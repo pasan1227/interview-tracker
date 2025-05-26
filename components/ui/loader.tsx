@@ -1,6 +1,5 @@
-import { cn } from '@/lib/utils';
-import { Loader } from 'lucide-react';
 import { FC } from 'react';
+import { BeatLoader } from 'react-spinners';
 
 interface LoadingSpinnerProps {
   className?: string;
@@ -8,14 +7,8 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ className }) => {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center',
-        'text-gray-500 dark:text-gray-400 h-full w-full',
-        className
-      )}
-    >
-      <Loader className='animate-spin' />
+    <div className='flex justify-center items-center h-full min-h-[400px]'>
+      <BeatLoader />
     </div>
   );
 };
