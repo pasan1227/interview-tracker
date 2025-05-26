@@ -9,6 +9,7 @@ import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import Loading from './loading';
 
 interface InterviewsPageProps {
   searchParams: Promise<{
@@ -58,7 +59,7 @@ export default async function InterviewsPage({
         <InterviewsFilters />
       </div>
 
-      <Suspense fallback={<div>Loading interviews...</div>}>
+      <Suspense fallback={<Loading />}>
         <InterviewsList
           page={page}
           search={search}

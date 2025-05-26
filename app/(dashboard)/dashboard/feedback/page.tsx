@@ -1,10 +1,6 @@
 // app/(dashboard)/dashboard/feedback/page.tsx
 
-import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { getFeedbacksByInterviewer } from '@/data/feedback';
-import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,9 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { StarIcon, ExternalLinkIcon } from 'lucide-react';
-import Link from 'next/link';
+import { getFeedbacksByInterviewer } from '@/data/feedback';
 import { Recommendation } from '@/lib/generated/prisma';
+import { formatDate } from '@/lib/utils';
+import { ExternalLinkIcon, StarIcon } from 'lucide-react';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import Loading from './loading';
 
 export default async function FeedbackPage() {
   const session = await auth();
@@ -35,7 +36,7 @@ export default async function FeedbackPage() {
         </p>
       </div>
 
-      <Suspense fallback={<div>Loading feedback...</div>}>
+      <Suspense fallback={<Loading />}>
         <FeedbackList userId={session.user.id!} />
       </Suspense>
     </div>

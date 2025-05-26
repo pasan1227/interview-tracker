@@ -1,14 +1,15 @@
 // app/(dashboard)/dashboard/candidates/page.tsx
 
-import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { CandidatesSearch } from '@/components/candidates/candidates-search';
-import { CandidatesFilters } from '@/components/candidates/candidates-filters';
+import { Button } from '@/components/ui/button';
+import { PlusIcon } from 'lucide-react';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import Loading from './loading';
 
 interface CandidatesPageProps {
   searchParams: Promise<{
@@ -57,7 +58,7 @@ export default async function CandidatesPage({
         <CandidatesFilters />
       </div>
 
-      <Suspense fallback={<div>Loading candidates...</div>}>
+      <Suspense fallback={<Loading />}>
         <CandidatesList
           page={page}
           search={search}
