@@ -2,7 +2,7 @@
   command = "yarn run build"
   publish = ".next"
 
-[[functions]]
+[functions]
   included_files = ["lib/generated/prisma/**"]
 
 [build.environment]
