@@ -1,8 +1,6 @@
 'use client';
 
 import { newVerification } from '@/actions/auth/new-verification';
-import { FormError } from '@/components/ui/form-error';
-import { FormSuccess } from '@/components/ui/form-success';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState, Suspense } from 'react';
 import { BeatLoader } from 'react-spinners';
@@ -56,7 +54,7 @@ function VerificationContent() {
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array to run only once
+  }, [onSubmit, success, error]); // Include dependencies
 
   return (
     <div className='flex flex-col items-center space-y-6 text-center'>
