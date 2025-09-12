@@ -14,7 +14,14 @@ export async function validateCredentials(credentials: z.infer<typeof LoginSchem
     }
     
     // Use dynamic import to load bcryptjs only in Node.js runtime
-    const bcrypt = await import('bcryptjs');
+    let bcrypt;
+    try {
+      bcrypt = await import('bcryptjs');
+    } catch (importError) {
+      console.error('Failed to import bcryptjs:', importError);
+      return null;
+    }
+    
     const passwordMatch = await bcrypt.default.compare(password, user.password);
     
     if (passwordMatch) {

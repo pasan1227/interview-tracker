@@ -4,7 +4,6 @@ import Github from 'next-auth/providers/github';
 import Google from 'next-auth/providers/google';
 
 import { LoginSchema } from './lib/validations/auth';
-import { validateCredentials } from './lib/auth-utils';
 
 export default {
   providers: [
@@ -18,14 +17,16 @@ export default {
     }),
     Credentials({
       async authorize(credentials) {
+        // Only validate the schema here, actual authentication happens in signIn callback
         const validatedFields = LoginSchema.safeParse(credentials);
-
+        
         if (validatedFields.success) {
-          const user = await validateCredentials(validatedFields.data);
-          
-          if (user) {
-            return user;
-          }
+          // Return the credentials to pass to signIn callback
+          return {
+            id: 'temp',
+            email: validatedFields.data.email,
+            password: validatedFields.data.password,
+          };
         }
         return null;
       },

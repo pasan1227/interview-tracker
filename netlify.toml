@@ -2,6 +2,9 @@
   command = "yarn run build"
   publish = ".next"
 
+[[functions]]
+  included_files = ["lib/generated/prisma/**"]
+
 [build.environment]
   SECRETS_SCAN_OMIT_PATHS = ".netlify/,.next/,lib/generated/prisma/,prisma/,docker-compose.yml"
   SECRETS_SCAN_OMIT_KEYS = "PGADMIN_DEFAULT_PASSWORD,POSTGRES_DB"

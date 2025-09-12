@@ -5,7 +5,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import NextAuth from 'next-auth';
 import { getAccountByUserId } from './data/account';
 import { getTwoFactorConfirmationByUserId } from './data/two-factor-confirmation';
-import { getUserById } from './data/user';
+import { getUserById, getUserByEmail } from './data/user';
 import { UserRole } from './lib/generated/prisma';
 
 export const {
@@ -33,25 +33,52 @@ export const {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider !== 'credentials') return true;
-      const existingUser = await getUserById(user.id!);
-      if (!existingUser?.emailVerified) return false;
+      
+      // For credentials provider, user contains email and password from auth.config.ts
+      if (user.email && (user as any).password) {
+        try {
+          const bcrypt = await import('bcryptjs');
+          const existingUser = await getUserByEmail(user.email);
+          
+          if (!existingUser || !existingUser.password) return false;
+          
+          const passwordMatch = await bcrypt.default.compare((user as any).password, existingUser.password);
+          
+          if (!passwordMatch) return false;
+          
+          if (!existingUser.emailVerified) return false;
 
-      if (existingUser.isTwoFactorEnabled) {
-        const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
-          existingUser.id
-        );
+          if (existingUser.isTwoFactorEnabled) {
+            const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
+              existingUser.id
+            );
 
-        if (!twoFactorConfirmation) {
+            if (!twoFactorConfirmation) {
+              return false;
+            }
+            // Delete two factor confirmation for next sign in
+            await db.twoFactorConfirmation.delete({
+              where: {
+                id: twoFactorConfirmation.id,
+              },
+            });
+          }
+          
+          // Update user object with real user data
+          user.id = existingUser.id;
+          user.name = existingUser.name;
+          user.email = existingUser.email;
+          (user as any).role = existingUser.role;
+          (user as any).isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
+          
+          return true;
+        } catch (error) {
+          console.error('Error in signIn callback:', error);
           return false;
         }
-        // Delete two factor confirmation for next sign in
-        await db.twoFactorConfirmation.delete({
-          where: {
-            id: twoFactorConfirmation.id,
-          },
-        });
       }
-      return true;
+      
+      return false;
     },
     async session({ token, session }) {
       if (token.sub && session.user) {
