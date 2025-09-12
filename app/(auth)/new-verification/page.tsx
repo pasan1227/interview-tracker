@@ -1,21 +1,13 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-import { BeatLoader } from 'react-spinners';
-
-// Dynamically import with SSR disabled
-const NewVerificationForm = dynamic(
-  () => import('@/components/auth/new-verification-form'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className='flex justify-center items-center h-full min-h-[400px]'>
-        <BeatLoader />
-      </div>
-    ),
-  }
-);
+import { NewVerificationForm } from '@/components/auth/new-verification-form';
+import { Suspense } from 'react';
+import { LoadingSpinner } from '@/components/ui/loader';
 
 export default function NewVerificationPage() {
-  return <NewVerificationForm />;
+  return (
+    <div className='flex items-center justify-center min-h-screen w-full px-4'>
+      <Suspense fallback={<LoadingSpinner />}>
+        <NewVerificationForm />
+      </Suspense>
+    </div>
+  );
 }

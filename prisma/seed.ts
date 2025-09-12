@@ -1,4 +1,4 @@
-import { PrismaClient } from '../lib/generated/prisma';
+import { PrismaClient, CandidateStatus, InterviewType, InterviewStatus, Recommendation } from '../lib/generated/prisma';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -207,7 +207,7 @@ async function main() {
       name: 'John Doe',
       email: 'john.doe@gmail.com',
       phone: '+1-555-0101',
-      status: 'NEW',
+      status: CandidateStatus.NEW,
       source: 'LinkedIn',
       positionId: frontendPos.id,
       tagIds: [reactTag.id, seniorTag.id],
@@ -216,7 +216,7 @@ async function main() {
       name: 'Jane Smith',
       email: 'jane.smith@gmail.com',
       phone: '+1-555-0102',
-      status: 'IN_PROCESS',
+      status: CandidateStatus.IN_PROCESS,
       source: 'Indeed',
       positionId: backendPos.id,
       tagIds: [nodeTag.id, pythonTag.id],
@@ -225,7 +225,7 @@ async function main() {
       name: 'David Brown',
       email: 'david.brown@gmail.com',
       phone: '+1-555-0103',
-      status: 'OFFERED',
+      status: CandidateStatus.OFFERED,
       source: 'Referral',
       positionId: frontendPos.id,
       tagIds: [reactTag.id, remoteTag.id],
@@ -234,7 +234,7 @@ async function main() {
       name: 'Emily Davis',
       email: 'emily.davis@gmail.com',
       phone: '+1-555-0104',
-      status: 'HIRED',
+      status: CandidateStatus.HIRED,
       source: 'Company Website',
       positionId: pmPos.id,
       tagIds: [seniorTag.id],
@@ -243,7 +243,7 @@ async function main() {
       name: 'Michael Wilson',
       email: 'michael.wilson@gmail.com',
       phone: '+1-555-0105',
-      status: 'IN_PROCESS',
+      status: CandidateStatus.IN_PROCESS,
       source: 'Glassdoor',
       positionId: backendPos.id,
       tagIds: [pythonTag.id, nodeTag.id],
@@ -252,7 +252,7 @@ async function main() {
       name: 'Lisa Johnson',
       email: 'lisa.johnson@gmail.com',
       phone: '+1-555-0106',
-      status: 'NEW',
+      status: CandidateStatus.NEW,
       source: 'AngelList',
       positionId: frontendPos.id,
       tagIds: [reactTag.id],
@@ -261,7 +261,7 @@ async function main() {
       name: 'Robert Lee',
       email: 'robert.lee@gmail.com',
       phone: '+1-555-0107',
-      status: 'REJECTED',
+      status: CandidateStatus.REJECTED,
       source: 'LinkedIn',
       positionId: backendPos.id,
       tagIds: [nodeTag.id],
@@ -270,7 +270,7 @@ async function main() {
       name: 'Anna Garcia',
       email: 'anna.garcia@gmail.com',
       phone: '+1-555-0108',
-      status: 'IN_PROCESS',
+      status: CandidateStatus.IN_PROCESS,
       source: 'Referral',
       positionId: pmPos.id,
       tagIds: [seniorTag.id, remoteTag.id],
@@ -279,7 +279,7 @@ async function main() {
       name: 'Thomas Anderson',
       email: 'thomas.anderson@gmail.com',
       phone: '+1-555-0109',
-      status: 'NEW',
+      status: CandidateStatus.NEW,
       source: 'Stack Overflow Jobs',
       positionId: frontendPos.id,
       tagIds: [reactTag.id, pythonTag.id],
@@ -288,7 +288,7 @@ async function main() {
       name: 'Maria Rodriguez',
       email: 'maria.rodriguez@gmail.com',
       phone: '+1-555-0110',
-      status: 'WITHDRAWN',
+      status: CandidateStatus.WITHDRAWN,
       source: 'Indeed',
       positionId: backendPos.id,
       tagIds: [nodeTag.id, remoteTag.id],
@@ -315,14 +315,26 @@ async function main() {
   const now = new Date();
   const interviews = [];
 
-  const interviewsData = [
+  const interviewsData: Array<{
+    title: string;
+    startTime: Date;
+    endTime: Date;
+    location: string;
+    type: InterviewType;
+    status: InterviewStatus;
+    candidateId: string;
+    positionId: string;
+    stageId: string;
+    interviewerIds: string[];
+    notes?: string;
+  }> = [
     {
       title: 'Frontend Technical Interview',
       startTime: new Date(now.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
       endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // Tomorrow + 1 hour
       location: 'Zoom Meeting Room 1',
-      type: 'TECHNICAL',
-      status: 'SCHEDULED',
+      type: InterviewType.TECHNICAL,
+      status: InterviewStatus.SCHEDULED,
       candidateId: candidates[0].id,
       positionId: frontendPos.id,
       stageId: techStage2.id,
@@ -333,8 +345,8 @@ async function main() {
       startTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
       endTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // + 1.5 hours
       location: 'Conference Room A',
-      type: 'TECHNICAL',
-      status: 'SCHEDULED',
+      type: InterviewType.TECHNICAL,
+      status: InterviewStatus.SCHEDULED,
       candidateId: candidates[1].id,
       positionId: backendPos.id,
       stageId: techStage2.id,
@@ -345,8 +357,8 @@ async function main() {
       startTime: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Yesterday (completed)
       endTime: new Date(now.getTime() - 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // Yesterday + 1 hour
       location: 'Executive Conference Room',
-      type: 'FINAL',
-      status: 'COMPLETED',
+      type: InterviewType.FINAL,
+      status: InterviewStatus.COMPLETED,
       candidateId: candidates[3].id,
       positionId: pmPos.id,
       stageId: mgmtStage2.id,
@@ -358,8 +370,8 @@ async function main() {
       startTime: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       endTime: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000), // + 30 mins
       location: 'Phone Call',
-      type: 'SCREENING',
-      status: 'COMPLETED',
+      type: InterviewType.SCREENING,
+      status: InterviewStatus.COMPLETED,
       candidateId: candidates[4].id,
       positionId: backendPos.id,
       stageId: techStage1.id,
@@ -371,8 +383,8 @@ async function main() {
       startTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // In 3 days
       endTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // + 45 mins
       location: 'Zoom Meeting Room 2',
-      type: 'BEHAVIORAL',
-      status: 'SCHEDULED',
+      type: InterviewType.BEHAVIORAL,
+      status: InterviewStatus.SCHEDULED,
       candidateId: candidates[5].id,
       positionId: frontendPos.id,
       stageId: techStage3.id,
@@ -396,8 +408,8 @@ async function main() {
       startTime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), // In 5 days
       endTime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000 + 75 * 60 * 1000), // + 75 mins
       location: 'Executive Conference Room',
-      type: 'MANAGER',
-      status: 'SCHEDULED',
+      type: InterviewType.MANAGER,
+      status: InterviewStatus.SCHEDULED,
       candidateId: candidates[7].id,
       positionId: pmPos.id,
       stageId: mgmtStage2.id,
@@ -444,7 +456,7 @@ async function main() {
   const feedbackData = [
     {
       rating: 5,
-      recommendation: 'STRONG_HIRE',
+      recommendation: Recommendation.STRONG_HIRE,
       comment: 'Exceptional product sense and leadership skills. Strong cultural fit.',
       skills: [
         { skill: 'Product Strategy', rating: 5, comment: 'Outstanding strategic thinking' },
@@ -454,7 +466,7 @@ async function main() {
     },
     {
       rating: 4,
-      recommendation: 'HIRE',
+      recommendation: Recommendation.HIRE,
       comment: 'Solid technical skills and good cultural fit. Ready for next round.',
       skills: [
         { skill: 'Python', rating: 4, comment: 'Strong Python knowledge' },
@@ -464,7 +476,7 @@ async function main() {
     },
     {
       rating: 2,
-      recommendation: 'NO_HIRE',
+      recommendation: Recommendation.NO_HIRE,
       comment: 'Technical skills below expectations for senior role.',
       skills: [
         { skill: 'System Design', rating: 2, comment: 'Weak system design skills' },
@@ -474,7 +486,7 @@ async function main() {
     },
     {
       rating: 5,
-      recommendation: 'STRONG_HIRE',
+      recommendation: Recommendation.STRONG_HIRE,
       comment: 'Outstanding technical skills and excellent problem-solving approach.',
       skills: [
         { skill: 'React', rating: 5, comment: 'Expert level React knowledge' },

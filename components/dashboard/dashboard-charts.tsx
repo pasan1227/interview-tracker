@@ -89,7 +89,7 @@ export function DashboardCharts({ stats }: DashboardChartsProps) {
                     cx,
                     cy,
                     midAngle,
-                    innerRadius,
+                    innerRadius: _innerRadius,
                     outerRadius,
                     value,
                     index,

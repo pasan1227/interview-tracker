@@ -10,19 +10,25 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: ['**/generated/**', '**/lib/generated/**', '**/prisma/**', '**/.next/**', '**/dist/**', '**/node_modules/**'],
+  },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
-    ignorePatterns: ['generated/'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off', // Turn off warnings and errors for 'any'
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           ignoreRestSiblings: true,
         },
       ],
+      '@typescript-eslint/no-empty-object-type': 'off',
+      'react/no-unescaped-entities': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
 ];

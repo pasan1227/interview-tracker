@@ -5,7 +5,7 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ className }) => {
+export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ className: _className }) => {
   return (
     <div className='flex justify-center items-center h-full min-h-[400px]'>
       <BeatLoader />
