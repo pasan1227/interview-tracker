@@ -86,6 +86,10 @@ export const login = async (
       redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
     });
   } catch (error) {
+    // NextAuth throws NEXT_REDIRECT to perform server-side redirects
+    if (error && typeof error === 'object' && 'digest' in error && String(error.digest).includes('NEXT_REDIRECT')) {
+      throw error;
+    }
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
@@ -96,4 +100,6 @@ export const login = async (
     }
     throw error;
   }
+  
+  return { success: 'Logged in successfully!' };
 };

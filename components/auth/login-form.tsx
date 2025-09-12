@@ -44,14 +44,21 @@ export function LoginForm() {
 
       if (result?.error) {
         setError(result.error);
+        setIsPending(false);
       } else if (result?.success) {
         // Handle successful login
         router.push(DEFAULT_LOGIN_REDIRECT);
+        setIsPending(false);
       }
+      // If no result returned, NextAuth is handling the redirect
     } catch (error) {
+      // Check if this is a NextAuth redirect (which is expected)
+      if (error && typeof error === 'object' && 'digest' in error && String(error.digest).includes('NEXT_REDIRECT')) {
+        // This is expected - NextAuth is redirecting, don't show error
+        return;
+      }
       console.error('Login error:', error);
       setError('Something went wrong');
-    } finally {
       setIsPending(false);
     }
   }
