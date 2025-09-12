@@ -5,19 +5,33 @@ import * as z from 'zod';
 export async function validateCredentials(credentials: z.infer<typeof LoginSchema>) {
   const { email, password } = credentials;
   
-  const user = await getUserByEmail(email);
-  
-  if (!user || !user.password) {
+  try {
+    const user = await getUserByEmail(email);
+    
+    // If user doesn't exist or doesn't have a password (OAuth users)
+    if (!user || !user.password) {
+      return null;
+    }
+    
+    // Use dynamic import to load bcryptjs only in Node.js runtime
+    const bcrypt = await import('bcryptjs');
+    const passwordMatch = await bcrypt.default.compare(password, user.password);
+    
+    if (passwordMatch) {
+      // Return user data that NextAuth expects
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error validating credentials:', error);
     return null;
   }
-  
-  // Use dynamic import to load bcryptjs only in Node.js runtime
-  const bcrypt = await import('bcryptjs');
-  const passwordMatch = await bcrypt.default.compare(password, user.password);
-  
-  if (passwordMatch) {
-    return user;
-  }
-  
-  return null;
 }

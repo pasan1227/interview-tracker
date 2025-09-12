@@ -18,16 +18,7 @@ export default auth((req, ctx) => {
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 
   if (isAPIAuthRoute) {
-    if (isLoggedIn) {
-      return Promise.resolve();
-    }
-
-    return Promise.resolve(
-      new Response('Unauthorized', {
-        status: 401,
-        statusText: 'Unauthorized',
-      })
-    );
+    return Promise.resolve();
   }
 
   if (isAuthRoute) {

@@ -4,7 +4,8 @@
 
 [build.environment]
   SECRETS_SCAN_OMIT_PATHS = ".netlify/,.next/,lib/generated/prisma/,prisma/,docker-compose.yml"
-  SECRETS_SCAN_OMIT_KEYS = "PGADMIN_DEFAULT_PASSWORD,POSTGRES_DB"
+  SECRETS_SCAN_OMIT_KEYS = "PGLADMIN_DEFAULT_PASSWORD,POSTGRES_DB"
+  NEXTAUTH_URL = "https://interview-tracker-bot.netlify.app"
 
 [[headers]]
   for = "/_next/static/*"
