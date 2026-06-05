@@ -1,9 +1,10 @@
 import { Resend } from 'resend';
+import { env } from './env';
 import { formatDateTime } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(env.RESEND_API_KEY);
 
-const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const domain = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // ---------- HTML safety ----------
 //
@@ -40,8 +41,17 @@ function html(strings: TemplateStringsArray, ...values: unknown[]): string {
 // extra headers (Bcc:, Cc:, etc.). Collapse any newline runs to a space.
 const headerSafe = (value: string) => value.replace(/[\r\n]+/g, ' ');
 
-const fromAddress = () =>
-  process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>';
+// In production every email must come from a domain we control. Falling back
+// to the shared `onboarding@resend.dev` lands real production mail in spam
+// and prevents DMARC alignment. In development we still allow the fallback
+// so contributors can run the app without setting up Resend.
+function fromAddress(): string {
+  if (env.EMAIL_FROM) return env.EMAIL_FROM;
+  if (env.NODE_ENV === 'production') {
+    throw new Error('EMAIL_FROM env var is required in production.');
+  }
+  return 'Acme <onboarding@resend.dev>';
+}
 
 // ---------- Senders ----------
 
@@ -105,7 +115,7 @@ export async function sendInterviewScheduleEmail({
 
   const linkUrl =
     actionUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   // notes preserves user line breaks via <br>. Escape first, then convert
   // newlines, then mark the result raw so the html tag doesn't re-escape it.
@@ -168,9 +178,7 @@ export async function sendInterviewScheduleEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
@@ -214,8 +222,8 @@ export async function sendFeedbackReminderEmail({
   );
 
   const feedbackLink = interviewId
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
-    : `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    ? `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
+    : `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   const body = html`
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -250,9 +258,7 @@ export async function sendFeedbackReminderEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
@@ -300,7 +306,7 @@ export async function sendNewInterviewNotifications(
       .map((i) => i.name?.trim())
       .filter((n): n is string => Boolean(n));
     const candidateName = interview.candidate.name;
-    const detailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
+    const detailUrl = `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
 
     const sharedArgs = {
       candidateName,

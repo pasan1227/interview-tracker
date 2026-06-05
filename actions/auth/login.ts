@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { sendTwoFactorTokenEmail, sendVerificationEmail } from '@/lib/mail';
 import { rateLimit } from '@/lib/rate-limit';
 import { LoginSchema } from '@/lib/validations/auth';
-import { DEFAULT_LOGIN_REDIRECT } from '@/routes';
+import { safeCallbackUrl } from '@/routes';
 import { timingSafeEqual } from 'crypto';
 import { AuthError } from 'next-auth';
 import { headers } from 'next/headers';
@@ -72,7 +72,7 @@ export const login = async (
     await signIn('credentials', {
       email,
       password,
-      redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
+      redirectTo: safeCallbackUrl(callbackUrl),
     });
     return { error: 'Something went wrong!' };
   } catch (error) {

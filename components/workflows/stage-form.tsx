@@ -64,16 +64,9 @@ export function StageForm({
 
     try {
       if (isEdit && stage) {
-        // Update existing stage
         await updateStage(stage.id, values);
       } else {
-        // Create new stage
-        await createStage({
-          ...values,
-          workflow: {
-            connect: { id: workflowId },
-          },
-        });
+        await createStage(workflowId, values);
       }
 
       router.push(`/dashboard/settings/workflows/${workflowId}`);
