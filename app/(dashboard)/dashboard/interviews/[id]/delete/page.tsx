@@ -81,10 +81,7 @@ export default async function DeleteInterviewPage({
             </div>
           </div>
 
-          <InterviewDeleteForm
-            interviewId={interview.id}
-            candidateId={interview.candidateId}
-          />
+          <InterviewDeleteForm interviewId={interview.id} />
 
           <div className='flex justify-end'>
             <Button variant='outline' asChild>
