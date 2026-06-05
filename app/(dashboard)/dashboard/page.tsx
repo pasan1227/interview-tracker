@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
 import { DashboardSummary } from '@/components/dashboard/dashboard-summary';
-import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
+import { DashboardCharts } from '@/components/dashboard/dashboard-charts-lazy';
 import {
   getUpcomingInterviews,
   getRecentCandidates,
