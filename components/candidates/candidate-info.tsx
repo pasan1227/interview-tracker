@@ -70,9 +70,9 @@ export function CandidateInfo({ candidate }: CandidateInfoProps) {
                 target='_blank'
                 rel='noopener noreferrer'
                 className='inline-flex items-center gap-2'
-                aria-label='View Resume'
+                aria-label='View resume'
               >
-                View Resume
+                View resume
                 <ExternalLinkIcon className='h-4 w-4' />
               </a>
             </Button>

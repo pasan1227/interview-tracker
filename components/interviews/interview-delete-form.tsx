@@ -12,7 +12,7 @@ export function InterviewDeleteForm({ interviewId }: InterviewDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deleteInterview(interviewId)}
       redirectTo='/dashboard/interviews'
-      buttonLabel='Delete Interview'
+      buttonLabel='Delete interview'
       errorLabel='interview'
     />
   );

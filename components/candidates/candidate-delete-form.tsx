@@ -12,7 +12,7 @@ export function CandidateDeleteForm({ candidateId }: CandidateDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deleteCandidate(candidateId)}
       redirectTo='/dashboard/candidates'
-      buttonLabel='Delete Permanently'
+      buttonLabel='Delete permanently'
       errorLabel='candidate'
     />
   );

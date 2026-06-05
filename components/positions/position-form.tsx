@@ -198,7 +198,7 @@ export function PositionForm({
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Position' : 'Create Position'}
+            {isEdit ? 'Update position' : 'Create position'}
           </Button>
         </div>
       </form>

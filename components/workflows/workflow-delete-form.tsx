@@ -12,7 +12,7 @@ export function WorkflowDeleteForm({ workflowId }: WorkflowDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deleteWorkflow(workflowId)}
       redirectTo='/dashboard/settings/workflows'
-      buttonLabel='Delete Workflow'
+      buttonLabel='Delete workflow'
       errorLabel='workflow'
     />
   );

@@ -62,7 +62,7 @@ export function InterviewStatusAction({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant='outline' disabled={isSubmitting}>
-            {isSubmitting ? 'Updating…' : 'Update Status'}
+            {isSubmitting ? 'Updating…' : 'Update status'}
             <ChevronDownIcon className='ml-2 h-4 w-4' />
           </Button>
         </DropdownMenuTrigger>

@@ -132,7 +132,7 @@ export function StageForm({
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Stage' : 'Add Stage'}
+            {isEdit ? 'Update stage' : 'Add stage'}
           </Button>
         </div>
       </form>

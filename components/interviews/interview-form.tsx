@@ -380,7 +380,7 @@ export function InterviewForm({
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Interview' : 'Schedule Interview'}
+            {isEdit ? 'Update interview' : 'Schedule interview'}
           </Button>
         </div>
       </form>

@@ -13,7 +13,7 @@ export function StageDeleteForm({ stageId, workflowId }: StageDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deleteStage(stageId, workflowId)}
       redirectTo={`/dashboard/settings/workflows/${workflowId}`}
-      buttonLabel='Delete Stage'
+      buttonLabel='Delete stage'
       errorLabel='stage'
     />
   );

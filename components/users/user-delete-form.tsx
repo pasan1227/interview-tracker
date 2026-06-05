@@ -12,7 +12,7 @@ export function UserDeleteForm({ userId }: UserDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deleteUser(userId)}
       redirectTo='/dashboard/settings/users'
-      buttonLabel='Delete User'
+      buttonLabel='Delete user'
       errorLabel='user'
     />
   );

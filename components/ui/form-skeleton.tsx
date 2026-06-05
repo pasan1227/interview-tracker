@@ -11,12 +11,12 @@ export function FormSkeleton({ rows = 4 }: Readonly<FormSkeletonProps>) {
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className='space-y-2'>
           <div className='h-3 w-24 rounded-md bg-secondary' />
-          <div className='h-10 rounded-md bg-secondary' />
+          <div className='h-9 rounded-md bg-secondary' />
         </div>
       ))}
       <div className='flex justify-end gap-2 pt-2'>
-        <div className='h-10 w-24 rounded-md bg-secondary' />
-        <div className='h-10 w-28 rounded-md bg-secondary' />
+        <div className='h-9 w-24 rounded-md bg-secondary' />
+        <div className='h-9 w-28 rounded-md bg-secondary' />
       </div>
     </div>
   );

@@ -299,7 +299,7 @@ export function FeedbackForm({
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Feedback' : 'Submit Feedback'}
+            {isEdit ? 'Update feedback' : 'Submit feedback'}
           </Button>
         </div>
       </form>

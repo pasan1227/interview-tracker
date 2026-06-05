@@ -231,7 +231,7 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update User' : 'Create User'}
+            {isEdit ? 'Update user' : 'Create user'}
           </Button>
         </div>
       </form>

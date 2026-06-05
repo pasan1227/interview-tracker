@@ -151,7 +151,7 @@ export function WorkflowForm({ workflow, isEdit = false }: WorkflowFormProps) {
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Workflow' : 'Create Workflow'}
+            {isEdit ? 'Update workflow' : 'Create workflow'}
           </Button>
         </div>
       </form>

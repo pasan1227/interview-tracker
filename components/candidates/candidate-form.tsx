@@ -274,7 +274,7 @@ export function CandidateForm({
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {isEdit ? 'Update Candidate' : 'Add Candidate'}
+            {isEdit ? 'Update candidate' : 'Add candidate'}
           </Button>
         </div>
       </form>

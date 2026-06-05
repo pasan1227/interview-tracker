@@ -12,7 +12,7 @@ export function PositionDeleteForm({ positionId }: PositionDeleteFormProps) {
     <DeleteConfirmForm
       onDelete={() => deletePosition(positionId)}
       redirectTo='/dashboard/positions'
-      buttonLabel='Delete Position'
+      buttonLabel='Delete position'
       errorLabel='position'
     />
   );
