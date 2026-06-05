@@ -20,7 +20,9 @@ export default async function DashboardLayout({
       <DashboardHeader user={user} />
       <div className='flex flex-1'>
         <DashboardNav role={user.role} />
-        <main className='flex-1 px-6 py-8 lg:px-10 lg:py-10'>{children}</main>
+        <main id='main' className='flex-1 px-6 py-8 lg:px-10 lg:py-10'>
+          {children}
+        </main>
       </div>
     </div>
   );

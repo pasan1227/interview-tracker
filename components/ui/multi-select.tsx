@@ -94,28 +94,32 @@ export function MultiSelect({
               <span className='text-muted-foreground'>{placeholder}</span>
             )}
           </div>
-          <div className='flex'>
-            <div
-              role='button'
-              className='h-4 w-4 shrink-0 opacity-50'
-              onClick={() => setOpen(!open)}
+          <button
+            type='button'
+            aria-label={open ? 'Close options' : 'Open options'}
+            aria-expanded={open}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
+            className='flex h-4 w-4 shrink-0 items-center justify-center opacity-50 outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring'
+          >
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='24'
+              height='24'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              className='h-4 w-4'
+              aria-hidden
             >
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                width='24'
-                height='24'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                className='h-4 w-4'
-              >
-                <path d='m6 9 6 6 6-6' />
-              </svg>
-            </div>
-          </div>
+              <path d='m6 9 6 6 6-6' />
+            </svg>
+          </button>
         </div>
       </PopoverTrigger>
       <PopoverContent className='w-[200px] p-0' align='start'>

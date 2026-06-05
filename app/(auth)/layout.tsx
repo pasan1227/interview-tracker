@@ -48,7 +48,7 @@ export default function AuthLayout({
         </div>
       </header>
 
-      <main className='flex flex-1 items-center justify-center px-6 py-16'>
+      <main id='main' className='flex flex-1 items-center justify-center px-6 py-16'>
         {children}
       </main>
 
