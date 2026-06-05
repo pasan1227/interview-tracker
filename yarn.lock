@@ -229,21 +229,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@daypicker/react@npm:^10.0.1":
-  version: 10.0.1
-  resolution: "@daypicker/react@npm:10.0.1"
-  dependencies:
-    react-day-picker: "npm:10.0.1"
-  peerDependencies:
-    "@types/react": ">=16.8.0"
-    react: ">=16.8.0"
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/0a31153456a41c83b7af4eda0a050a0e92777871187e14b3be2000c8bf055dc4eb2e83a5a7def1ce055a79f15a521774ddfd56b527309468823d37ff66504dec
-  languageName: node
-  linkType: hard
-
 "@dnd-kit/accessibility@npm:^3.1.1":
   version: 3.1.1
   resolution: "@dnd-kit/accessibility@npm:3.1.1"
@@ -2486,7 +2471,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^19.2.16":
+"@types/react-is@npm:^19":
+  version: 19.2.0
+  resolution: "@types/react-is@npm:19.2.0"
+  dependencies:
+    "@types/react": "npm:*"
+  checksum: 10c0/ff49ac8b8d439c3377e11d2f9f491ed4f8c8ee800225a40093c7941715ca8ccbde1b3833c5435354a8e39305fd0a163019d97f033c9402bc4b46f515851d2290
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:*, @types/react@npm:^19.2.16":
   version: 19.2.16
   resolution: "@types/react@npm:19.2.16"
   dependencies:
@@ -4725,9 +4719,9 @@ __metadata:
   resolution: "interview-tracker@workspace:."
   dependencies:
     "@auth/prisma-adapter": "npm:^2.11.2"
-    "@daypicker/react": "npm:^10.0.1"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
+    "@dnd-kit/utilities": "npm:^3.2.2"
     "@hookform/resolvers": "npm:^5.4.0"
     "@prisma/adapter-pg": "npm:^7.8.0"
     "@prisma/client": "npm:^7.8.0"
@@ -4747,6 +4741,7 @@ __metadata:
     "@types/node": "npm:^25.9.1"
     "@types/react": "npm:^19.2.16"
     "@types/react-dom": "npm:^19.2.3"
+    "@types/react-is": "npm:^19"
     bcryptjs: "npm:^3.0.3"
     class-variance-authority: "npm:^0.7.1"
     clsx: "npm:^2.1.1"
@@ -4759,9 +4754,9 @@ __metadata:
     next-auth: "npm:5.0.0-beta.31"
     prisma: "npm:^7.8.0"
     react: "npm:^19.2.7"
+    react-day-picker: "npm:^10.0.1"
     react-dom: "npm:^19.2.7"
     react-hook-form: "npm:^7.77.0"
-    react-icons: "npm:^5.6.0"
     react-is: "npm:^19.2.7"
     recharts: "npm:^3.8.1"
     resend: "npm:^6.12.4"
@@ -6123,7 +6118,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-day-picker@npm:10.0.1":
+"react-day-picker@npm:^10.0.1":
   version: 10.0.1
   resolution: "react-day-picker@npm:10.0.1"
   dependencies:
@@ -6156,15 +6151,6 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
   checksum: 10c0/b61c9d739cf0fb4fde235cf1e36ae7bb69a583acbf144c9a1e403b47a0406bef5418cc0deb432b0b7e3e50738a998c5c44fad50aa881d85e5233b66c7a67d868
-  languageName: node
-  linkType: hard
-
-"react-icons@npm:^5.6.0":
-  version: 5.6.0
-  resolution: "react-icons@npm:5.6.0"
-  peerDependencies:
-    react: "*"
-  checksum: 10c0/addba1ebfd45cdf7f69291d0c93df64fca1271cfdb66df657abd223e3451c73356b035f50e75858627dd182b02129596c79eaaaa45d32eb52658e443a992645c
   languageName: node
   linkType: hard
 

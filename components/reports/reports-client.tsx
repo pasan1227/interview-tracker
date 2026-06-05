@@ -3,7 +3,7 @@
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportSkeleton } from '@/components/reports/report-skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { ReportFilters as ReportFiltersType } from '@/data/reports';
+import type { ReportFilters as ReportFiltersType } from '@/types/reports';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, type ComponentType } from 'react';

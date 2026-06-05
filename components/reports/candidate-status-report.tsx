@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CandidateStatusData, ReportFilters } from '@/data/reports';
+import { CandidateStatusData, ReportFilters } from '@/types/reports';
 import { useEffect, useState } from 'react';
 import {
   Cell,

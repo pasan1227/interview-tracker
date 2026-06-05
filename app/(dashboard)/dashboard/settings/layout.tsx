@@ -22,28 +22,5 @@ export default async function SettingsLayout({
     redirect('/dashboard');
   }
 
-  return (
-    <div className='space-y-6'>
-      {/* <SettingsTabs /> */}
-      {children}
-    </div>
-  );
+  return <div className='space-y-6'>{children}</div>;
 }
-
-// function SettingsTabs() {
-//   return (
-//     <Tabs defaultValue='general' className='w-full'>
-//       <TabsList className='grid w-full grid-cols-3'>
-//         <TabsTrigger value='general' asChild>
-//           <Link href='/dashboard/settings/general'>General</Link>
-//         </TabsTrigger>
-//         <TabsTrigger value='users' asChild>
-//           <Link href='/dashboard/settings/users'>Users</Link>
-//         </TabsTrigger>
-//         <TabsTrigger value='workflows' asChild>
-//           <Link href='/dashboard/settings/workflows'>Workflows</Link>
-//         </TabsTrigger>
-//       </TabsList>
-//     </Tabs>
-//   );
-// }

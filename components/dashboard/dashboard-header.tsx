@@ -11,10 +11,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from '@/lib/generated/prisma/browser';
 
+// Narrow to the fields the header actually reads. Accepts both the
+// next-auth session user (no createdAt/updatedAt) and a Prisma User.
 interface DashboardHeaderProps {
-  user: User;
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
 }
 
 function Logomark() {

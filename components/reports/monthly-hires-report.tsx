@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ReportFilters, MonthlyHireData } from '@/data/reports';
+import { ReportFilters, MonthlyHireData } from '@/types/reports';
 import { getMonthlyHiresReport } from '@/actions/reports';
 import {
   Bar,

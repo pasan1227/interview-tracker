@@ -1,6 +1,7 @@
 // lib/data/settings.ts
 
 import { db } from '@/lib/db';
+import { Prisma } from '@/lib/generated/prisma/browser';
 
 export async function getSettings() {
   try {
@@ -36,7 +37,9 @@ export async function getSettings() {
   }
 }
 
-export async function updateSettings(data: any) {
+export async function updateSettings(
+  data: Prisma.SettingsUpdateInput & Prisma.SettingsCreateInput
+) {
   try {
     // Get the first settings record
     const settings = await db.settings.findFirst();

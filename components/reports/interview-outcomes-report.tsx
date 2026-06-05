@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {  ReportFilters } from '@/data/reports';
+import { Recommendation } from '@/lib/generated/prisma/browser';
+import { ReportFilters } from '@/types/reports';
 import {
   Card,
   CardContent,
@@ -28,10 +29,8 @@ interface InterviewOutcomesReportProps {
   filters: ReportFilters;
 }
 
-type RecommendationType = 'STRONG_HIRE' | 'HIRE' | 'NO_DECISION' | 'NO_HIRE' | 'STRONG_NO_HIRE';
-
 interface OutcomeData {
-  recommendation: RecommendationType;
+  recommendation: Recommendation;
   count: number;
   label?: string;
 }
@@ -54,7 +53,7 @@ export function InterviewOutcomesReport({
         // Format recommendation labels
         const formattedData = result.data.map((item) => ({
           ...item,
-          recommendation: item.recommendation as RecommendationType,
+          recommendation: item.recommendation as Recommendation,
           label: item.recommendation.replace(/_/g, ' '),
         }));
         

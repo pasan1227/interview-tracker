@@ -39,11 +39,13 @@ export async function getInterviews({
       ];
     }
 
-    if (status) {
+    // Status / type come from a searchParam — only accept declared enum
+    // values, mirroring the candidate-list guard.
+    if (status && (Object.values(InterviewStatus) as string[]).includes(status)) {
       where.status = status as InterviewStatus;
     }
 
-    if (type) {
+    if (type && (Object.values(InterviewType) as string[]).includes(type)) {
       where.type = type as InterviewType;
     }
 
@@ -157,7 +159,9 @@ export async function getInterviewById(id: string) {
   }
 }
 
-export async function createInterview(data: any) {
+export async function createInterview(
+  data: Prisma.InterviewUncheckedCreateInput
+) {
   try {
     const interview = await db.interview.create({
       data: {
@@ -179,7 +183,10 @@ export async function createInterview(data: any) {
   }
 }
 
-export async function updateInterview(id: string, data: any) {
+export async function updateInterview(
+  id: string,
+  data: Prisma.InterviewUncheckedUpdateInput
+) {
   try {
     const interview = await db.interview.update({
       where: { id },

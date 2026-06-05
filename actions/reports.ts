@@ -29,35 +29,31 @@ function sanitizeFilters(filters: ReportFilters = {}): ParsedFilters {
   return result.success ? result.data : {};
 }
 
+// Candidate reports all share the same filter shape (date range,
+// position, source). Centralise the where-builder so adding a filter is
+// one edit, not three — and give it a real Prisma type so a renamed
+// column is a compile error.
+function buildCandidateReportWhere(
+  filters: ParsedFilters
+): Prisma.CandidateWhereInput {
+  const where: Prisma.CandidateWhereInput = {};
+  if (filters.startDate || filters.endDate) {
+    where.createdAt = {
+      ...(filters.startDate && { gte: filters.startDate }),
+      ...(filters.endDate && { lte: filters.endDate }),
+    };
+  }
+  if (filters.positionId) where.positionId = filters.positionId;
+  if (filters.source) where.source = filters.source;
+  return where;
+}
+
 export async function getCandidateStatusReport(rawFilters: ReportFilters = {}) {
   await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {};
-
-    if (filters.startDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        gte: filters.startDate,
-      };
-    }
-
-    if (filters.endDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        lte: filters.endDate,
-      };
-    }
-
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
-    }
-
-    if (filters.source) {
-      where.source = filters.source;
-    }
+    const where = buildCandidateReportWhere(filters);
 
     // Get candidates grouped by status
     const candidatesByStatus = await db.candidate.groupBy({
@@ -101,29 +97,13 @@ export async function getSourceReport(rawFilters: ReportFilters = {}) {
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {};
-
-    if (filters.startDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        gte: filters.startDate,
-      };
-    }
-
-    if (filters.endDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        lte: filters.endDate,
-      };
-    }
-
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
-    }
-
-    // Add filter to exclude null sources
-    where.source = { not: null };
+    // Exclude the source filter — this report explicitly drops nulls and
+    // groups by source, so a same-source filter would be redundant.
+    const { source: _source, ...rest } = filters;
+    const where: Prisma.CandidateWhereInput = {
+      ...buildCandidateReportWhere(rest),
+      source: { not: null },
+    };
 
     // Get candidates grouped by source
     const candidatesBySource = await db.candidate.groupBy({
@@ -166,33 +146,13 @@ export async function getPositionReport(rawFilters: ReportFilters = {}) {
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {};
-
-    if (filters.startDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        gte: filters.startDate,
-      };
-    }
-
-    if (filters.endDate) {
-      where.createdAt = {
-        ...where.createdAt,
-        lte: filters.endDate,
-      };
-    }
-
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
-    }
-
-    if (filters.source) {
-      where.source = filters.source;
-    }
-
-    // Add filter to exclude null positions
-    where.positionId = { not: null };
+    // groupBy positionId, so drop the positionId equality filter and
+    // exclude rows without a position instead.
+    const { positionId: _pid, ...rest } = filters;
+    const where: Prisma.CandidateWhereInput = {
+      ...buildCandidateReportWhere(rest),
+      positionId: { not: null },
+    };
 
     // Get candidates grouped by position
     const candidatesByPosition = await db.candidate.groupBy({

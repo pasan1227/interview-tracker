@@ -32,7 +32,9 @@ export async function getCandidates({
       ];
     }
 
-    if (status) {
+    // Status comes from a searchParam; only accept declared enum values
+    // so an attacker can't smuggle `?status=DROP TABLE` into Prisma.
+    if (status && (Object.values(CandidateStatus) as string[]).includes(status)) {
       where.status = status as CandidateStatus;
     }
 
@@ -113,7 +115,9 @@ export async function getCandidateById(id: string) {
   }
 }
 
-export async function createCandidate(data: any) {
+export async function createCandidate(
+  data: Prisma.CandidateUncheckedCreateInput
+) {
   try {
     const candidate = await db.candidate.create({
       data,
@@ -126,7 +130,10 @@ export async function createCandidate(data: any) {
   }
 }
 
-export async function updateCandidate(id: string, data: any) {
+export async function updateCandidate(
+  id: string,
+  data: Prisma.CandidateUncheckedUpdateInput
+) {
   try {
     const candidate = await db.candidate.update({
       where: { id },

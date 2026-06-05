@@ -1,6 +1,30 @@
 // lib/data/feedback.ts
 
 import { db } from '@/lib/db';
+import { Prisma } from '@/lib/generated/prisma/browser';
+
+// Skill assessments are stored as a sibling table but the action layer
+// passes them as a flat array. We strip them off Prisma's nested-create
+// shape and re-insert via the create-many relation below.
+type SkillAssessmentInput = {
+  skill: string;
+  rating: number;
+  comment?: string | null;
+};
+
+export type CreateFeedbackInput = Omit<
+  Prisma.FeedbackUncheckedCreateInput,
+  'skillAssessments'
+> & {
+  skillAssessments?: SkillAssessmentInput[];
+};
+
+export type UpdateFeedbackInput = Omit<
+  Prisma.FeedbackUncheckedUpdateInput,
+  'skillAssessments'
+> & {
+  skillAssessments?: SkillAssessmentInput[];
+};
 
 export async function getFeedbackById(id: string) {
   try {
@@ -27,7 +51,7 @@ export async function getFeedbackById(id: string) {
   }
 }
 
-export async function createFeedback(data: any) {
+export async function createFeedback(data: CreateFeedbackInput) {
   try {
     // Create the feedback with skill assessments
     const { skillAssessments, ...feedbackData } = data;
@@ -54,7 +78,7 @@ export async function createFeedback(data: any) {
   }
 }
 
-export async function updateFeedback(id: string, data: any) {
+export async function updateFeedback(id: string, data: UpdateFeedbackInput) {
   try {
     // Update the feedback with skill assessments
     const { skillAssessments, ...feedbackData } = data;

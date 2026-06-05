@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {  ReportFilters } from '@/data/reports';
+import {  ReportFilters } from '@/types/reports';
 import {
   Card,
   CardContent,
