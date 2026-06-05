@@ -1,11 +1,9 @@
-// components/interviews/interview-form.tsx
-
 'use client';
 
 import { createInterview, updateInterview } from '@/actions/interview';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { DateTimeField } from '@/components/ui/date-time-field';
 import {
   Form,
   FormControl,
@@ -17,11 +15,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -36,41 +29,40 @@ import {
   InterviewType,
   User,
 } from '@/lib/generated/prisma/browser';
-import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { addHours, format, setHours, setMinutes } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { addHours, setHours, setMinutes } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useStagesForPosition } from './use-stages-for-position';
 
-// Form schema
-const interviewSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  startTime: z.date(),
-  endTime: z.date(),
-  location: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  type: z.nativeEnum(InterviewType),
-  status: z.nativeEnum(InterviewStatus),
-  candidateId: z.string().min(1, 'Candidate is required'),
-  positionId: z.string().min(1, 'Position is required'),
-  stageId: z.string().optional().nullable(),
-  interviewerIds: z
-    .array(z.string())
-    .min(1, 'At least one interviewer is required'),
-});
+const interviewSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required'),
+    startTime: z.date(),
+    endTime: z.date(),
+    location: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    type: z.nativeEnum(InterviewType),
+    status: z.nativeEnum(InterviewStatus),
+    candidateId: z.string().min(1, 'Candidate is required'),
+    positionId: z.string().min(1, 'Position is required'),
+    stageId: z.string().optional().nullable(),
+    interviewerIds: z
+      .array(z.string())
+      .min(1, 'At least one interviewer is required'),
+  })
+  .refine((d) => d.endTime > d.startTime, {
+    message: 'End time must be after start time',
+    path: ['endTime'],
+  });
 
 type InterviewFormValues = z.infer<typeof interviewSchema>;
 
 interface InterviewFormProps {
-  interview?:
-    | (Interview & {
-        interviewers: User[];
-      })
-    | null;
+  interview?: (Interview & { interviewers: User[] }) | null;
   defaultCandidateId?: string;
   candidates: { id: string; name: string }[];
   positions: { id: string; title: string }[];
@@ -89,85 +81,28 @@ export function InterviewForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stages, setStages] = useState<
-    { id: string; name: string; order: number }[]
-  >([]);
-  const [isLoadingStages, setIsLoadingStages] = useState(false);
-
-  // Default start time (current hour + 1, rounded to next 30 min)
-  const defaultStartTime = setMinutes(
-    setHours(new Date(), new Date().getHours() + 1),
-    Math.ceil(new Date().getMinutes() / 30) * 30
-  );
-
-  // Default end time (start time + 1 hour)
-  const defaultEndTime = addHours(defaultStartTime, 1);
-
-  // Default values for the form
-  const defaultValues: Partial<InterviewFormValues> = {
-    title: interview?.title || '',
-    startTime: interview?.startTime
-      ? new Date(interview.startTime)
-      : defaultStartTime,
-    endTime: interview?.endTime ? new Date(interview.endTime) : defaultEndTime,
-    location: interview?.location || '',
-    notes: interview?.notes || '',
-    type: interview?.type || InterviewType.TECHNICAL,
-    status: interview?.status || InterviewStatus.SCHEDULED,
-    candidateId: interview?.candidateId || defaultCandidateId || '',
-    positionId: interview?.positionId || '',
-    stageId: interview?.stageId || '',
-    interviewerIds: interview?.interviewers.map((i) => i.id) || [],
-  };
 
   const form = useForm<InterviewFormValues>({
     resolver: zodResolver(interviewSchema),
-    defaultValues,
+    defaultValues: buildDefaults(interview, defaultCandidateId),
   });
 
-  // Watch for positionId changes to load stages
   const positionId = form.watch('positionId');
-
-  // Fetch stages when position changes
-  useEffect(() => {
-    if (!positionId) {
-      setStages([]);
-      return;
-    }
-
-    async function fetchStages() {
-      setIsLoadingStages(true);
-      try {
-        const response = await fetch(`/api/positions/${positionId}/stages`);
-
-        if (response.ok) {
-          const data = await response.json();
-          setStages(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch stages:', error);
-      } finally {
-        setIsLoadingStages(false);
-      }
-    }
-
-    fetchStages();
-  }, [positionId]);
-
-  // Update position when candidate changes (if editing)
   const candidateId = form.watch('candidateId');
+  const { stages, isLoading: isLoadingStages } =
+    useStagesForPosition(positionId);
 
+  // When the candidate is changed on a new interview, auto-fill the position
+  // from the candidate's current position if the user hasn't already chosen
+  // one. Note: relies on `candidates` items carrying a `positionId` field at
+  // runtime even though the prop type doesn't include it — see the page that
+  // builds this prop.
   useEffect(() => {
-    if (isEdit || !candidateId || form.getValues('positionId')) {
-      return;
-    }
-
-    // Find the candidate's position
-    const candidate = candidates.find((c) => c.id === candidateId);
-    //@ts-expect-error type mismatch
-
+    if (isEdit || !candidateId || form.getValues('positionId')) return;
+    const candidate = candidates.find((c) => c.id === candidateId) as
+      | { id: string; name: string; positionId?: string }
+      | undefined;
     if (candidate?.positionId) {
-      //@ts-expect-error type mismatch
       form.setValue('positionId', candidate.positionId);
     }
   }, [candidateId, candidates, form, isEdit]);
@@ -175,28 +110,17 @@ export function InterviewForm({
   async function onSubmit(values: InterviewFormValues) {
     setIsSubmitting(true);
     setError(null);
-
-    // Validate that end time is after start time
-    if (values.endTime <= values.startTime) {
-      setError('End time must be after start time');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       if (isEdit && interview) {
-        // Update existing interview
         await updateInterview(interview.id, values);
         router.push(`/dashboard/interviews/${interview.id}`);
-        router.refresh();
       } else {
-        // Create new interview
-        const newInterview = await createInterview(values);
-        router.push(`/dashboard/interviews/${newInterview.id}`);
-        router.refresh();
+        const created = await createInterview(values);
+        router.push(`/dashboard/interviews/${created.id}`);
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
+      router.refresh();
+    } catch (err) {
+      console.error('Error submitting form:', err);
       setError('Failed to save interview. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -247,9 +171,9 @@ export function InterviewForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {candidates.map((candidate) => (
-                      <SelectItem key={candidate.id} value={candidate.id}>
-                        {candidate.name}
+                    {candidates.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -272,9 +196,9 @@ export function InterviewForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {positions.map((position) => (
-                      <SelectItem key={position.id} value={position.id}>
-                        {position.title}
+                    {positions.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -318,24 +242,15 @@ export function InterviewForm({
                 <Select
                   disabled={isLoadingStages || stages.length === 0}
                   onValueChange={field.onChange}
-                  value={field.value || undefined} // Use null instead of an empty string
+                  value={field.value || undefined}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingStages
-                            ? 'Loading stages...'
-                            : stages.length === 0
-                              ? 'No stages available'
-                              : 'Select a stage'
-                        }
-                      />
+                      <SelectValue placeholder={stagePlaceholder(isLoadingStages, stages.length)} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value={'None'}>None</SelectItem>{' '}
-                    {/* Use null here */}
+                    <SelectItem value='None'>None</SelectItem>
                     {stages.map((stage) => (
                       <SelectItem key={stage.id} value={stage.id}>
                         Stage {stage.order + 1}: {stage.name}
@@ -351,134 +266,15 @@ export function InterviewForm({
             )}
           />
 
-          <FormField
+          <DateTimeField
             control={form.control}
             name='startTime'
-            render={({ field }) => (
-              <FormItem className='flex flex-col'>
-                <FormLabel>Start Date & Time</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant='outline'
-                        className={cn(
-                          'w-full pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'PPP p')
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0' align='start'>
-                    <Calendar
-                      mode='single'
-                      selected={field.value}
-                      onSelect={(date) => {
-                        if (date) {
-                          const newDate = new Date(field.value);
-                          newDate.setFullYear(date.getFullYear());
-                          newDate.setMonth(date.getMonth());
-                          newDate.setDate(date.getDate());
-                          field.onChange(newDate);
-                        }
-                      }}
-                    />
-                    <div className='border-t p-3'>
-                      <div className='flex justify-between items-center'>
-                        <label className='text-sm'>Time:</label>
-                        <Input
-                          type='time'
-                          className='w-40'
-                          value={format(field.value, 'HH:mm')}
-                          onChange={(e) => {
-                            const [hours, minutes] = e.target.value
-                              .split(':')
-                              .map(Number);
-                            const newDate = new Date(field.value);
-                            newDate.setHours(hours);
-                            newDate.setMinutes(minutes);
-                            field.onChange(newDate);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
+            label='Start Date & Time'
           />
-
-          <FormField
+          <DateTimeField
             control={form.control}
             name='endTime'
-            render={({ field }) => (
-              <FormItem className='flex flex-col'>
-                <FormLabel>End Date & Time</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant='outline'
-                        className={cn(
-                          'w-full pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'PPP p')
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className='w-auto p-0' align='start'>
-                    <Calendar
-                      mode='single'
-                      selected={field.value}
-                      onSelect={(date) => {
-                        if (date) {
-                          const newDate = new Date(field.value);
-                          newDate.setFullYear(date.getFullYear());
-                          newDate.setMonth(date.getMonth());
-                          newDate.setDate(date.getDate());
-                          field.onChange(newDate);
-                        }
-                      }}
-                    />
-                    <div className='border-t p-3'>
-                      <div className='flex justify-between items-center'>
-                        <label className='text-sm'>Time:</label>
-                        <Input
-                          type='time'
-                          className='w-40'
-                          value={format(field.value, 'HH:mm')}
-                          onChange={(e) => {
-                            const [hours, minutes] = e.target.value
-                              .split(':')
-                              .map(Number);
-                            const newDate = new Date(field.value);
-                            newDate.setHours(hours);
-                            newDate.setMinutes(minutes);
-                            field.onChange(newDate);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
+            label='End Date & Time'
           />
         </div>
 
@@ -511,9 +307,9 @@ export function InterviewForm({
               <FormLabel>Interviewers</FormLabel>
               <FormControl>
                 <MultiSelect
-                  options={interviewers.map((interviewer) => ({
-                    value: interviewer.id,
-                    label: interviewer.name,
+                  options={interviewers.map((i) => ({
+                    value: i.id,
+                    label: i.name,
                   }))}
                   selected={field.value}
                   onChange={field.onChange}
@@ -592,4 +388,36 @@ export function InterviewForm({
       </form>
     </Form>
   );
+}
+
+function buildDefaults(
+  interview: InterviewFormProps['interview'],
+  defaultCandidateId?: string
+): Partial<InterviewFormValues> {
+  // Default start: top of the next half-hour, one hour from now.
+  const now = new Date();
+  const defaultStart = setMinutes(
+    setHours(new Date(), now.getHours() + 1),
+    Math.ceil(now.getMinutes() / 30) * 30
+  );
+  const defaultEnd = addHours(defaultStart, 1);
+  return {
+    title: interview?.title || '',
+    startTime: interview?.startTime ? new Date(interview.startTime) : defaultStart,
+    endTime: interview?.endTime ? new Date(interview.endTime) : defaultEnd,
+    location: interview?.location || '',
+    notes: interview?.notes || '',
+    type: interview?.type || InterviewType.TECHNICAL,
+    status: interview?.status || InterviewStatus.SCHEDULED,
+    candidateId: interview?.candidateId || defaultCandidateId || '',
+    positionId: interview?.positionId || '',
+    stageId: interview?.stageId || '',
+    interviewerIds: interview?.interviewers.map((i) => i.id) || [],
+  };
+}
+
+function stagePlaceholder(isLoading: boolean, count: number) {
+  if (isLoading) return 'Loading stages...';
+  if (count === 0) return 'No stages available';
+  return 'Select a stage';
 }
