@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useFormAction } from '@/hooks/use-form-action';
 import { Candidate, CandidateStatus } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
@@ -24,24 +25,28 @@ export function CandidateStatusUpdate({
 }: CandidateStatusUpdateProps) {
   const router = useRouter();
   const [status, setStatus] = useState<string>(candidate.status);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { submit, isSubmitting, error } = useFormAction<string, void>(
+    async (newStatus) => {
+      await updateCandidateStatus(candidate.id, newStatus);
+    },
+    {
+      onSuccess: () => router.refresh(),
+      errorMessage: 'Failed to update candidate status.',
+    }
+  );
 
   const handleStatusChange = async (newStatus: string) => {
-    if (newStatus === candidate.status) return;
-
+    if (newStatus === candidate.status || newStatus === status) return;
     setStatus(newStatus);
-    setIsSubmitting(true);
-
-    try {
-      await updateCandidateStatus(candidate.id, newStatus);
-      router.refresh();
-    } catch (error) {
-      console.error('Failed to update candidate status:', error);
-      setStatus(candidate.status); // Revert on error
-    } finally {
-      setIsSubmitting(false);
-    }
+    await submit(newStatus);
   };
+
+  // Revert the local state if the action threw — the hook surfaces the
+  // failure via `error`; we just need to roll the optimistic update back.
+  if (error && status !== candidate.status) {
+    setStatus(candidate.status);
+  }
 
   return (
     <div className='flex items-center gap-2'>
