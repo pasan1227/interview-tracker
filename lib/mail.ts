@@ -225,49 +225,59 @@ export async function sendFeedbackReminderEmail({
   }
 }
 
-/**
- * Sends notification emails when a new interview is created
- * @param interview The interview data with related entities
- */
-export async function sendNewInterviewNotifications(interview: any) {
-  try {
-    const interviewerNames = interview.interviewers.map((interviewer: any) =>
-      `${interviewer.firstName} ${interviewer.lastName}`.trim()
-    );
+interface InterviewForNotification {
+  id: string;
+  title: string;
+  startTime: Date;
+  location: string | null;
+  notes: string | null;
+  candidate: { name: string; email: string };
+  interviewers: { name: string | null; email: string | null }[];
+}
 
-    const candidateName =
-      `${interview.candidate.firstName} ${interview.candidate.lastName}`.trim();
+/**
+ * Sends notification emails when a new interview is created.
+ *
+ * The previous implementation read `interviewer.firstName` / `lastName`
+ * and `candidate.firstName` / `lastName` — but the Prisma schema only
+ * carries a single `name` field on User and Candidate. So every
+ * notification this function sent contained the literal string
+ * "undefined undefined" in place of every name. Fixed; sends in
+ * parallel; both emails go out even if one interviewer doesn't have
+ * an address.
+ */
+export async function sendNewInterviewNotifications(
+  interview: InterviewForNotification
+) {
+  try {
+    const interviewerNames = interview.interviewers
+      .map((i) => i.name?.trim())
+      .filter((n): n is string => Boolean(n));
+    const candidateName = interview.candidate.name;
     const detailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
 
-    // Send to each interviewer
-    for (const interviewer of interview.interviewers) {
-      if (interviewer.email) {
-        await sendInterviewScheduleEmail({
-          to: interviewer.email,
-          candidateName,
-          interviewTitle: interview.title,
-          interviewDateTime: interview.startTime,
-          interviewerNames,
-          location: interview.location || undefined,
-          notes: interview.notes || undefined,
-          actionUrl: detailUrl,
-        });
-      }
-    }
+    const sharedArgs = {
+      candidateName,
+      interviewTitle: interview.title,
+      interviewDateTime: interview.startTime,
+      interviewerNames,
+      location: interview.location ?? undefined,
+      notes: interview.notes ?? undefined,
+      actionUrl: detailUrl,
+    };
 
-    // Send to candidate if they have an email
-    if (interview.candidate.email) {
-      await sendInterviewScheduleEmail({
-        to: interview.candidate.email,
-        candidateName,
-        interviewTitle: interview.title,
-        interviewDateTime: interview.startTime,
-        interviewerNames,
-        location: interview.location || undefined,
-        notes: interview.notes || undefined,
-        actionUrl: detailUrl,
-      });
-    }
+    const recipients: string[] = [
+      ...interview.interviewers
+        .map((i) => i.email)
+        .filter((email): email is string => Boolean(email)),
+      ...(interview.candidate.email ? [interview.candidate.email] : []),
+    ];
+
+    await Promise.all(
+      recipients.map((to) =>
+        sendInterviewScheduleEmail({ ...sharedArgs, to })
+      )
+    );
 
     return true;
   } catch (error) {
