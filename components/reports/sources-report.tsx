@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -8,59 +7,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ReportFilters, SourceData } from '@/types/reports';
-import { getSourceReport } from '@/actions/reports';
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
+import type { SourceReport } from '@/types/reports';
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface SourcesReportProps {
-  filters: ReportFilters;
+  result: SourceReport;
 }
 
-export function SourcesReport({ filters }: SourcesReportProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<SourceData[]>([]);
-  const [totalCandidates, setTotalCandidates] = useState(0);
+const COLORS = [
+  '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ef4444',
+  '#0ea5e9', '#10b981', '#f97316', '#8b5cf6', '#6b7280',
+];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getSourceReport(filters);
-        setData(result.data);
-        setTotalCandidates(result.totalCandidates);
-      } catch (error) {
-        console.error('Error fetching source data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [filters]);
-
-  // Only show top 10 sources for readability
-  const topSources = data.slice(0, 10);
-
-  // Colors for the chart
-  const COLORS = [
-    '#3b82f6',
-    '#22c55e',
-    '#f59e0b',
-    '#a855f7',
-    '#ef4444',
-    '#0ea5e9',
-    '#10b981',
-    '#f97316',
-    '#8b5cf6',
-    '#6b7280',
-  ];
+export function SourcesReport({ result }: SourcesReportProps) {
+  const topSources = result.data.slice(0, 10);
 
   return (
     <Card>
@@ -71,15 +31,9 @@ export function SourcesReport({ filters }: SourcesReportProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>Loading...</p>
-          </div>
-        ) : totalCandidates === 0 ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>
-              No data available for the selected filters
-            </p>
+        {result.totalCandidates === 0 ? (
+          <div className='flex h-80 items-center justify-center'>
+            <p className='text-muted-foreground'>No data available for the selected filters</p>
           </div>
         ) : (
           <div className='h-96'>
@@ -100,15 +54,10 @@ export function SourcesReport({ filters }: SourcesReportProps) {
                   labelLine={false}
                 >
                   {topSources.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value, name) => [`${value} Candidates`, name]}
-                />
+                <Tooltip formatter={(value, name) => [`${value} Candidates`, name]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -119,7 +68,7 @@ export function SourcesReport({ filters }: SourcesReportProps) {
           {topSources.map((item) => (
             <div
               key={item.source}
-              className='flex justify-between p-3 border rounded-md'
+              className='flex justify-between rounded-md border p-3'
             >
               <span className='font-medium'>{item.source}</span>
               <span>{item.count}</span>

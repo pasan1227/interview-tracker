@@ -1,6 +1,5 @@
 'use client';
 
-import { getCandidateStatusReport } from '@/actions/reports';
 import {
   Card,
   CardContent,
@@ -8,8 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CandidateStatusData, ReportFilters } from '@/types/reports';
-import { useEffect, useState } from 'react';
+import type { CandidateStatusReport as CandidateStatusReportData } from '@/types/reports';
 import {
   Cell,
   Legend,
@@ -20,51 +18,26 @@ import {
 } from 'recharts';
 
 interface CandidateStatusReportProps {
-  filters: ReportFilters;
+  result: CandidateStatusReportData;
 }
 
-interface FormattedStatusData extends CandidateStatusData {
-  label: string;
-}
+const COLORS = [
+  '#3b82f6', // NEW - blue
+  '#f59e0b', // IN_PROCESS - amber
+  '#a855f7', // OFFERED - purple
+  '#22c55e', // HIRED - green
+  '#ef4444', // REJECTED - red
+  '#6b7280', // WITHDRAWN - gray
+];
 
-export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<FormattedStatusData[]>([]);
-  const [totalCandidates, setTotalCandidates] = useState(0);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getCandidateStatusReport(filters);
-
-        // Format status labels
-        const formattedData = result.data.map((item) => ({
-          ...item,
-          label: item.status.replace(/_/g, ' '),
-        }));
-
-        setData(formattedData);
-        setTotalCandidates(result.totalCandidates);
-      } catch (error) {
-        console.error('Error fetching candidate status data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [filters]);
-
-  // Colors for the chart
-  const COLORS = [
-    '#3b82f6', // NEW - blue
-    '#f59e0b', // IN_PROCESS - amber
-    '#a855f7', // OFFERED - purple
-    '#22c55e', // HIRED - green
-    '#ef4444', // REJECTED - red
-    '#6b7280', // WITHDRAWN - gray
-  ];
+// Server fetches the result via @/actions/reports.getCandidateStatusReport
+// and passes it in. This component is purely the recharts shell — the
+// previous client-side useEffect → action → setState round-trip is gone.
+export function CandidateStatusReport({ result }: CandidateStatusReportProps) {
+  const data = result.data.map((item) => ({
+    ...item,
+    label: item.status.replace(/_/g, ' '),
+  }));
 
   return (
     <Card>
@@ -75,16 +48,8 @@ export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>Loading...</p>
-          </div>
-        ) : totalCandidates === 0 ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>
-              No data available for the selected filters
-            </p>
-          </div>
+        {result.totalCandidates === 0 ? (
+          <EmptyState />
         ) : (
           <div className='h-96'>
             <ResponsiveContainer width='100%' height='100%'>
@@ -104,15 +69,10 @@ export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
                   labelLine={false}
                 >
                   {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value, name) => [`${value} Candidates`, name]}
-                />
+                <Tooltip formatter={(value, name) => [`${value} Candidates`, name]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -123,7 +83,7 @@ export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
           {data.map((item) => (
             <div
               key={item.status}
-              className='flex justify-between p-3 border rounded-md'
+              className='flex justify-between rounded-md border p-3'
             >
               <span className='font-medium'>{item.label}</span>
               <span>{item.count}</span>
@@ -132,5 +92,13 @@ export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className='flex h-80 items-center justify-center'>
+      <p className='text-muted-foreground'>No data available for the selected filters</p>
+    </div>
   );
 }

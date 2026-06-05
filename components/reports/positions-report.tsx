@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {  ReportFilters } from '@/types/reports';
 import {
   Card,
   CardContent,
@@ -9,51 +7,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import type { PositionReport } from '@/types/reports';
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LabelList,
 } from 'recharts';
-import { getPositionReport } from '@/actions/reports';
 
 interface PositionsReportProps {
-  filters: ReportFilters;
+  result: PositionReport;
 }
 
-interface PositionData {
-  position: string;
-  count: number;
-}
-
-export function PositionsReport({ filters }: PositionsReportProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [data, setData] = useState<PositionData[]>([]);
-  const [totalCandidates, setTotalCandidates] = useState(0);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getPositionReport(filters);
-        setData(result.data);
-        setTotalCandidates(result.totalCandidates);
-      } catch (error) {
-        console.error('Error fetching position data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [filters]);
-
-  // Only show top 10 positions for readability
-  const topPositions = data.slice(0, 10);
+export function PositionsReport({ result }: PositionsReportProps) {
+  const topPositions = result.data.slice(0, 10);
 
   return (
     <Card>
@@ -64,15 +35,9 @@ export function PositionsReport({ filters }: PositionsReportProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>Loading...</p>
-          </div>
-        ) : totalCandidates === 0 ? (
-          <div className='flex justify-center items-center h-80'>
-            <p className='text-muted-foreground'>
-              No data available for the selected filters
-            </p>
+        {result.totalCandidates === 0 ? (
+          <div className='flex h-80 items-center justify-center'>
+            <p className='text-muted-foreground'>No data available for the selected filters</p>
           </div>
         ) : (
           <div className='h-96'>
@@ -106,10 +71,10 @@ export function PositionsReport({ filters }: PositionsReportProps) {
           {topPositions.map((item) => (
             <div
               key={item.position}
-              className='flex justify-between p-3 border rounded-md'
+              className='flex justify-between rounded-md border p-3'
             >
               <span
-                className='font-medium truncate max-w-[70%]'
+                className='max-w-[70%] truncate font-medium'
                 title={item.position}
               >
                 {item.position}
