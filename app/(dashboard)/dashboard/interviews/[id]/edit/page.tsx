@@ -19,7 +19,7 @@ export default async function EditInterviewPage({
 
   // Interview lookup + form bootstrap run in parallel. Gate runs after
   // we have the interview record.
-  const [interview, { candidates, positions, interviewers }] =
+  const [interview, { candidates, positions, interviewers, stagesByPosition }] =
     await Promise.all([getInterviewForForm(id), getInterviewFormOptions()]);
 
   if (!interview) {
@@ -52,6 +52,7 @@ export default async function EditInterviewPage({
           candidates={candidates}
           positions={positions}
           interviewers={interviewers}
+          stagesByPosition={stagesByPosition}
           isEdit
         />
       </div>

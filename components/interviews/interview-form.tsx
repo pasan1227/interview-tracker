@@ -37,10 +37,10 @@ import {
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { addHours, setHours, setMinutes } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFormAction } from '@/hooks/use-form-action';
 import { useForm } from 'react-hook-form';
-import { useStagesForPosition } from './use-stages-for-position';
+import type { InterviewFormStage } from '@/data/interview-form';
 
 type InterviewFormValues = CreateInterviewInput;
 
@@ -59,6 +59,10 @@ interface InterviewFormProps {
   candidates: { id: string; name: string; positionId?: string | null }[];
   positions: { id: string; title: string }[];
   interviewers: { id: string; name: string | null; email: string }[];
+  // Map of positionId → workflow stages, pre-computed server-side by
+  // getInterviewFormOptions. Replaces the per-position-change roundtrip
+  // that useStagesForPosition used to do.
+  stagesByPosition: Record<string, InterviewFormStage[]>;
   isEdit?: boolean;
 }
 
@@ -68,6 +72,7 @@ export function InterviewForm({
   candidates,
   positions,
   interviewers,
+  stagesByPosition,
   isEdit = false,
 }: InterviewFormProps) {
   const router = useRouter();
@@ -79,8 +84,14 @@ export function InterviewForm({
 
   const positionId = form.watch('positionId');
   const candidateId = form.watch('candidateId');
-  const { stages, isLoading: isLoadingStages } =
-    useStagesForPosition(positionId);
+  // Synchronous lookup against the pre-fetched map. Position dropdown
+  // becomes responsive — no spinner on the stage select while a server
+  // action completes.
+  const stages = useMemo<InterviewFormStage[]>(
+    () => (positionId ? stagesByPosition[positionId] ?? [] : []),
+    [positionId, stagesByPosition]
+  );
+  const isLoadingStages = false;
 
   // When the candidate is changed on a new interview, auto-fill the position
   // from the candidate's current position if the user hasn't already chosen

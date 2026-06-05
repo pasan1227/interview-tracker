@@ -305,43 +305,6 @@ export async function getUpcomingInterviewsForUser(userId: string, days = 7) {
   }
 }
 
-export async function getStagesForPosition(positionId: string) {
-  try {
-    // Get the position with its workflow
-    const position = await db.position.findUnique({
-      where: { id: positionId },
-      include: {
-        workflow: {
-          include: {
-            stages: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!position?.workflow) {
-      // If no workflow is associated, try to get the default workflow
-      const defaultWorkflow = await db.workflow.findFirst({
-        where: { isDefault: true },
-        include: {
-          stages: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      });
-
-      return defaultWorkflow?.stages || [];
-    }
-
-    return position.workflow.stages;
-  } catch (error) {
-    console.error('Failed to fetch stages for position:', error);
-    return [];
-  }
-}
+// getStagesForPosition removed — interview form now reads stages from
+// the pre-computed `stagesByPosition` map returned by
+// getInterviewFormOptions instead of round-tripping per position pick.

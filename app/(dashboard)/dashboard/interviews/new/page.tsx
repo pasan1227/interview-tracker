@@ -19,7 +19,8 @@ export default async function NewInterviewPage({
   await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { candidateId } = await searchParams;
 
-  const { candidates, positions, interviewers } = await getInterviewFormOptions();
+  const { candidates, positions, interviewers, stagesByPosition } =
+    await getInterviewFormOptions();
 
   return (
     <div className='space-y-6'>
@@ -35,7 +36,8 @@ export default async function NewInterviewPage({
           defaultCandidateId={candidateId}
           candidates={candidates}
           positions={positions}
-          interviewers={interviewers!}
+          interviewers={interviewers}
+          stagesByPosition={stagesByPosition}
         />
       </div>
     </div>
