@@ -126,20 +126,24 @@ export async function deleteFeedback(id: string) {
 
 export async function getFeedbacksByInterviewer(interviewerId: string) {
   try {
+    // Narrow to the fields the my-feedback table renders. Previously
+    // included full interview.candidate, interview.position, and a
+    // second top-level candidate row — duplicating one another and
+    // shipping unrendered scalars (phone, resumeUrl, source, ...).
     const feedbacks = await db.feedback.findMany({
       where: { interviewerId },
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        recommendation: true,
+        createdAt: true,
+        interviewId: true,
+        candidate: { select: { id: true, name: true } },
         interview: {
-          include: {
-            candidate: true,
-            position: true,
-          },
+          select: { position: { select: { title: true } } },
         },
-        candidate: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
     return feedbacks;

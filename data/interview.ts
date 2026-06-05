@@ -21,12 +21,19 @@ interface GetInterviewsParams extends PaginatedQuery {
   userId?: string;
 }
 
+// Each relation projects to just the fields the table renders:
+//   candidate → id + name (cell links to /candidates/{id})
+//   position  → id + title (cell renders the title)
+//   stage     → id + name  (suffix on the type column)
+//   interviewers → id + name + image (avatar stack; emails unused)
+//   feedbacks → id + interviewerId (only the count + per-row "has my
+//                                   feedback" flag is read)
 type InterviewListItem = Prisma.InterviewGetPayload<{
   include: {
-    candidate: true;
-    position: true;
-    interviewers: { select: { id: true; name: true; email: true; image: true } };
-    stage: true;
+    candidate: { select: { id: true; name: true } };
+    position: { select: { id: true; title: true } };
+    interviewers: { select: { id: true; name: true; image: true } };
+    stage: { select: { id: true; name: true } };
     feedbacks: { select: { id: true; interviewerId: true } };
   };
 }>;
@@ -79,12 +86,10 @@ export async function getInterviews({
       db.interview.findMany({
         where,
         include: {
-          candidate: true,
-          position: true,
-          interviewers: {
-            select: { id: true, name: true, email: true, image: true },
-          },
-          stage: true,
+          candidate: { select: { id: true, name: true } },
+          position: { select: { id: true, title: true } },
+          interviewers: { select: { id: true, name: true, image: true } },
+          stage: { select: { id: true, name: true } },
           feedbacks: { select: { id: true, interviewerId: true } },
         },
         orderBy: { startTime: 'asc' },

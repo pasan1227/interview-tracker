@@ -102,13 +102,19 @@ async function _getDashboardStats(): Promise<DashboardStats> {
       }),
       db.interview.groupBy({ by: ['positionId'], _count: { id: true } }),
       db.candidate.groupBy({ by: ['status'], _count: { id: true } }),
-      db.candidate.findMany({
-        where: {
-          status: CandidateStatus.HIRED,
-          updatedAt: { gte: sixMonthsAgo },
-        },
-        select: { updatedAt: true },
-      }),
+      // Monthly hires bucketed in Postgres via date_trunc — mirrors the
+      // pattern in actions/reports.ts:getMonthlyHiresReport. Replaces
+      // a findMany of every HIRED candidate's updatedAt + JS bucketing.
+      db.$queryRaw<Array<{ month: Date; count: bigint }>>`
+        SELECT
+          date_trunc('month', "updatedAt") AS month,
+          COUNT(*)::bigint AS count
+        FROM "Candidate"
+        WHERE "status" = 'HIRED'
+          AND "updatedAt" >= ${sixMonthsAgo}::timestamp
+        GROUP BY 1
+        ORDER BY 1
+      `,
     ]);
 
     const candidateChange =
@@ -166,29 +172,27 @@ async function _getDashboardStats(): Promise<DashboardStats> {
       }
     }
 
-    const monthlyHiresCounts: Record<string, number> = {};
-    for (let i = 0; i < 6; i++) {
-      const month = subMonths(now, i);
-      monthlyHiresCounts[`${month.getFullYear()}-${month.getMonth() + 1}`] = 0;
-    }
-    for (const hire of monthlyHiresData) {
-      const key = `${hire.updatedAt.getFullYear()}-${hire.updatedAt.getMonth() + 1}`;
-      if (monthlyHiresCounts[key] !== undefined) {
-        monthlyHiresCounts[key]++;
-      }
-    }
-
+    // Bucketed counts come from Postgres. Fill in any zero-count
+    // months JS-side so the chart x-axis is a stable 6-month strip.
     const monthNames = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
-
-    const monthlyHires = Object.entries(monthlyHiresCounts)
-      .map(([key, count]) => {
-        const [year, month] = key.split('-').map(Number);
-        return { month: `${monthNames[month - 1]} ${year}`, count };
+    const monthlyHiresByKey = new Map(
+      monthlyHiresData.map((r) => {
+        const d = new Date(r.month);
+        return [`${d.getFullYear()}-${d.getMonth() + 1}`, Number(r.count)];
       })
-      .reverse();
+    );
+    const monthlyHires: Array<{ month: string; count: number }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = subMonths(now, i);
+      const key = `${m.getFullYear()}-${m.getMonth() + 1}`;
+      monthlyHires.push({
+        month: `${monthNames[m.getMonth()]} ${m.getFullYear()}`,
+        count: monthlyHiresByKey.get(key) ?? 0,
+      });
+    }
 
     return {
       totalCandidates,

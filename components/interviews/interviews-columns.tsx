@@ -33,12 +33,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Extended type for interviews with related data
+// Narrowed to the per-column projections data/interview.ts:getInterviews
+// returns. Listing what's actually rendered keeps the prop type in
+// sync with the query and stops future over-fetching from re-leaking
+// fields the table never reads.
 export type InterviewWithRelations = Interview & {
-  candidate: Candidate;
-  position: Position;
-  interviewers: Pick<User, 'id' | 'name' | 'email' | 'image'>[];
-  stage: Stage | null;
+  candidate: Pick<Candidate, 'id' | 'name'>;
+  position: Pick<Position, 'id' | 'title'>;
+  interviewers: Pick<User, 'id' | 'name' | 'image'>[];
+  stage: Pick<Stage, 'id' | 'name'> | null;
   feedbacks: Pick<Feedback, 'id' | 'interviewerId'>[];
 };
 
