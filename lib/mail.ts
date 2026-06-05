@@ -1,15 +1,16 @@
 import { Resend } from 'resend';
+import { env } from './env';
 import { formatDateTime } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(env.RESEND_API_KEY);
 
-const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const domain = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export const sendVerificationEmail = async (email: string, token: string) => {
   const confirmLink = `${domain}/new-verification?token=${encodeURIComponent(token)}`;
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
     to: email,
     subject: 'Confirm your email',
     html: `<p>Click <a href=${confirmLink}>here</a> to confirm email.</p>`,
@@ -20,7 +21,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   const resetLink = `${domain}/new-password?token=${encodeURIComponent(token)}`;
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
     to: email,
     subject: 'Reset Your password',
     html: `<p>Click <a href=${resetLink}>here</a> to reset your password.</p>`,
@@ -29,7 +30,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
 
 export const sendTwoFactorTokenEmail = async (email: string, token: string) => {
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
     to: email,
     subject: '2FA Code',
     html: `<p>Your 2FA code: ${token}</p>`,
@@ -66,7 +67,7 @@ export async function sendInterviewScheduleEmail({
   // If no actionUrl is provided, default to the dashboard
   const linkUrl =
     actionUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -123,9 +124,7 @@ export async function sendInterviewScheduleEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: env.EMAIL_FROM || 'Interview Tracking <no-reply@yourcompany.com>',
       to: [to],
       subject,
       html,
@@ -168,8 +167,8 @@ export async function sendFeedbackReminderEmail({
 
   // Create a direct link to the feedback form if an ID is provided
   const feedbackLink = interviewId
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
-    : `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    ? `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
+    : `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -204,9 +203,7 @@ export async function sendFeedbackReminderEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: env.EMAIL_FROM || 'Interview Tracking <no-reply@yourcompany.com>',
       to: [to],
       subject,
       html,
@@ -237,7 +234,7 @@ export async function sendNewInterviewNotifications(interview: any) {
 
     const candidateName =
       `${interview.candidate.firstName} ${interview.candidate.lastName}`.trim();
-    const detailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
+    const detailUrl = `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
 
     // Send to each interviewer
     for (const interviewer of interview.interviewers) {
