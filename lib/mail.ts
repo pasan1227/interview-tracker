@@ -5,11 +5,24 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+// In production every email must come from a domain we control. Falling back
+// to the shared `onboarding@resend.dev` lands real production mail in spam
+// and prevents DMARC alignment. In development we still allow the fallback
+// so contributors can run the app without setting up Resend.
+function fromAddress(): string {
+  const v = process.env.EMAIL_FROM;
+  if (v) return v;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('EMAIL_FROM env var is required in production.');
+  }
+  return 'Acme <onboarding@resend.dev>';
+}
+
 export const sendVerificationEmail = async (email: string, token: string) => {
   const confirmLink = `${domain}/new-verification?token=${encodeURIComponent(token)}`;
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: fromAddress(),
     to: email,
     subject: 'Confirm your email',
     html: `<p>Click <a href=${confirmLink}>here</a> to confirm email.</p>`,
@@ -20,7 +33,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   const resetLink = `${domain}/new-password?token=${encodeURIComponent(token)}`;
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: fromAddress(),
     to: email,
     subject: 'Reset Your password',
     html: `<p>Click <a href=${resetLink}>here</a> to reset your password.</p>`,
@@ -29,7 +42,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
 
 export const sendTwoFactorTokenEmail = async (email: string, token: string) => {
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>',
+    from: fromAddress(),
     to: email,
     subject: '2FA Code',
     html: `<p>Your 2FA code: ${token}</p>`,
@@ -123,9 +136,7 @@ export async function sendInterviewScheduleEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html,
@@ -204,9 +215,7 @@ export async function sendFeedbackReminderEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html,

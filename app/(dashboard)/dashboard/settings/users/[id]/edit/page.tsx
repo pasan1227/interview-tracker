@@ -2,7 +2,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
-import { getUserById } from '@/data/user';
+import { getSafeUserById } from '@/data/user';
 import { UserForm } from '@/components/users/user-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -26,7 +26,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
     redirect('/dashboard');
   }
 
-  const user = await getUserById(id);
+  const user = await getSafeUserById(id);
 
   if (!user) {
     notFound();
