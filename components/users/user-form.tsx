@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, UserRole } from '@/lib/generated/prisma/browser';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -60,8 +60,16 @@ const updateUserSchema = z.object({
 // enforced at runtime by zodResolver(newUserSchema).
 type UserFormValues = z.infer<typeof updateUserSchema>;
 
+// Only the fields the form actually reads. Accepts the password-less
+// SafeUser shape from data/user.ts so admin pages don't have to send the
+// bcrypt hash to the client just to prefill the form.
 interface UserFormProps {
-  user?: User | null;
+  user?: {
+    id: string;
+    name: string | null;
+    email: string;
+    role: UserRole;
+  } | null;
   isEdit?: boolean;
 }
 

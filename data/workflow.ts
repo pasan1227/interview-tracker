@@ -157,23 +157,19 @@ export async function deleteWorkflow(id: string) {
   }
 }
 
-export async function createStage(data: Prisma.StageCreateInput) {
+// Order is server-computed, so callers don't pass it.
+export async function createStage(data: Omit<Prisma.StageCreateInput, 'order'>) {
   try {
-    // Get the highest order in the workflow
     const highestOrderStage = await db.stage.findFirst({
       where: { workflowId: data.workflow.connect!.id },
       orderBy: { order: 'desc' },
       select: { order: true },
     });
 
-    // Set the order to one more than the highest order, or 0 if no stages exist
     const order = highestOrderStage ? highestOrderStage.order + 1 : 0;
 
     const stage = await db.stage.create({
-      data: {
-        ...data,
-        order,
-      },
+      data: { ...data, order },
     });
 
     return stage;

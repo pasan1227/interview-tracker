@@ -1,52 +1,54 @@
-// lib/actions/workflow.ts
-
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { auth } from '@/auth';
 import {
-  createWorkflow as createWorkflowData,
-  updateWorkflow as updateWorkflowData,
-  deleteWorkflow as deleteWorkflowData,
   createStage as createStageData,
-  updateStage as updateStageData,
+  createWorkflow as createWorkflowData,
   deleteStage as deleteStageData,
+  deleteWorkflow as deleteWorkflowData,
   reorderStages as reorderStagesData,
+  updateStage as updateStageData,
+  updateWorkflow as updateWorkflowData,
 } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { requireAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
+import {
+  StageInputSchema,
+  WorkflowInputSchema,
+  type StageInput,
+  type WorkflowInput,
+} from '@/lib/validations/dashboard';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
-export async function createWorkflow(data: any) {
-  const session = await auth();
+// Bulk-reorder accepts an ordered list of stage IDs; cap it to keep
+// the transaction bounded.
+const ReorderSchema = z.array(z.string().cuid()).max(200);
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+// ---------- Workflows ----------
 
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
+export async function createWorkflow(input: WorkflowInput) {
+  await requireAdmin();
+  const data = WorkflowInputSchema.parse(input);
 
-  const workflow = await createWorkflowData(data);
+  const workflow = await createWorkflowData({
+    name: data.name,
+    description: data.description ?? null,
+    isDefault: data.isDefault ?? false,
+  });
 
   revalidatePath('/dashboard/settings/workflows');
   return workflow;
 }
 
-export async function updateWorkflow(id: string, data: any) {
-  const session = await auth();
+export async function updateWorkflow(id: string, input: WorkflowInput) {
+  await requireAdmin();
+  const data = WorkflowInputSchema.parse(input);
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
-
-  const workflow = await updateWorkflowData(id, data);
+  const workflow = await updateWorkflowData(id, {
+    name: data.name,
+    description: data.description ?? null,
+    isDefault: data.isDefault ?? false,
+  });
 
   revalidatePath(`/dashboard/settings/workflows/${id}`);
   revalidatePath('/dashboard/settings/workflows');
@@ -54,100 +56,81 @@ export async function updateWorkflow(id: string, data: any) {
 }
 
 export async function deleteWorkflow(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
-
+  await requireAdmin();
   await deleteWorkflowData(id);
-
   revalidatePath('/dashboard/settings/workflows');
   return true;
 }
 
-export async function createStage(data: any) {
-  const session = await auth();
+/**
+ * Mark this workflow as the default. Lives separately from updateWorkflow
+ * so the create/update schema can stay strict — toggling default doesn't
+ * need to round-trip the name and description.
+ */
+export async function setWorkflowAsDefault(id: string) {
+  await requireAdmin();
+  const wfId = z.string().cuid().parse(id);
+  await updateWorkflowData(wfId, { isDefault: true });
+  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
+  revalidatePath('/dashboard/settings/workflows');
+  return true;
+}
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+// ---------- Stages ----------
+//
+// Stages are owned by a workflow. The action takes workflowId as a
+// separate, server-validated argument so the client can't smuggle in a
+// different workflow via the data payload (mass assignment).
 
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
+export async function createStage(workflowId: string, input: StageInput) {
+  await requireAdmin();
+  const data = StageInputSchema.parse(input);
+  const wfId = z.string().cuid().parse(workflowId);
 
-  const stage = await createStageData(data);
+  const stage = await createStageData({
+    name: data.name,
+    description: data.description ?? null,
+    workflow: { connect: { id: wfId } },
+  });
 
-  revalidatePath(`/dashboard/settings/workflows/${data.workflow.connect.id}`);
+  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
   return stage;
 }
 
-export async function updateStage(id: string, data: any) {
-  const session = await auth();
+export async function updateStage(id: string, input: StageInput) {
+  await requireAdmin();
+  const data = StageInputSchema.parse(input);
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+  const stage = await updateStageData(id, {
+    name: data.name,
+    description: data.description ?? null,
+  });
 
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
-
-  const stage = await updateStageData(id, data);
-
-  // We need the workflowId to properly revalidate
-  const updatedStage = await db.stage.findUnique({
+  // Look up the workflowId so we know which detail page to revalidate.
+  const updated = await db.stage.findUnique({
     where: { id },
     select: { workflowId: true },
   });
-
-  if (updatedStage) {
-    revalidatePath(`/dashboard/settings/workflows/${updatedStage.workflowId}`);
+  if (updated) {
+    revalidatePath(`/dashboard/settings/workflows/${updated.workflowId}`);
   }
 
   return stage;
 }
 
 export async function deleteStage(id: string, workflowId: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
-
+  await requireAdmin();
+  const wfId = z.string().cuid().parse(workflowId);
   await deleteStageData(id);
-
-  revalidatePath(`/dashboard/settings/workflows/${workflowId}`);
+  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
   return true;
 }
 
 export async function reorderStages(workflowId: string, stageIds: string[]) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Check role permission
-  if (session.user.role !== UserRole.ADMIN) {
-    throw new Error('Forbidden');
-  }
-
-  await reorderStagesData(workflowId, stageIds);
-
-  revalidatePath(`/dashboard/settings/workflows/${workflowId}`);
+  await requireAdmin();
+  const wfId = z.string().cuid().parse(workflowId);
+  const ids = ReorderSchema.parse(stageIds);
+  await reorderStagesData(wfId, ids);
+  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
   return true;
 }
