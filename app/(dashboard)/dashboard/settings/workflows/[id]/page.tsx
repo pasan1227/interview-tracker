@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/settings/workflows/[workflowId]/page.tsx (renamed from [id])
-
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import Link from 'next/link';

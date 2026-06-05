@@ -16,13 +16,10 @@ const eslintConfig = [
   ...nextTypeScript,
   {
     rules: {
-      // PR #9 cleared every `any` from the user-facing forms. Flip the
-      // rule back on as a warning so a regression is visible in code
-      // review without breaking CI on the ~30 remaining cases in
-      // actions/* and data/* (mostly Prisma `where: any` builders and
-      // a few action wrappers that will be typed alongside the workflow
-      // / position Zod work in subsequent PRs).
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // All explicit `any` was cleared by audit rounds 2–5 (K6 typed
+      // the Prisma where-builders; K5 typed the data-layer mutation
+      // wrappers). Rule is `error` so a regression breaks CI.
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {

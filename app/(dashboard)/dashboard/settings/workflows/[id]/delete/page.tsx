@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/settings/workflows/[workflowId]/delete/page.tsx
-
 import { redirect, notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import { getWorkflowById } from '@/data/workflow';

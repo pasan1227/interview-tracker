@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/interviews/[id]/edit/page.tsx (continued)
-
 import { redirect, notFound } from 'next/navigation';
 import { requirePageSession } from '@/lib/authz';
 import { getInterviewForForm } from '@/data/interview';

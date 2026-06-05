@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/settings/workflows/[workflowId]/stages/[stageId]/delete/page.tsx
-
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import { db } from '@/lib/db';

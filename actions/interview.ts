@@ -152,25 +152,4 @@ export async function updateInterviewStatus(id: string, status: string) {
   return interview;
 }
 
-async function setStatusFromForm(formData: FormData, status: InterviewStatus) {
-  const interviewId = formData.get('interviewId');
-  if (typeof interviewId !== 'string' || !interviewId) {
-    throw new Error('Interview ID is required');
-  }
-  await updateInterviewStatus(interviewId, status);
-  return { success: true };
-}
-
-export async function markInterviewAsCompleted(formData: FormData) {
-  return setStatusFromForm(formData, InterviewStatus.COMPLETED);
-}
-
-export async function markInterviewAsCanceled(formData: FormData) {
-  return setStatusFromForm(formData, InterviewStatus.CANCELED);
-}
-
-export async function markInterviewAsNoShow(formData: FormData) {
-  return setStatusFromForm(formData, InterviewStatus.NO_SHOW);
-}
-
 // Email side-effects live in @/effects/interview-mail.ts.

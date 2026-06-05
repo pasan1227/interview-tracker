@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/settings/workflows/[workflowId]/stages/[stageId]/edit/page.tsx
-
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
