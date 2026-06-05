@@ -1,25 +1,12 @@
 // app/(dashboard)/dashboard/positions/new/page.tsx
 
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
 import { PositionForm } from '@/components/positions/position-form';
+import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { db } from '@/lib/db';
 
 export default async function NewPositionPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
 
   const workflows = await db.workflow.findMany({
     orderBy: {

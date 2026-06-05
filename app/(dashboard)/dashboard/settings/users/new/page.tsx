@@ -1,21 +1,11 @@
 // app/(dashboard)/dashboard/settings/users/new/page.tsx
 
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
 import { UserForm } from '@/components/users/user-form';
+import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function NewUserPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Only admin can add users
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   return (
     <div className='space-y-6'>

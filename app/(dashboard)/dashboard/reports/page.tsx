@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { requirePageRole } from '@/lib/authz';
 import { ReportsClient } from '@/components/reports/reports-client';
 import { db } from '@/lib/db';
 import { UserRole } from '@/lib/generated/prisma/browser';

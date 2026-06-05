@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  CreateCandidateSchema,
+  type CreateCandidateInput,
+} from '@/lib/validations/dashboard';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -31,19 +34,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { Candidate, CandidateStatus } from '@/lib/generated/prisma/browser';
 
-// Form schema
-const candidateSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
-  status: z.nativeEnum(CandidateStatus),
-  positionId: z.string().optional(),
-  source: z.string().optional(),
-  resumeUrl: z.string().url().optional().or(z.literal('')),
-  notes: z.string().optional(),
-});
-
-type CandidateFormValues = z.infer<typeof candidateSchema>;
+// Form uses the same schema the server action validates against, so a
+// field added or tightened on the server picks up here automatically.
+type CandidateFormValues = CreateCandidateInput;
 
 interface CandidateFormProps {
   candidate?: Candidate | null;
@@ -73,7 +66,7 @@ export function CandidateForm({
   };
 
   const form = useForm<CandidateFormValues>({
-    resolver: zodResolver(candidateSchema),
+    resolver: zodResolver(CreateCandidateSchema),
     defaultValues,
     mode: 'onBlur',
   });
@@ -151,7 +144,11 @@ export function CandidateForm({
               <FormItem>
                 <FormLabel>Phone</FormLabel>
                 <FormControl>
-                  <Input placeholder='+1 (555) 123-4567' {...field} />
+                  <Input
+                    placeholder='+1 (555) 123-4567'
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -166,7 +163,7 @@ export function CandidateForm({
                 <FormLabel>Position</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value ?? undefined}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -222,7 +219,11 @@ export function CandidateForm({
               <FormItem>
                 <FormLabel>Source</FormLabel>
                 <FormControl>
-                  <Input placeholder='LinkedIn, Referral, etc.' {...field} />
+                  <Input
+                    placeholder='LinkedIn, Referral, etc.'
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

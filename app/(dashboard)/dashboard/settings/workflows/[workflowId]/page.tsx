@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/settings/workflows/[workflowId]/page.tsx (renamed from [id])
 
-import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/auth';
+import { notFound } from 'next/navigation';
+import { requirePageRole } from '@/lib/authz';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
@@ -17,19 +17,10 @@ interface WorkflowPageProps {
 }
 
 export default async function WorkflowPage({ params }: WorkflowPageProps) {
-  const session = await auth();
+  await requirePageRole(UserRole.ADMIN);
   const { workflowId } = await params;
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
-
-  const workflow = await getWorkflowById(workflowId); // Changed from id to workflowId
+  const workflow = await getWorkflowById(workflowId);
 
   if (!workflow) {
     notFound();

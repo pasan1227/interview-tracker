@@ -5,7 +5,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  UpdateSettingsSchema,
+  type UpdateSettingsInput,
+} from '@/lib/validations/dashboard';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -30,20 +33,7 @@ import { updateSettings } from '@/actions/settings';
 import { Settings } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-// Form schema
-const settingsSchema = z.object({
-  companyName: z.string().min(1, 'Company name is required'),
-  companyLogo: z.string().optional().nullable(),
-  emailNotifications: z.boolean(),
-  feedbackReminders: z.boolean(),
-  defaultInterviewLength: z
-    .number()
-    .int()
-    .min(15, 'Must be at least 15 minutes')
-    .max(240, 'Must be at most 240 minutes'),
-});
-
-type SettingsFormValues = z.infer<typeof settingsSchema>;
+type SettingsFormValues = UpdateSettingsInput;
 
 interface GeneralSettingsFormProps {
   settings: Settings;
@@ -64,7 +54,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
   };
 
   const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
+    resolver: zodResolver(UpdateSettingsSchema),
     defaultValues,
   });
 
@@ -199,7 +189,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
                 <FormLabel>Default Interview Length (minutes)</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange(parseInt(value))}
-                  value={field.value.toString()}
+                  value={String(field.value ?? '')}
                 >
                   <FormControl>
                     <SelectTrigger>

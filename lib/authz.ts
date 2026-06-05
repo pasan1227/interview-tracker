@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { UserRole } from '@/lib/generated/prisma/client';
+import { redirect } from 'next/navigation';
 
 export type SessionUser = {
   id: string;
@@ -14,6 +15,10 @@ export class AuthzError extends Error {
     this.name = 'AuthzError';
   }
 }
+
+// ---------- Action helpers (throw) ----------
+// Use inside server actions / API routes where the call site decides
+// how to surface the error (form alert, JSON 401, etc.).
 
 export async function requireSession(): Promise<SessionUser> {
   const session = await auth();
@@ -37,6 +42,33 @@ export async function requireRole(
 export const requireAdmin = () => requireRole([UserRole.ADMIN]);
 export const requireManagerOrAdmin = () =>
   requireRole([UserRole.ADMIN, UserRole.MANAGER]);
+
+// ---------- Page helpers (redirect) ----------
+// Use inside Server Component page.tsx / layout.tsx where we want
+// Next's redirect() rather than a thrown error. Matches the existing
+// inline pattern used in 30+ pages.
+
+export async function requirePageSession(): Promise<SessionUser> {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login');
+  return {
+    id: session.user.id,
+    role: session.user.role,
+    email: session.user.email!,
+    name: session.user.name,
+  };
+}
+
+export async function requirePageRole(
+  roles: UserRole | readonly UserRole[]
+): Promise<SessionUser> {
+  const user = await requirePageSession();
+  const allow = Array.isArray(roles) ? roles : [roles];
+  if (!allow.includes(user.role)) redirect('/dashboard');
+  return user;
+}
+
+// ---------- Predicates ----------
 
 export const isAdmin = (user: SessionUser) => user.role === UserRole.ADMIN;
 export const isManagerOrAdmin = (user: SessionUser) =>

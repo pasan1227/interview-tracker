@@ -1,11 +1,11 @@
 // app/(dashboard)/dashboard/candidates/[id]/edit/page.tsx
 
-import { auth } from '@/auth';
 import { CandidateForm } from '@/components/candidates/candidate-form';
 import { getCandidateById } from '@/data/candidate';
 import { getPositions } from '@/data/position';
+import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 interface EditCandidatePageProps {
   params: Promise<{ id: string }>;
@@ -14,15 +14,8 @@ interface EditCandidatePageProps {
 export default async function EditCandidatePage({
   params,
 }: EditCandidatePageProps) {
-  const session = await auth();
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { id } = await params;
-  if (!session?.user) redirect('/login');
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
 
   const [candidate, positions] = await Promise.all([
     getCandidateById(id),

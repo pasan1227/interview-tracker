@@ -1,8 +1,7 @@
 // app/(dashboard)/dashboard/settings/users/page.tsx
 
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
 import Link from 'next/link';
+import { requirePageRole } from '@/lib/authz';
 import { getSafeUsers } from '@/data/user';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
@@ -10,16 +9,7 @@ import { UsersList } from '@/components/users/users-list';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function UsersPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Only admin can access user management
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   const users = await getSafeUsers({ includeAdmins: true });
 

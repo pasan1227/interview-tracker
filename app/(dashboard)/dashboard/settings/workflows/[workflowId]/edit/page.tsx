@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/settings/workflows/[id]/edit/page.tsx
 
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
 import { getWorkflowById } from '@/data/workflow';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
@@ -19,14 +20,7 @@ export default async function EditWorkflowPage({
   const { workflowId } = await params;
 
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   const workflow = await getWorkflowById(workflowId);
 

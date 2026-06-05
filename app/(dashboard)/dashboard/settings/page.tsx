@@ -1,8 +1,7 @@
 // app/(dashboard)/dashboard/settings/page.tsx
 
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/auth';
+import { requirePageRole } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import {
   ArrowUpRight,
@@ -71,16 +70,7 @@ function SettingsCard({
 }
 
 export default async function SettingsPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewsFilters } from '@/components/interviews/interviews-filters';
 import { InterviewsList } from '@/components/interviews/interviews-list';
-import { InterviewsSearch } from '@/components/interviews/interviews-search';
+import { ResourceSearch } from '@/components/ui/resource-search';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -55,7 +55,7 @@ export default async function InterviewsPage({
       />
 
       <div className='flex items-center justify-between space-x-4'>
-        <InterviewsSearch />
+        <ResourceSearch placeholder='Search interviews...' />
         <InterviewsFilters />
       </div>
 

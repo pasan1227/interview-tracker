@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  StageInputSchema,
+  type StageInput,
+} from '@/lib/validations/dashboard';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -24,13 +27,7 @@ import { createStage, updateStage } from '@/actions/workflow';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { Stage } from '@/lib/generated/prisma/browser';
 
-// Form schema
-const stageSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional().nullable(),
-});
-
-type StageFormValues = z.infer<typeof stageSchema>;
+type StageFormValues = StageInput;
 
 interface StageFormProps {
   stage?: Stage | null;
@@ -54,7 +51,7 @@ export function StageForm({
   };
 
   const form = useForm<StageFormValues>({
-    resolver: zodResolver(stageSchema),
+    resolver: zodResolver(StageInputSchema),
     defaultValues,
   });
 

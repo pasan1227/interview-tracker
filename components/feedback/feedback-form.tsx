@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  CreateFeedbackSchema,
+  type CreateFeedbackInput,
+} from '@/lib/validations/dashboard';
 import {
   Candidate,
   Feedback,
@@ -41,23 +44,7 @@ import { formatDate } from '@/lib/utils';
 import { StarRating } from '@/components/ui/star-rating';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-// Form schema
-const feedbackSchema = z.object({
-  rating: z.number().min(1, 'Rating is required').max(5),
-  recommendation: z.nativeEnum(Recommendation),
-  comment: z.string().optional().nullable(),
-  interviewId: z.string(),
-  candidateId: z.string(),
-  skillAssessments: z.array(
-    z.object({
-      skill: z.string().min(1, 'Skill name is required'),
-      rating: z.number().min(1, 'Rating is required').max(5),
-      comment: z.string().optional().nullable(),
-    })
-  ),
-});
-
-type FeedbackFormValues = z.infer<typeof feedbackSchema>;
+type FeedbackFormValues = CreateFeedbackInput;
 
 type FeedbackWithSkills = Feedback & { skillAssessments: SkillAssessment[] };
 
@@ -92,7 +79,7 @@ export function FeedbackForm({
   };
 
   const form = useForm<FeedbackFormValues>({
-    resolver: zodResolver(feedbackSchema),
+    resolver: zodResolver(CreateFeedbackSchema),
     defaultValues,
   });
 
@@ -277,7 +264,7 @@ export function FeedbackForm({
                     <FormLabel>Rating</FormLabel>
                     <FormControl>
                       <StarRating
-                        value={field.value}
+                        value={field.value ?? 0}
                         onChange={field.onChange}
                       />
                     </FormControl>

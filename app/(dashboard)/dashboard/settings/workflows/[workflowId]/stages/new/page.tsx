@@ -1,10 +1,11 @@
 // app/(dashboard)/dashboard/settings/workflows/[id]/stages/new/page.tsx
 
 import { auth } from '@/auth';
+import { requirePageRole } from '@/lib/authz';
 import { StageForm } from '@/components/workflows/stage-form';
 import { getWorkflowById } from '@/data/workflow';
 import { UserRole } from '@/lib/generated/prisma/browser';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 interface NewStagePageProps {
   params: Promise<{
     workflowId: string;
@@ -15,14 +16,7 @@ export default async function NewStagePage({ params }: NewStagePageProps) {
   const session = await auth();
   const { workflowId } = await params;
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   const workflow = await getWorkflowById(workflowId);
 

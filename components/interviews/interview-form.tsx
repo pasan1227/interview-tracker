@@ -30,36 +30,18 @@ import {
   User,
 } from '@/lib/generated/prisma/browser';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  CreateInterviewSchema,
+  type CreateInterviewInput,
+} from '@/lib/validations/dashboard';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { addHours, setHours, setMinutes } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { useStagesForPosition } from './use-stages-for-position';
 
-const interviewSchema = z
-  .object({
-    title: z.string().min(1, 'Title is required'),
-    startTime: z.date(),
-    endTime: z.date(),
-    location: z.string().optional().nullable(),
-    notes: z.string().optional().nullable(),
-    type: z.nativeEnum(InterviewType),
-    status: z.nativeEnum(InterviewStatus),
-    candidateId: z.string().min(1, 'Candidate is required'),
-    positionId: z.string().min(1, 'Position is required'),
-    stageId: z.string().optional().nullable(),
-    interviewerIds: z
-      .array(z.string())
-      .min(1, 'At least one interviewer is required'),
-  })
-  .refine((d) => d.endTime > d.startTime, {
-    message: 'End time must be after start time',
-    path: ['endTime'],
-  });
-
-type InterviewFormValues = z.infer<typeof interviewSchema>;
+type InterviewFormValues = CreateInterviewInput;
 
 interface InterviewFormProps {
   interview?: (Interview & { interviewers: User[] }) | null;
@@ -83,7 +65,7 @@ export function InterviewForm({
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<InterviewFormValues>({
-    resolver: zodResolver(interviewSchema),
+    resolver: zodResolver(CreateInterviewSchema),
     defaultValues: buildDefaults(interview, defaultCandidateId),
   });
 

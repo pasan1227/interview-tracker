@@ -1,9 +1,13 @@
+// Import the enum runtime from /browser so client form components can
+// `zodResolver()` these schemas without dragging the server Prisma
+// runtime into the client bundle. Both /client and /browser export the
+// same enum values, so server actions still resolve them identically.
 import {
   CandidateStatus,
   InterviewStatus,
   InterviewType,
   Recommendation,
-} from '@/lib/generated/prisma/client';
+} from '@/lib/generated/prisma/browser';
 import { z } from 'zod';
 
 // Forms send '' or null for unset optional CUIDs — accept those at the input
@@ -101,13 +105,20 @@ export const SkillAssessmentSchema = z.object({
   comment: z.string().max(2000).optional().nullable(),
 });
 
+// candidateId is included in the form's payload (the client doesn't know
+// to strip it), but the server re-derives it from the interview record
+// for safety. We accept it explicitly here so the form shares this
+// schema as its zodResolver without resorting to .passthrough() — which
+// would widen the inferred type to a `[x: string]: unknown` index sig
+// that breaks useFieldArray's name-narrowing.
 export const CreateFeedbackSchema = z.object({
   interviewId: z.string().cuid(),
   rating: z.number().int().min(1).max(5),
   recommendation: z.nativeEnum(Recommendation),
   comment: z.string().max(10_000).optional().nullable(),
   skillAssessments: z.array(SkillAssessmentSchema).max(50).default([]),
-}).passthrough(); // form also sends candidateId; server re-derives it.
+  candidateId: z.string().cuid().optional(),
+});
 
 export const UpdateFeedbackSchema = z.object({
   rating: z.number().int().min(1).max(5),

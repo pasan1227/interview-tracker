@@ -1,7 +1,6 @@
 // app/(dashboard)/dashboard/interviews/new/page.tsx
 
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
+import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { InterviewForm } from '@/components/interviews/interview-form';
 import { getInterviewFormOptions } from '@/data/interview-form';
@@ -15,20 +14,10 @@ interface NewInterviewPageProps {
 export default async function NewInterviewPage({
   searchParams,
 }: NewInterviewPageProps) {
-  const session = await auth();
+  // Matches createInterview's requireManagerOrAdmin gate so we don't
+  // serve a form that submits to an action that will reject.
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { candidateId } = await searchParams;
-
-  if (!session?.user) {
-    redirect('/login');
-  }
-  // Matches createInterview's requireManagerOrAdmin gate. Avoids serving
-  // a form that submits to an action that will reject.
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
 
   const { candidates, positions, interviewers } = await getInterviewFormOptions();
 

@@ -6,7 +6,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  PositionInputSchema,
+  type PositionInput,
+} from '@/lib/validations/dashboard';
 import { Position, Workflow } from '@/lib/generated/prisma/browser';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,15 +34,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createPosition, updatePosition } from '@/actions/position';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-// Form schema
-const positionSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  department: z.string().optional().nullish(),
-  workflowId: z.string().optional().nullish(),
-  isActive: z.boolean(),
-});
-
-type PositionFormValues = z.infer<typeof positionSchema>;
+type PositionFormValues = PositionInput;
 
 interface PositionFormProps {
   position?: Position | null;
@@ -68,7 +63,7 @@ export function PositionForm({
   };
 
   const form = useForm<PositionFormValues>({
-    resolver: zodResolver(positionSchema),
+    resolver: zodResolver(PositionInputSchema),
     defaultValues,
   });
 

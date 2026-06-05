@@ -1,24 +1,13 @@
 // app/(dashboard)/dashboard/settings/workflows/page.tsx
 
-import { auth } from '@/auth';
 import { Button } from '@/components/ui/button';
+import { requirePageRole } from '@/lib/authz';
 import { WorkflowsList } from '@/components/workflows/workflows-list';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-
 export default async function WorkflowsPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to access this page
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   return (
     <div className='space-y-6'>

@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import {
+  WorkflowInputSchema,
+  type WorkflowInput,
+} from '@/lib/validations/dashboard';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -25,14 +28,7 @@ import { createWorkflow, updateWorkflow } from '@/actions/workflow';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { Workflow } from '@/lib/generated/prisma/browser';
 
-// Form schema
-const workflowSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional().nullable(),
-  isDefault: z.boolean(),
-});
-
-type WorkflowFormValues = z.infer<typeof workflowSchema>;
+type WorkflowFormValues = WorkflowInput;
 
 interface WorkflowFormProps {
   workflow?: Workflow | null;
@@ -52,7 +48,7 @@ export function WorkflowForm({ workflow, isEdit = false }: WorkflowFormProps) {
   };
 
   const form = useForm<WorkflowFormValues>({
-    resolver: zodResolver(workflowSchema),
+    resolver: zodResolver(WorkflowInputSchema),
     defaultValues,
   });
 

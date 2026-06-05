@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
-import { CandidatesSearch } from '@/components/candidates/candidates-search';
+import { ResourceSearch } from '@/components/ui/resource-search';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { getPositions } from '@/data/position';
@@ -60,7 +60,7 @@ export default async function CandidatesPage({
       />
 
       <div className='flex items-center justify-between space-x-4'>
-        <CandidatesSearch />
+        <ResourceSearch placeholder='Search candidates...' />
         <CandidatesFilters positions={positionOptions} />
       </div>
 

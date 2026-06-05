@@ -1,32 +1,19 @@
 // app/(dashboard)/dashboard/candidates/[id]/delete/page.tsx
 
-import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { auth } from '@/auth';
+import { notFound } from 'next/navigation';
 import { getCandidateById } from '@/data/candidate';
-import { Button } from '@/components/ui/button';
+import { requirePageRole } from '@/lib/authz';
+import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { CandidateDeleteForm } from '@/components/candidates/candidate-delete-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
-// Define the props type according to Next.js 15 standards
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function DeleteCandidatePage({ params }: PageProps) {
-  const session = await auth();
-
+export default async function DeleteCandidatePageRoute({ params }: PageProps) {
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { id } = await params;
-
-  if (!session?.user) {
-    redirect('/login');
-  }
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
 
   const candidate = await getCandidateById(id);
 
@@ -35,57 +22,26 @@ export default async function DeleteCandidatePage({ params }: PageProps) {
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Delete Candidate</h1>
-        <p className='text-muted-foreground'>
-          Are you sure you want to delete this candidate?
-        </p>
-      </div>
-
-      <div className='rounded-md border p-6 bg-white'>
-        <div className='space-y-4'>
-          <div>
-            <h2 className='text-xl font-bold text-red-600'>Warning</h2>
-            <p className='text-muted-foreground'>
-              This action cannot be undone. This will permanently delete the
-              candidate
-              <span className='font-semibold'> {candidate.name} </span>
-              and all associated data including interviews, feedback, and notes.
-            </p>
-          </div>
-
-          <div className='border rounded-md p-4 bg-slate-50'>
-            <h3 className='font-semibold'>Candidate Information</h3>
-            <div className='mt-2 space-y-1 text-sm'>
-              <p>
-                <span className='text-muted-foreground'>Name:</span>{' '}
-                {candidate.name}
-              </p>
-              <p>
-                <span className='text-muted-foreground'>Email:</span>{' '}
-                {candidate.email}
-              </p>
-              <p>
-                <span className='text-muted-foreground'>Position:</span>{' '}
-                {candidate.position?.title || 'No position'}
-              </p>
-              <p>
-                <span className='text-muted-foreground'>Status:</span>{' '}
-                {candidate.status.replace(/_/g, ' ')}
-              </p>
-            </div>
-          </div>
-
-          <CandidateDeleteForm candidateId={candidate.id} />
-
-          <div className='flex justify-end'>
-            <Button variant='outline' asChild>
-              <Link href={`/dashboard/candidates/${candidate.id}`}>Cancel</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DeleteResourcePage
+      title='Delete candidate'
+      description='Are you sure you want to delete this candidate?'
+      resourceLabel='candidate'
+      resourceName={candidate.name}
+      detailsHeading='Candidate information'
+      details={[
+        { label: 'Name', value: candidate.name },
+        { label: 'Email', value: candidate.email },
+        { label: 'Position', value: candidate.position?.title ?? 'No position' },
+        { label: 'Status', value: candidate.status.replace(/_/g, ' ') },
+      ]}
+      impact={[
+        { label: 'interviews', count: candidate.interviews.length },
+        { label: 'feedback entries', count: candidate.feedbacks.length },
+        { label: 'notes', count: candidate.notes.length },
+      ]}
+      cancelHref={`/dashboard/candidates/${candidate.id}`}
+    >
+      <CandidateDeleteForm candidateId={candidate.id} />
+    </DeleteResourcePage>
   );
 }

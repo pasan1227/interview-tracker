@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/positions/[id]/edit/page.tsx
 
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { PositionForm } from '@/components/positions/position-form';
@@ -18,17 +19,7 @@ export default async function EditPositionPage({
   const session = await auth();
   const { positionId } = await params;
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Check if user has permission to edit positions
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
 
   // Fetch the position
   const position = await db.position.findUnique({

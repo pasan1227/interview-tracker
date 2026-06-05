@@ -1,9 +1,7 @@
 // app/(dashboard)/dashboard/settings/layout.tsx
 
-import { auth } from '@/auth';
 import { UserRole } from '@/lib/generated/prisma/browser';
-import { redirect } from 'next/navigation';
-
+import { requirePageRole } from '@/lib/authz';
 interface SettingsLayoutProps {
   children: React.ReactNode;
 }
@@ -11,16 +9,7 @@ interface SettingsLayoutProps {
 export default async function SettingsLayout({
   children,
 }: SettingsLayoutProps) {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Only admin can access settings
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   return <div className='space-y-6'>{children}</div>;
 }

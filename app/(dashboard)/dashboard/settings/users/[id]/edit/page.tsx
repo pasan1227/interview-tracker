@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/settings/users/[id]/edit/page.tsx
 
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
 import { getSafeUserById } from '@/data/user';
 import { UserForm } from '@/components/users/user-form';
@@ -17,14 +18,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   const { id } = await params;
 
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Only admin can edit users
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   const user = await getSafeUserById(id);
 

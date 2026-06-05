@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/candidates/[id]/page.tsx
 
-import { auth } from '@/auth';
+import { requirePageRole } from '@/lib/authz';
 import { CandidateFeedback } from '@/components/candidates/candidate-feedback';
 import { CandidateInfo } from '@/components/candidates/candidate-info';
 import { CandidateInterviews } from '@/components/candidates/candidate-interviews';
@@ -14,7 +14,7 @@ import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { CalendarIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 interface CandidateDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -23,23 +23,11 @@ interface CandidateDetailsPageProps {
 export default async function CandidateDetailsPage({
   params,
 }: CandidateDetailsPageProps) {
-  const session = await auth();
-
-  const {id} = await params;
-
-  if (!session?.user) {
-    redirect('/login');
-  }
-
   // PII gate: candidate detail (name, email, notes, feedback) is
   // manager/admin only. INTERVIEWER role accesses candidates via the
   // interview detail page where their participation is verified.
-  if (
-    session.user.role !== UserRole.ADMIN &&
-    session.user.role !== UserRole.MANAGER
-  ) {
-    redirect('/dashboard');
-  }
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const { id } = await params;
 
   const candidate = await getCandidateById(id);
 

@@ -1,23 +1,13 @@
 // app/(dashboard)/dashboard/settings/general/page.tsx
 
-import { redirect } from 'next/navigation';
-import { auth } from '@/auth';
 import { getSettings } from '@/data/settings';
+import { requirePageRole } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { GeneralSettingsForm } from '@/components/settings/general-settings-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function GeneralSettingsPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  // Only admin can access general settings
-  if (session.user.role !== UserRole.ADMIN) {
-    redirect('/dashboard');
-  }
+  await requirePageRole(UserRole.ADMIN);
 
   const settings = await getSettings();
 
