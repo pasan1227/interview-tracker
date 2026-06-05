@@ -2,8 +2,8 @@
 
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
-import { auth } from '@/auth';
 import { getSafeUserById } from '@/data/user';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { UserForm } from '@/components/users/user-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -14,11 +14,8 @@ interface EditUserPageProps {
 }
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
-  const session = await auth();
-  const { id } = await params;
-
-
   await requirePageRole(UserRole.ADMIN);
+  const { id } = await params;
 
   const user = await getSafeUserById(id);
 
@@ -27,11 +24,12 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Edit User</h1>
-        <p className='text-muted-foreground'>Update user account details</p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Edit'
+        title='Edit user'
+        description='Update user account details.'
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <UserForm user={user} isEdit />

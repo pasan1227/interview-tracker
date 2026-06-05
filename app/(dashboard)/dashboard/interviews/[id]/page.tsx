@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requirePageSession } from '@/lib/authz';
 import { getInterviewByIdForViewer } from '@/data/interview';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InterviewDetail } from '@/components/interviews/interview-detail';
@@ -54,54 +55,48 @@ export default async function InterviewDetailPage({
   );
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <div className='flex items-center gap-3'>
-            <h1 className='text-3xl font-bold'>{interview.title}</h1>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Interview'
+        title={interview.title}
+        description={`${interview.type.replace(/_/g, ' ')}${
+          interview.stage ? ` · ${interview.stage.name}` : ''
+        }`}
+        action={
+          <div className='flex flex-wrap items-center gap-2'>
             <Badge variant='outline' style={statusClass} className='border-0'>
               {interview.status.replace(/_/g, ' ')}
             </Badge>
-          </div>
-          <p className='text-muted-foreground'>
-            {interview.type.replace(/_/g, ' ')}
-            {interview.stage && ` - ${interview.stage.name}`}
-          </p>
-        </div>
-
-        <div className='flex items-center gap-2'>
-          {interview.status === InterviewStatus.SCHEDULED && (
-            <InterviewStatusAction interview={interview} />
-          )}
-
-          {interview.status === InterviewStatus.COMPLETED &&
-            isInterviewer &&
-            !hasSubmittedFeedback && (
-              <Button asChild>
-                <Link
-                  href={`/dashboard/interviews/${interview.id}/feedback/new`}
-                >
-                  <ClipboardIcon className='mr-2 h-4 w-4' />
-                  Submit Feedback
-                </Link>
-              </Button>
+            {interview.status === InterviewStatus.SCHEDULED && (
+              <InterviewStatusAction interview={interview} />
             )}
-
-          <Button variant='outline' asChild>
-            <Link href={`/dashboard/interviews/${interview.id}/edit`}>
-              <PencilIcon className='mr-2 h-4 w-4' />
-              Edit
-            </Link>
-          </Button>
-
-          <Button variant='outline' className='text-red-600' asChild>
-            <Link href={`/dashboard/interviews/${interview.id}/delete`}>
-              <TrashIcon className='mr-2 h-4 w-4' />
-              Delete
-            </Link>
-          </Button>
-        </div>
-      </div>
+            {interview.status === InterviewStatus.COMPLETED &&
+              isInterviewer &&
+              !hasSubmittedFeedback && (
+                <Button asChild>
+                  <Link
+                    href={`/dashboard/interviews/${interview.id}/feedback/new`}
+                  >
+                    <ClipboardIcon className='mr-2 h-4 w-4' />
+                    Submit feedback
+                  </Link>
+                </Button>
+              )}
+            <Button variant='outline' asChild>
+              <Link href={`/dashboard/interviews/${interview.id}/edit`}>
+                <PencilIcon className='mr-2 h-4 w-4' />
+                Edit
+              </Link>
+            </Button>
+            <Button variant='outline' className='text-destructive' asChild>
+              <Link href={`/dashboard/interviews/${interview.id}/delete`}>
+                <TrashIcon className='mr-2 h-4 w-4' />
+                Delete
+              </Link>
+            </Button>
+          </div>
+        }
+      />
 
       <InterviewDetail interview={interview} currentUserId={session.id} />
     </div>

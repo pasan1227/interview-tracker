@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
-import { auth } from '@/auth';
 import { db } from '@/lib/db';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { PositionForm } from '@/components/positions/position-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -12,12 +12,9 @@ interface EditPositionPageProps {
 export default async function EditPositionPage({
   params,
 }: EditPositionPageProps) {
-  const session = await auth();
+  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { id: positionId } = await params;
 
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
-
-  // Fetch the position
   const position = await db.position.findUnique({
     where: { id: positionId },
   });
@@ -26,7 +23,6 @@ export default async function EditPositionPage({
     notFound();
   }
 
-  // Fetch workflows for the dropdown
   const workflows = await db.workflow.findMany({
     orderBy: {
       name: 'asc',
@@ -34,11 +30,12 @@ export default async function EditPositionPage({
   });
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Edit Position</h1>
-        <p className='text-muted-foreground'>Update position details</p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Edit'
+        title='Edit position'
+        description='Update position details.'
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <PositionForm position={position} workflows={workflows} isEdit />

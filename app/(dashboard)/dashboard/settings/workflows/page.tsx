@@ -1,5 +1,6 @@
 // app/(dashboard)/dashboard/settings/workflows/page.tsx
 
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { requirePageRole } from '@/lib/authz';
 import { WorkflowsList } from '@/components/workflows/workflows-list';
@@ -10,21 +11,20 @@ export default async function WorkflowsPage() {
   await requirePageRole(UserRole.ADMIN);
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold'>Interview Workflows</h1>
-          <p className='text-muted-foreground'>
-            Configure interview stages and processes for different positions
-          </p>
-        </div>
-        <Button asChild>
-          <Link href='/dashboard/settings/workflows/new'>
-            <PlusIcon className='mr-2 h-4 w-4' />
-            Create Workflow
-          </Link>
-        </Button>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Settings'
+        title='Interview workflows'
+        description='Configure interview stages and processes for different positions.'
+        action={
+          <Button asChild>
+            <Link href='/dashboard/settings/workflows/new'>
+              <PlusIcon className='mr-2 h-4 w-4' />
+              Create workflow
+            </Link>
+          </Button>
+        }
+      />
 
       <WorkflowsList />
     </div>

@@ -3,6 +3,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getInterviewById } from '@/data/interview';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { FeedbackForm } from '@/components/feedback/feedback-form-lazy';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
 
@@ -50,13 +51,12 @@ export default async function NewFeedbackPage({
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Submit Feedback</h1>
-        <p className='text-muted-foreground'>
-          Provide your evaluation of the candidate&apos;s performance
-        </p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Feedback'
+        title='Submit feedback'
+        description="Provide your evaluation of the candidate's performance."
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <FeedbackForm interview={interview} />

@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { requirePageSession } from '@/lib/authz';
 import { getInterviewForForm } from '@/data/interview';
 import { getInterviewFormOptions } from '@/data/interview-form';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -41,11 +42,12 @@ export default async function EditInterviewPage({
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Edit Interview</h1>
-        <p className='text-muted-foreground'>Update the interview details</p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Edit'
+        title='Edit interview'
+        description='Update the interview details.'
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <InterviewForm

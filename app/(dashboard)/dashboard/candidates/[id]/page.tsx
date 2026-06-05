@@ -4,6 +4,7 @@ import { CandidateInfo } from '@/components/candidates/candidate-info';
 import { CandidateInterviews } from '@/components/candidates/candidate-interviews';
 import { CandidateNotes } from '@/components/candidates/candidate-notes';
 import { CandidateStatusUpdate } from '@/components/candidates/candidate-status-update';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,47 +48,40 @@ export default async function CandidateDetailsPage({
     CANDIDATE_STATUS_BADGE[candidate.status] ?? CANDIDATE_STATUS_BADGE.NEW;
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <div className='flex items-center gap-3'>
-            <h1 className='text-3xl font-bold'>{candidate.name}</h1>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Candidate'
+        title={candidate.name}
+        description={`${candidate.position?.title || 'No position'} · ${candidate.email}`}
+        action={
+          <div className='flex flex-wrap items-center gap-2'>
             <Badge variant='outline' style={statusClass} className='border-0'>
               {candidate.status.replace(/_/g, ' ')}
             </Badge>
+            <CandidateStatusUpdate candidate={candidate} />
+            <Button variant='outline' asChild>
+              <Link
+                href={`/dashboard/interviews/new?candidateId=${candidate.id}`}
+              >
+                <CalendarIcon className='mr-2 h-4 w-4' />
+                Schedule Interview
+              </Link>
+            </Button>
+            <Button variant='outline' asChild>
+              <Link href={`/dashboard/candidates/${candidate.id}/edit`}>
+                <PencilIcon className='mr-2 h-4 w-4' />
+                Edit
+              </Link>
+            </Button>
+            <Button variant='outline' className='text-destructive' asChild>
+              <Link href={`/dashboard/candidates/${candidate.id}/delete`}>
+                <TrashIcon className='mr-2 h-4 w-4' />
+                Delete
+              </Link>
+            </Button>
           </div>
-          <p className='text-muted-foreground'>
-            {candidate.position?.title || 'No position'} - {candidate.email}
-          </p>
-        </div>
-
-        <div className='flex items-center gap-2'>
-          <CandidateStatusUpdate candidate={candidate} />
-
-          <Button variant='outline' asChild>
-            <Link
-              href={`/dashboard/interviews/new?candidateId=${candidate.id}`}
-            >
-              <CalendarIcon className='mr-2 h-4 w-4' />
-              Schedule Interview
-            </Link>
-          </Button>
-
-          <Button variant='outline' asChild>
-            <Link href={`/dashboard/candidates/${candidate.id}/edit`}>
-              <PencilIcon className='mr-2 h-4 w-4' />
-              Edit
-            </Link>
-          </Button>
-
-          <Button variant='outline' className='text-red-600' asChild>
-            <Link href={`/dashboard/candidates/${candidate.id}/delete`}>
-              <TrashIcon className='mr-2 h-4 w-4' />
-              Delete
-            </Link>
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <Tabs defaultValue='info' className='space-y-4'>
         <TabsList>

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { WorkflowHeader } from '@/components/workflows/workflow-header';
@@ -23,28 +24,32 @@ export default async function WorkflowPage({ params }: WorkflowPageProps) {
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center'>
-        <Button variant='outline' size='sm' className='mr-4' asChild>
-          <Link href='/dashboard/settings/workflows'>
-            <ArrowLeftIcon className='mr-2 h-4 w-4' />
-            Back to Workflows
-          </Link>
-        </Button>
-        <h1 className='text-3xl font-bold'>{workflow.name}</h1>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Workflow'
+        title={workflow.name}
+        description={workflow.description || 'Configure interview stages for this workflow.'}
+        action={
+          <Button variant='outline' size='sm' asChild>
+            <Link href='/dashboard/settings/workflows'>
+              <ArrowLeftIcon className='mr-2 h-4 w-4' />
+              Back to workflows
+            </Link>
+          </Button>
+        }
+      />
 
       <WorkflowHeader workflow={workflow} />
 
       <div className='space-y-4'>
         <div className='flex items-center justify-between'>
-          <h2 className='text-xl font-semibold'>Interview Stages</h2>
+          <h2 className='text-xl font-semibold'>Interview stages</h2>
           <Button size='sm' asChild>
             <Link
               href={`/dashboard/settings/workflows/${workflow.id}/stages/new`}
             >
               <PlusIcon className='mr-2 h-4 w-4' />
-              Add Stage
+              Add stage
             </Link>
           </Button>
         </div>

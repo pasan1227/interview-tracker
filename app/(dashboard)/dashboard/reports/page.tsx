@@ -6,6 +6,7 @@ import {
   getSourceReport,
   getTimeToHireReport,
 } from '@/actions/reports';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { ReportTabs } from '@/components/reports/report-tabs';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportSkeleton } from '@/components/reports/report-skeleton';
@@ -82,12 +83,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Reports</h1>
-        <p className='text-muted-foreground'>
-          Analyze recruitment metrics and trends
-        </p>
-      </div>
+      <PageHeader
+        eyebrow='Insights'
+        title='Reports'
+        description='Analyze recruitment metrics and trends.'
+      />
 
       <ReportFilters
         positions={positions}

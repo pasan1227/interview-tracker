@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/dashboard/page-header';
 
 interface ImpactItem {
   label: string;
@@ -42,17 +43,16 @@ export function DeleteResourcePage({
 }: Readonly<DeleteResourcePageProps>) {
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>{title}</h1>
-        {description && (
-          <p className='text-muted-foreground'>{description}</p>
-        )}
-      </div>
+      <PageHeader
+        eyebrow='Confirm'
+        title={title}
+        description={description}
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <div className='space-y-4'>
           <div>
-            <h2 className='text-xl font-bold text-red-600'>Warning</h2>
+            <h2 className='text-xl font-bold text-destructive'>Warning</h2>
             <p className='text-muted-foreground'>
               This action cannot be undone. This will permanently delete the
               {' '}

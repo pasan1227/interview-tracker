@@ -2,6 +2,7 @@
 
 import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { getInterviewFormOptions } from '@/data/interview-form';
 
@@ -23,13 +24,12 @@ export default async function NewInterviewPage({
     await getInterviewFormOptions({ viewerRole: session.role });
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Schedule Interview</h1>
-        <p className='text-muted-foreground'>
-          Set up a new interview with a candidate
-        </p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='New'
+        title='Schedule interview'
+        description='Set up a new interview with a candidate.'
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <InterviewForm

@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth';
 import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { getPositions } from '@/data/position';
 import { redirect } from 'next/navigation';
 
@@ -13,13 +14,12 @@ export default async function NewCandidatePage() {
   const positionOptions = positions.map((p) => ({ id: p.id, title: p.title }));
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>Add New Candidate</h1>
-        <p className='text-muted-foreground'>
-          Enter the details for the new candidate
-        </p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='New'
+        title='Add new candidate'
+        description='Enter the details for the new candidate.'
+      />
 
       <div className='rounded-xl border border-border bg-card p-6'>
         <CandidateForm positions={positionOptions} />
