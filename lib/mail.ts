@@ -1,9 +1,10 @@
 import { Resend } from 'resend';
+import { env } from './env';
 import { formatDateTime } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(env.RESEND_API_KEY);
 
-const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const domain = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // ---------- HTML safety ----------
 //
@@ -45,9 +46,8 @@ const headerSafe = (value: string) => value.replace(/[\r\n]+/g, ' ');
 // and prevents DMARC alignment. In development we still allow the fallback
 // so contributors can run the app without setting up Resend.
 function fromAddress(): string {
-  const v = process.env.EMAIL_FROM;
-  if (v) return v;
-  if (process.env.NODE_ENV === 'production') {
+  if (env.EMAIL_FROM) return env.EMAIL_FROM;
+  if (env.NODE_ENV === 'production') {
     throw new Error('EMAIL_FROM env var is required in production.');
   }
   return 'Acme <onboarding@resend.dev>';
@@ -115,7 +115,7 @@ export async function sendInterviewScheduleEmail({
 
   const linkUrl =
     actionUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   // notes preserves user line breaks via <br>. Escape first, then convert
   // newlines, then mark the result raw so the html tag doesn't re-escape it.
@@ -222,8 +222,8 @@ export async function sendFeedbackReminderEmail({
   );
 
   const feedbackLink = interviewId
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
-    : `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    ? `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
+    : `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   const body = html`
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -289,7 +289,7 @@ export async function sendNewInterviewNotifications(interview: any) {
 
     const candidateName =
       `${interview.candidate.firstName} ${interview.candidate.lastName}`.trim();
-    const detailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
+    const detailUrl = `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
 
     // Send to each interviewer
     for (const interviewer of interview.interviewers) {
