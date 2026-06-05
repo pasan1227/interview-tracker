@@ -2,11 +2,11 @@
 
 import { newVerification } from '@/actions/auth/new-verification';
 import { Button } from '@/components/ui/button';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { BeatLoader } from 'react-spinners';
 
 export function NewVerificationForm() {
   const searchParams = useSearchParams();
@@ -51,7 +51,7 @@ export function NewVerificationForm() {
           <div className='flex flex-col items-center space-y-6 text-center'>
             {isLoading && (
               <div className='flex flex-col items-center space-y-4'>
-                <BeatLoader size={12} color='#3b82f6' />
+                <ReloadIcon className='h-6 w-6 animate-spin text-blue-500' aria-label='Loading' />
                 <p className='text-sm text-muted-foreground animate-pulse'>
                   Verifying your email address...
                 </p>
