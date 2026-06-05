@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import { DashboardMobileNav } from '@/components/dashboard/dashboard-mobile-nav';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 // Narrow to the fields the header actually reads. Accepts both the
 // next-auth session user (no createdAt/updatedAt) and a Prisma User.
@@ -19,6 +21,7 @@ interface DashboardHeaderProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: UserRole;
   };
 }
 
@@ -57,12 +60,15 @@ export function DashboardHeader({ user }: Readonly<DashboardHeaderProps>) {
       }}
     >
       <div className='mx-auto flex h-16 items-center justify-between px-6 lg:px-10'>
-        <Link href='/dashboard' className='flex items-center gap-2.5'>
-          <Logomark />
-          <span className='text-[16px] font-semibold tracking-[-0.01em]'>
-            InterviewPro
-          </span>
-        </Link>
+        <div className='flex items-center gap-2'>
+          <DashboardMobileNav role={user?.role} />
+          <Link href='/dashboard' className='flex items-center gap-2.5'>
+            <Logomark />
+            <span className='text-[16px] font-semibold tracking-[-0.01em]'>
+              InterviewPro
+            </span>
+          </Link>
+        </div>
 
         <div className='flex items-center gap-3'>
           <div
