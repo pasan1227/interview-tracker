@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { usePositions } from '@/hooks/use-positions';
 import { createCandidate, updateCandidate } from '@/actions/candidate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
@@ -48,15 +47,16 @@ type CandidateFormValues = z.infer<typeof candidateSchema>;
 
 interface CandidateFormProps {
   candidate?: Candidate | null;
+  positions: { id: string; title: string }[];
   isEdit?: boolean;
 }
 
 export function CandidateForm({
   candidate,
+  positions,
   isEdit = false,
 }: CandidateFormProps) {
   const router = useRouter();
-  const { positions, isLoading: isLoadingPositions } = usePositions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -165,7 +165,6 @@ export function CandidateForm({
               <FormItem>
                 <FormLabel>Position</FormLabel>
                 <Select
-                  disabled={isLoadingPositions}
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
@@ -175,20 +174,12 @@ export function CandidateForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {isLoadingPositions ? (
-                      <SelectItem value='loading' disabled>
-                        Loading positions...
+                    <SelectItem value='None'>None</SelectItem>
+                    {positions.map((position) => (
+                      <SelectItem key={position.id} value={position.id}>
+                        {position.title}
                       </SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value='None'>None</SelectItem>
-                        {positions.map((position) => (
-                          <SelectItem key={position.id} value={position.id}>
-                            {position.title}
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

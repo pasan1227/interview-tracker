@@ -1,5 +1,6 @@
 'use client';
 
+import { getStagesForPosition } from '@/actions/position';
 import { useEffect, useState } from 'react';
 
 export interface Stage {
@@ -9,9 +10,12 @@ export interface Stage {
 }
 
 /**
- * Fetch the workflow stages for the given position. Returns an empty list
- * while loading or when no position is selected. Aborts in-flight requests
- * if the position changes before the previous response lands.
+ * Fetch the workflow stages for the given position via the server action.
+ * Returns an empty list while loading or when no position is selected.
+ *
+ * If the position changes mid-fetch, the second response wins via a
+ * monotonically-increasing request ID — server actions don't accept
+ * AbortSignal, so we can't cancel the in-flight call, just discard it.
  */
 export function useStagesForPosition(positionId: string | undefined) {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -22,18 +26,23 @@ export function useStagesForPosition(positionId: string | undefined) {
       setStages([]);
       return;
     }
-    const ac = new AbortController();
+    let canceled = false;
     setIsLoading(true);
-    fetch(`/api/positions/${positionId}/stages`, { signal: ac.signal })
-      .then((r) => (r.ok ? (r.json() as Promise<Stage[]>) : []))
-      .then((data) => setStages(data))
-      .catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error('Failed to fetch stages:', err);
-        }
+    getStagesForPosition(positionId)
+      .then((data) => {
+        if (canceled) return;
+        setStages(data);
       })
-      .finally(() => setIsLoading(false));
-    return () => ac.abort();
+      .catch((err) => {
+        if (canceled) return;
+        console.error('Failed to fetch stages:', err);
+      })
+      .finally(() => {
+        if (!canceled) setIsLoading(false);
+      });
+    return () => {
+      canceled = true;
+    };
   }, [positionId]);
 
   return { stages, isLoading };

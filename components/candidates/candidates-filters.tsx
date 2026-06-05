@@ -9,7 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePositions } from '@/hooks/use-positions';
 import { useUrlFilters } from '@/hooks/use-url-filters';
 import { CandidateStatus } from '@/lib/generated/prisma/browser';
 import { FilterIcon } from 'lucide-react';
@@ -17,12 +16,15 @@ import { FilterIcon } from 'lucide-react';
 const KEYS = ['status', 'position'] as const;
 const RESET = ['page'] as const;
 
-export function CandidatesFilters() {
+interface CandidatesFiltersProps {
+  positions: { id: string; title: string }[];
+}
+
+export function CandidatesFilters({ positions }: CandidatesFiltersProps) {
   const { get, push, clear, isActive, isPending } = useUrlFilters({
     keys: KEYS,
     resetKeys: RESET,
   });
-  const { positions, isLoading } = usePositions();
 
   const currentStatus = get('status');
   const currentPosition = get('position');
@@ -64,21 +66,15 @@ export function CandidatesFilters() {
           >
             All Positions
           </DropdownMenuCheckboxItem>
-          {isLoading ? (
-            <DropdownMenuCheckboxItem disabled>
-              Loading positions...
+          {positions.map((position) => (
+            <DropdownMenuCheckboxItem
+              key={position.id}
+              checked={currentPosition === position.id}
+              onCheckedChange={() => push({ position: position.id })}
+            >
+              {position.title}
             </DropdownMenuCheckboxItem>
-          ) : (
-            positions.map((position) => (
-              <DropdownMenuCheckboxItem
-                key={position.id}
-                checked={currentPosition === position.id}
-                onCheckedChange={() => push({ position: position.id })}
-              >
-                {position.title}
-              </DropdownMenuCheckboxItem>
-            ))
-          )}
+          ))}
 
           {isActive && (
             <>
