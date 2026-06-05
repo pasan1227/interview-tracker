@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import Link from 'next/link';
-import { getUsers } from '@/data/user';
+import { getSafeUsers } from '@/data/user';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { UsersList } from '@/components/users/users-list';
@@ -21,7 +21,7 @@ export default async function UsersPage() {
     redirect('/dashboard');
   }
 
-  const users = await getUsers({ includeAdmins: true });
+  const users = await getSafeUsers({ includeAdmins: true });
 
   return (
     <div className='space-y-6'>

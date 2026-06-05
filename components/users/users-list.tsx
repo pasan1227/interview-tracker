@@ -13,16 +13,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { USER_ROLE_BADGE } from '@/lib/constants/status-styles';
-import { User } from '@/lib/generated/prisma/browser';
+import type { SafeUserListItem } from '@/data/user';
 import { formatDate } from '@/lib/utils';
 import { PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 
 interface UsersListProps {
-  users: User[];
+  users: SafeUserListItem[];
 }
 
-export function UsersList({ users }: UsersListProps) {
+export function UsersList({ users }: Readonly<UsersListProps>) {
   if (users.length === 0) {
     return (
       <ListEmptyState

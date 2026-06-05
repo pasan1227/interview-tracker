@@ -5,7 +5,7 @@ import {
   deleteCandidate as deleteCandidateData,
   updateCandidate as updateCandidateData,
 } from '@/data/candidate';
-import { AuthzError, isManagerOrAdmin, requireSession } from '@/lib/authz';
+import { requireManagerOrAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
 import {
   CreateCandidateSchema,
@@ -17,7 +17,7 @@ import {
 import { revalidatePath } from 'next/cache';
 
 export async function createCandidate(input: CreateCandidateInput) {
-  const user = await requireSession();
+  const user = await requireManagerOrAdmin();
   const data = CreateCandidateSchema.parse(input);
   const { notes, ...candidateFields } = data;
 
@@ -37,7 +37,7 @@ export async function createCandidate(input: CreateCandidateInput) {
 }
 
 export async function updateCandidate(id: string, input: UpdateCandidateInput) {
-  await requireSession();
+  await requireManagerOrAdmin();
   const data = UpdateCandidateSchema.parse(input);
   const { notes, ...candidateFields } = data;
 
@@ -60,8 +60,7 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
 }
 
 export async function deleteCandidate(id: string) {
-  const user = await requireSession();
-  if (!isManagerOrAdmin(user)) throw new AuthzError('Forbidden');
+  await requireManagerOrAdmin();
 
   await deleteCandidateData(id);
 
@@ -71,7 +70,7 @@ export async function deleteCandidate(id: string) {
 }
 
 export async function addCandidateNote(candidateId: string, content: string) {
-  await requireSession();
+  await requireManagerOrAdmin();
   const trimmed = content.trim();
   if (!trimmed) throw new Error('Note cannot be empty');
   if (trimmed.length > 10_000) throw new Error('Note is too long');
@@ -85,7 +84,7 @@ export async function addCandidateNote(candidateId: string, content: string) {
 }
 
 export async function updateCandidateStatus(id: string, status: string) {
-  await requireSession();
+  await requireManagerOrAdmin();
   const { status: parsed } = UpdateCandidateStatusSchema.parse({ status });
 
   const candidate = await updateCandidateData(id, { status: parsed });

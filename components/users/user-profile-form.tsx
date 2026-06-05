@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User } from '@/lib/generated/prisma/browser';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -23,52 +22,50 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { updateUser } from '@/actions/user';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-// Profile update schema (password is optional)
+// Mirrors lib/validations/auth.ts SelfUpdateProfileSchema. We re-declare it
+// here (instead of importing) because that file pulls in Prisma client types
+// that don't belong in the browser bundle. confirmPassword is purely a
+// client-side check.
 const profileSchema = z
   .object({
-    name: z.string().min(1, 'Name is required'),
-    password: z
+    name: z.string().trim().min(1, 'Name is required').max(120),
+    currentPassword: z.string().optional(),
+    newPassword: z
       .string()
       .min(8, 'Password must be at least 8 characters')
-      .optional()
-      .nullable(),
-    confirmPassword: z.string().optional().nullable(),
+      .max(72)
+      .optional(),
+    confirmPassword: z.string().optional(),
   })
-  .refine(
-    (data) => {
-      // Check that passwords match if provided
-      if (data.password && data.confirmPassword) {
-        return data.password === data.confirmPassword;
-      }
-      return true;
-    },
-    {
-      message: 'Passwords do not match',
-      path: ['confirmPassword'],
-    }
-  );
+  .refine((d) => !d.newPassword || d.newPassword === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+  .refine((d) => !d.newPassword || !!d.currentPassword, {
+    message: 'Current password is required to set a new one',
+    path: ['currentPassword'],
+  });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 interface UserProfileFormProps {
-  user: User;
+  user: { id: string; name: string | null };
 }
 
-export function UserProfileForm({ user }: UserProfileFormProps) {
+export function UserProfileForm({ user }: Readonly<UserProfileFormProps>) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const defaultValues: ProfileFormValues = {
-    name: user.name || '',
-    password: '',
-    confirmPassword: '',
-  };
-
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues,
+    defaultValues: {
+      name: user.name ?? '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
   });
 
   async function onSubmit(values: ProfileFormValues) {
@@ -76,17 +73,29 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
     setError(null);
     setSuccess(null);
 
-    const { confirmPassword: _confirm, password, name } = values;
-    const updateData = password ? { name, password } : { name };
-
     try {
-      await updateUser(user.id, updateData);
-      form.reset({ ...form.getValues(), password: '', confirmPassword: '' });
+      await updateUser(user.id, {
+        name: values.name,
+        ...(values.newPassword
+          ? {
+              currentPassword: values.currentPassword,
+              newPassword: values.newPassword,
+            }
+          : {}),
+      });
+      form.reset({
+        name: values.name,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
       setSuccess('Profile updated successfully');
       router.refresh();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setError('Failed to update profile. Please try again.');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      const message =
+        err instanceof Error ? err.message : 'Failed to update profile.';
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -122,25 +131,49 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
         />
 
         <div className='space-y-4 border-t pt-4'>
-          <h2 className='font-medium'>Change Password</h2>
+          <h2 className='font-medium'>Change password</h2>
+          <p className='text-[13px] text-muted-foreground'>
+            Leave the new-password fields blank to keep your current one.
+          </p>
 
           <FormField
             control={form.control}
-            name='password'
+            name='currentPassword'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New Password</FormLabel>
+                <FormLabel>Current password</FormLabel>
                 <FormControl>
                   <Input
                     type='password'
                     placeholder='••••••••'
+                    autoComplete='current-password'
                     {...field}
-                    value={field.value || ''}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormDescription>
-                  Leave blank to keep your current password
+                  Required only when setting a new password.
                 </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='newPassword'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>New password</FormLabel>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder='••••••••'
+                    autoComplete='new-password'
+                    {...field}
+                    value={field.value ?? ''}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -151,13 +184,14 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             name='confirmPassword'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
+                <FormLabel>Confirm new password</FormLabel>
                 <FormControl>
                   <Input
                     type='password'
                     placeholder='••••••••'
+                    autoComplete='new-password'
                     {...field}
-                    value={field.value || ''}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -171,7 +205,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             {isSubmitting && (
               <ReloadIcon className='mr-2 h-4 w-4 animate-spin' />
             )}
-            Update Profile
+            Update profile
           </Button>
         </div>
       </form>

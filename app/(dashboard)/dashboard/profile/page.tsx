@@ -4,16 +4,16 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { UserProfileForm } from '@/components/users/user-profile-form';
-import { getCurrentUser } from '@/lib/session';
+import { getSafeUserById } from '@/data/user';
 
 export default async function ProfilePage() {
   const session = await auth();
 
-  if (!session || !session.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
-  const user = await getCurrentUser();
+  const user = await getSafeUserById(session.user.id);
 
   if (!user) {
     redirect('/login');
@@ -28,8 +28,7 @@ export default async function ProfilePage() {
       />
 
       <div className='rounded-xl border border-border bg-card p-6'>
-        {/* @ts-expect-error Server Component */}
-        <UserProfileForm user={user} />
+        <UserProfileForm user={{ id: user.id, name: user.name }} />
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ const SAFE_USER_SELECT = {
   updatedAt: true,
 } as const;
 
-export type SafeUser = Awaited<ReturnType<typeof getSafeUserById>>;
+export type SafeUser = NonNullable<Awaited<ReturnType<typeof getSafeUserById>>>;
 
 export async function getSafeUserById(id: string) {
   try {
@@ -47,6 +47,21 @@ export async function getSafeUserById(id: string) {
     });
   } catch (error) {
     console.error('Error fetching safe user by ID:', error);
+    return null;
+  }
+}
+
+// Server-side only: returns the bcrypt hash for currentPassword verification.
+// Never pass the result to a client component / serialize it into a prop.
+export async function getUserPasswordHash(id: string) {
+  try {
+    const row = await db.user.findUnique({
+      where: { id },
+      select: { password: true },
+    });
+    return row?.password ?? null;
+  } catch (error) {
+    console.error('Error fetching user password hash:', error);
     return null;
   }
 }
@@ -66,22 +81,28 @@ export async function createUser({
 
   return db.user.create({
     data: { name, email, password: hashedPassword, role },
+    select: SAFE_USER_SELECT,
   });
 }
 
 // Fields a regular user may update on their own profile.
 // Privileged fields (role, emailVerified, isTwoFactorEnabled) require adminUpdateUser.
-const USER_SELF_FIELDS = ['name', 'email', 'image', 'password'] as const;
-const ADMIN_FIELDS = [...USER_SELF_FIELDS, 'role'] as const;
+const USER_SELF_FIELDS = ['name', 'image', 'password'] as const;
+const ADMIN_FIELDS = [
+  ...USER_SELF_FIELDS,
+  'email',
+  'role',
+  'emailVerified',
+] as const;
 
 export type UpdateUserInput = Partial<{
   name: string;
-  email: string;
   image: string;
   password: string;
 }>;
 
-export type AdminUpdateUserInput = UpdateUserInput & { role?: UserRole };
+export type AdminUpdateUserInput = UpdateUserInput &
+  Partial<{ email: string; role: UserRole; emailVerified: Date | null }>;
 
 async function buildUpdateData(
   data: Record<string, unknown>,
@@ -89,6 +110,7 @@ async function buildUpdateData(
 ) {
   const out: Record<string, unknown> = {};
   for (const field of allowed) {
+    if (!(field in data)) continue;
     const value = data[field];
     if (value === undefined) continue;
     out[field] =
@@ -104,6 +126,7 @@ export async function updateUser(id: string, data: UpdateUserInput) {
     return await db.user.update({
       where: { id },
       data: await buildUpdateData(data, USER_SELF_FIELDS),
+      select: SAFE_USER_SELECT,
     });
   } catch (error) {
     console.error('Failed to update user:', error);
@@ -116,6 +139,7 @@ export async function adminUpdateUser(id: string, data: AdminUpdateUserInput) {
     return await db.user.update({
       where: { id },
       data: await buildUpdateData(data, ADMIN_FIELDS),
+      select: SAFE_USER_SELECT,
     });
   } catch (error) {
     console.error('Failed to update user (admin):', error);
@@ -133,10 +157,16 @@ export async function deleteUser(id: string) {
   }
 }
 
-export async function getUsers({ includeAdmins = false } = {}) {
+export type SafeUserListItem = Awaited<ReturnType<typeof getSafeUsers>>[number];
+
+export async function getSafeUsers({ includeAdmins = false } = {}) {
   try {
     const where = includeAdmins ? {} : { role: { not: UserRole.ADMIN } };
-    return await db.user.findMany({ where, orderBy: { name: 'asc' } });
+    return await db.user.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      select: SAFE_USER_SELECT,
+    });
   } catch (error) {
     console.error('Failed to fetch users:', error);
     return [];

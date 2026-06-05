@@ -6,7 +6,12 @@ import {
   getInterviewById,
   updateInterview as updateInterviewData,
 } from '@/data/interview';
-import { AuthzError, isManagerOrAdmin, requireSession } from '@/lib/authz';
+import {
+  AuthzError,
+  isManagerOrAdmin,
+  requireManagerOrAdmin,
+  requireSession,
+} from '@/lib/authz';
 import { db } from '@/lib/db';
 import { InterviewStatus } from '@/lib/generated/prisma/client';
 import {
@@ -52,7 +57,10 @@ async function authorizeInterviewMutation(interviewId: string) {
 // ---------- Actions ----------
 
 export async function createInterview(input: CreateInterviewInput) {
-  const user = await requireSession();
+  // Scheduling fans out emails to arbitrary user IDs (`interviewerIds`),
+  // so it stays manager/admin only. INTERVIEWER role still submits
+  // feedback via actions/feedback.ts.
+  const user = await requireManagerOrAdmin();
   const data = CreateInterviewSchema.parse(input);
 
   const interview = await createInterviewData({

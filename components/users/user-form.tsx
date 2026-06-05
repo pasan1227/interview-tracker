@@ -99,8 +99,13 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
     try {
       if (isEdit && user) {
         // Strip empty password on edit so the action treats it as "no change".
-        const { password, ...rest } = values;
-        await updateUser(user.id, password ? values : rest);
+        const { password, name, email, role } = values;
+        await updateUser(user.id, {
+          name,
+          email,
+          role,
+          ...(password ? { newPassword: password } : {}),
+        });
       } else {
         // The newUserSchema resolver guarantees password is set on create,
         // but the broader form-values type doesn't reflect that.
@@ -110,7 +115,9 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
       router.refresh();
     } catch (error) {
       console.error('Error submitting form:', error);
-      setError('Failed to save user. Please try again.');
+      const message =
+        error instanceof Error ? error.message : 'Failed to save user.';
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
