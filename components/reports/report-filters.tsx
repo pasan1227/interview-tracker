@@ -21,11 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useUrlFilters } from '@/hooks/use-url-filters';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, FilterIcon, XIcon } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+const KEYS = ['startDate', 'endDate', 'positionId', 'source'] as const;
+// Selects use 'All' as a sentinel value (Radix Select can't store '').
+const ALL = 'All';
 
 interface ReportFiltersProps {
   positions: { id: string; title: string }[];
@@ -43,104 +47,42 @@ export function ReportFilters({
   sources,
   activeFilters,
 }: ReportFiltersProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // Reports use a draft+apply pattern: users compose multiple changes locally,
+  // then click Apply to push them all to the URL at once.
+  const { push, isActive } = useUrlFilters({ keys: KEYS });
 
-  // Local state for date picker
   const [date, setDate] = useState<{
     from: Date | undefined;
     to: Date | undefined;
-  }>({
-    from: activeFilters.startDate,
-    to: activeFilters.endDate,
-  });
+  }>({ from: activeFilters.startDate, to: activeFilters.endDate });
+  const [positionId, setPositionId] = useState(activeFilters.positionId || ALL);
+  const [source, setSource] = useState(activeFilters.source || ALL);
 
-  // Local state for other filters
-  const [positionId, setPositionId] = useState(activeFilters.positionId || '');
-  const [source, setSource] = useState(activeFilters.source || '');
-
-  // Update local state when active filters change
+  // Re-sync local state when the URL changes externally (e.g. tab switch).
   useEffect(() => {
-    setDate({
-      from: activeFilters.startDate,
-      to: activeFilters.endDate,
-    });
-    setPositionId(activeFilters.positionId || '');
-    setSource(activeFilters.source || '');
+    setDate({ from: activeFilters.startDate, to: activeFilters.endDate });
+    setPositionId(activeFilters.positionId || ALL);
+    setSource(activeFilters.source || ALL);
   }, [activeFilters]);
 
-  // Check if any filters are active
-  const hasActiveFilters = !!(
-    activeFilters.startDate ||
-    activeFilters.endDate ||
-    activeFilters.positionId ||
-    activeFilters.source
-  );
+  const hasActiveFilters =
+    isActive ||
+    !!(activeFilters.startDate || activeFilters.endDate || activeFilters.positionId || activeFilters.source);
 
-  // Apply filters
   const applyFilters = () => {
-    // FIX: Create a new URLSearchParams object from the current searchParams
-    const params = new URLSearchParams(searchParams.toString());
-
-    // Update date range
-    if (date.from) {
-      params.set('startDate', format(date.from, 'yyyy-MM-dd'));
-    } else {
-      params.delete('startDate');
-    }
-
-    if (date.to) {
-      params.set('endDate', format(date.to, 'yyyy-MM-dd'));
-    } else {
-      params.delete('endDate');
-    }
-
-    // Update position
-    if (positionId) {
-      params.set('positionId', positionId);
-    } else {
-      params.delete('positionId');
-    }
-
-    // Update source
-    if (source) {
-      params.set('source', source);
-    } else {
-      params.delete('source');
-    }
-
-    // Preserve the current tab
-    const currentTab = searchParams.get('tab');
-    if (currentTab) {
-      params.set('tab', currentTab);
-    }
-
-    router.push(`${pathname}?${params.toString()}`);
+    push({
+      startDate: date.from ? format(date.from, 'yyyy-MM-dd') : null,
+      endDate: date.to ? format(date.to, 'yyyy-MM-dd') : null,
+      positionId: positionId === ALL ? null : positionId,
+      source: source === ALL ? null : source,
+    });
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setDate({ from: undefined, to: undefined });
-    setPositionId('');
-    setSource('');
-
-    // FIX: Create a new URLSearchParams object from the current searchParams
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('startDate');
-    params.delete('endDate');
-    params.delete('positionId');
-    params.delete('source');
-
-    // Preserve the current tab
-    const currentTab = searchParams.get('tab');
-    if (currentTab) {
-      params.set('tab', currentTab);
-    } else {
-      params.delete('tab');
-    }
-
-    router.push(`${pathname}?${params.toString()}`);
+    setPositionId(ALL);
+    setSource(ALL);
+    push({ startDate: null, endDate: null, positionId: null, source: null });
   };
 
   return (
@@ -193,9 +135,9 @@ export function ReportFilters({
                 <Calendar
                   mode='range'
                   selected={{ from: date.from, to: date.to }}
-                  onSelect={(range) => {
-                    setDate({ from: range?.from, to: range?.to });
-                  }}
+                  onSelect={(range) =>
+                    setDate({ from: range?.from, to: range?.to })
+                  }
                 />
               </PopoverContent>
             </Popover>
@@ -208,8 +150,7 @@ export function ReportFilters({
                 <SelectValue placeholder='All positions' />
               </SelectTrigger>
               <SelectContent>
-                {/* FIX: Use empty string for "All positions" value */}
-                <SelectItem value='All'>All positions</SelectItem>
+                <SelectItem value={ALL}>All positions</SelectItem>
                 {positions.map((position) => (
                   <SelectItem key={position.id} value={position.id}>
                     {position.title}
@@ -226,11 +167,10 @@ export function ReportFilters({
                 <SelectValue placeholder='All sources' />
               </SelectTrigger>
               <SelectContent>
-                {/* FIX: Use empty string for "All sources" value */}
-                <SelectItem value='All'>All sources</SelectItem>
-                {sources.map((source) => (
-                  <SelectItem key={source} value={source}>
-                    {source}
+                <SelectItem value={ALL}>All sources</SelectItem>
+                {sources.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
                   </SelectItem>
                 ))}
               </SelectContent>

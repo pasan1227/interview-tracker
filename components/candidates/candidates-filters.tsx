@@ -1,5 +1,3 @@
-// components/candidates/candidates-filters.tsx
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -12,68 +10,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePositions } from '@/hooks/use-positions';
+import { useUrlFilters } from '@/hooks/use-url-filters';
 import { CandidateStatus } from '@/lib/generated/prisma/browser';
 import { FilterIcon } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+
+const KEYS = ['status', 'position'] as const;
+const RESET = ['page'] as const;
 
 export function CandidatesFilters() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
+  const { get, push, clear, isActive, isPending } = useUrlFilters({
+    keys: KEYS,
+    resetKeys: RESET,
+  });
   const { positions, isLoading } = usePositions();
 
-  const currentStatus = searchParams.get('status') || '';
-  const currentPosition = searchParams.get('position') || '';
-
-  const handleStatusChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-
-    if (value) {
-      params.set('status', value);
-    } else {
-      params.delete('status');
-    }
-
-    // Reset to first page when filtering
-    params.delete('page');
-
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-
-  const handlePositionChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-
-    if (value) {
-      params.set('position', value);
-    } else {
-      params.delete('position');
-    }
-
-    // Reset to first page when filtering
-    params.delete('page');
-
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-
-  const handleClearFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('status');
-    params.delete('position');
-    params.delete('page');
-
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-
-  const isFiltered = currentStatus || currentPosition;
+  const currentStatus = get('status');
+  const currentPosition = get('position');
 
   return (
     <div className='flex items-center gap-2'>
@@ -82,14 +34,14 @@ export function CandidatesFilters() {
           <Button variant='outline' size='sm'>
             <FilterIcon className='mr-2 h-4 w-4' />
             Filters
-            {isFiltered && <span className='ml-1 text-xs'>(Active)</span>}
+            {isActive && <span className='ml-1 text-xs'>(Active)</span>}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-56'>
           <DropdownMenuLabel>Status</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={!currentStatus}
-            onCheckedChange={() => handleStatusChange('')}
+            onCheckedChange={() => push({ status: null })}
           >
             All Statuses
           </DropdownMenuCheckboxItem>
@@ -97,7 +49,7 @@ export function CandidatesFilters() {
             <DropdownMenuCheckboxItem
               key={status}
               checked={currentStatus === status}
-              onCheckedChange={() => handleStatusChange(status)}
+              onCheckedChange={() => push({ status })}
             >
               {status.replace(/_/g, ' ')}
             </DropdownMenuCheckboxItem>
@@ -108,7 +60,7 @@ export function CandidatesFilters() {
           <DropdownMenuLabel>Position</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={!currentPosition}
-            onCheckedChange={() => handlePositionChange('')}
+            onCheckedChange={() => push({ position: null })}
           >
             All Positions
           </DropdownMenuCheckboxItem>
@@ -121,14 +73,14 @@ export function CandidatesFilters() {
               <DropdownMenuCheckboxItem
                 key={position.id}
                 checked={currentPosition === position.id}
-                onCheckedChange={() => handlePositionChange(position.id)}
+                onCheckedChange={() => push({ position: position.id })}
               >
                 {position.title}
               </DropdownMenuCheckboxItem>
             ))
           )}
 
-          {isFiltered && (
+          {isActive && (
             <>
               <DropdownMenuSeparator />
               <div className='p-2'>
@@ -136,7 +88,7 @@ export function CandidatesFilters() {
                   variant='outline'
                   size='sm'
                   className='w-full'
-                  onClick={handleClearFilters}
+                  onClick={clear}
                   disabled={isPending}
                 >
                   Clear Filters
