@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getSettings } from '@/data/settings';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { GeneralSettingsForm } from '@/components/settings/general-settings-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -21,15 +22,14 @@ export default async function GeneralSettingsPage() {
   const settings = await getSettings();
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>General Settings</h1>
-        <p className='text-muted-foreground'>
-          Configure system-wide settings for the interview tracking platform
-        </p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Settings'
+        title='General'
+        description='Configure system-wide settings for the interview tracking platform.'
+      />
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <GeneralSettingsForm settings={settings} />
       </div>
     </div>

@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { CandidatesSearch } from '@/components/candidates/candidates-search';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { getPositions } from '@/data/position';
 import { PlusIcon } from 'lucide-react';
@@ -43,21 +44,20 @@ export default async function CandidatesPage({
   const positionOptions = positions.map((p) => ({ id: p.id, title: p.title }));
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold'>Candidates</h1>
-          <p className='text-muted-foreground'>
-            Manage and track candidates in your pipeline
-          </p>
-        </div>
-        <Button asChild>
-          <Link href='/dashboard/candidates/new'>
-            <PlusIcon className='mr-2 h-4 w-4' />
-            Add Candidate
-          </Link>
-        </Button>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Pipeline'
+        title='Candidates'
+        description='Manage and track candidates in your pipeline.'
+        action={
+          <Button asChild>
+            <Link href='/dashboard/candidates/new'>
+              <PlusIcon className='mr-2 h-4 w-4' />
+              Add candidate
+            </Link>
+          </Button>
+        }
+      />
 
       <div className='flex items-center justify-between space-x-4'>
         <CandidatesSearch />

@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/interviews/page.tsx
 
 import { auth } from '@/auth';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewsFilters } from '@/components/interviews/interviews-filters';
 import { InterviewsList } from '@/components/interviews/interviews-list';
 import { InterviewsSearch } from '@/components/interviews/interviews-search';
@@ -38,21 +39,20 @@ export default async function InterviewsPage({
   const date = awaitedParams.date || '';
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold'>Interviews</h1>
-          <p className='text-muted-foreground'>
-            Schedule and manage candidate interviews
-          </p>
-        </div>
-        <Button asChild>
-          <Link href='/dashboard/interviews/new'>
-            <PlusIcon className='mr-2 h-4 w-4' />
-            Schedule Interview
-          </Link>
-        </Button>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Schedule'
+        title='Interviews'
+        description='Schedule and manage candidate interviews.'
+        action={
+          <Button asChild>
+            <Link href='/dashboard/interviews/new'>
+              <PlusIcon className='mr-2 h-4 w-4' />
+              Schedule interview
+            </Link>
+          </Button>
+        }
+      />
 
       <div className='flex items-center justify-between space-x-4'>
         <InterviewsSearch />

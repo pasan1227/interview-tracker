@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { UserProfileForm } from '@/components/users/user-profile-form';
 import { getCurrentUser } from '@/lib/session';
 
@@ -19,13 +20,14 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>My Profile</h1>
-        <p className='text-muted-foreground'>Manage your account settings</p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Account'
+        title='My profile'
+        description='Manage your account settings.'
+      />
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         {/* @ts-expect-error Server Component */}
         <UserProfileForm user={user} />
       </div>

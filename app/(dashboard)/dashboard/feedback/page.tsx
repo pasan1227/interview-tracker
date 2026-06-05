@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/feedback/page.tsx
 
 import { auth } from '@/auth';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,13 +29,12 @@ export default async function FeedbackPage() {
   }
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-3xl font-bold'>My Feedback</h1>
-        <p className='text-muted-foreground'>
-          View all feedback you&apos;ve submitted for candidates
-        </p>
-      </div>
+    <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
+      <PageHeader
+        eyebrow='Reviews'
+        title='My feedback'
+        description="View all feedback you've submitted for candidates."
+      />
 
       <Suspense fallback={<Loading />}>
         <FeedbackList userId={session.user.id!} />
@@ -83,15 +83,25 @@ async function FeedbackList({ userId }: { userId: string }) {
               </TableCell>
               <TableCell>{feedback.interview.position.title}</TableCell>
               <TableCell>
-                <div className='flex items-center'>
+                <div
+                  className='flex items-center gap-0.5'
+                  role='img'
+                  aria-label={`${feedback.rating} out of 5`}
+                >
                   {Array.from({ length: 5 }).map((_, i) => (
                     <StarIcon
                       key={i}
-                      className={`h-4 w-4 ${
-                        i < feedback.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
-                      }`}
+                      aria-hidden
+                      className='h-4 w-4'
+                      strokeWidth={1.75}
+                      style={{
+                        color:
+                          i < feedback.rating
+                            ? 'var(--forest)'
+                            : 'var(--border)',
+                        fill:
+                          i < feedback.rating ? 'var(--forest)' : 'transparent',
+                      }}
                     />
                   ))}
                 </div>

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
 import { DashboardSummary } from '@/components/dashboard/dashboard-summary';
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts-lazy';
+import { PageHeader } from '@/components/dashboard/page-header';
 import {
   getUpcomingInterviews,
   getRecentCandidates,
@@ -30,27 +31,11 @@ export default async function DashboardPage() {
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-8'>
-      <header className='flex flex-col gap-2'>
-        <div
-          className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em]'
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <span
-            className='inline-block size-1.5 rounded-full'
-            style={{ backgroundColor: 'var(--forest)' }}
-          />
-          Overview
-        </div>
-        <h1 className='text-[clamp(1.75rem,3vw,2.25rem)] font-medium leading-[1.1] tracking-[-0.03em]'>
-          Welcome back, {session.user.name?.split(' ')[0] ?? 'there'}.
-        </h1>
-        <p
-          className='max-w-[60ch] text-[15px] leading-[1.55]'
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          Here&apos;s where your hiring stands this week.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow='Overview'
+        title={`Welcome back, ${session.user.name?.split(' ')[0] ?? 'there'}.`}
+        description="Here's where your hiring stands this week."
+      />
 
       <Suspense fallback={<div className='text-sm text-muted-foreground'>Loading stats…</div>}>
         <DashboardSummary stats={stats} />
