@@ -5,6 +5,7 @@ import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { CandidatesSearch } from '@/components/candidates/candidates-search';
 import { Button } from '@/components/ui/button';
+import { getPositions } from '@/data/position';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -29,12 +30,17 @@ export default async function CandidatesPage({
     redirect('/login');
   }
 
-  const awaitedParams = await searchParams;
+  const [awaitedParams, positions] = await Promise.all([
+    searchParams,
+    getPositions({ activeOnly: true }),
+  ]);
 
   const page = Number(awaitedParams.page) || 1;
   const search = awaitedParams.search || '';
   const status = awaitedParams.status || '';
   const position = awaitedParams.position || '';
+
+  const positionOptions = positions.map((p) => ({ id: p.id, title: p.title }));
 
   return (
     <div className='space-y-6'>
@@ -55,7 +61,7 @@ export default async function CandidatesPage({
 
       <div className='flex items-center justify-between space-x-4'>
         <CandidatesSearch />
-        <CandidatesFilters />
+        <CandidatesFilters positions={positionOptions} />
       </div>
 
       <Suspense fallback={<Loading />}>
