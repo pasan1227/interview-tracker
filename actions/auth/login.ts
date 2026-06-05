@@ -8,6 +8,7 @@ import { sendTwoFactorTokenEmail, sendVerificationEmail } from '@/lib/mail';
 import { rateLimit } from '@/lib/rate-limit';
 import { LoginSchema } from '@/lib/validations/auth';
 import { safeCallbackUrl } from '@/routes';
+import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { AuthError } from 'next-auth';
 import { headers } from 'next/headers';
@@ -34,8 +35,20 @@ export const login = async (
   }
 
   const existingUser = await getUserByEmail(email);
-  // Same error for "no user", "no password (OAuth)", and "wrong password" — no enumeration.
+  // Same error for "no user", "no password (OAuth)", and "wrong password"
+  // — no enumeration.
   if (!existingUser?.email || !existingUser.password) {
+    return { error: GENERIC_INVALID };
+  }
+
+  // Verify the password BEFORE branching on emailVerified. Otherwise the
+  // {verifyEmail} response + automatic verification-email resend acts
+  // as a registered-account oracle, and lets anyone with a candidate
+  // email burn through the per-email rate limit on the verification
+  // sender. signIn() below does its own bcrypt.compare via the
+  // credentials provider, so this is one extra hash on the unhappy path.
+  const passwordMatch = await bcrypt.compare(password, existingUser.password);
+  if (!passwordMatch) {
     return { error: GENERIC_INVALID };
   }
 

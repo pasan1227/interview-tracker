@@ -20,7 +20,10 @@ export default async function EditInterviewPage({
   // Interview lookup + form bootstrap run in parallel. Gate runs after
   // we have the interview record.
   const [interview, { candidates, positions, interviewers, stagesByPosition }] =
-    await Promise.all([getInterviewForForm(id), getInterviewFormOptions()]);
+    await Promise.all([
+      getInterviewForForm(id),
+      getInterviewFormOptions({ viewerRole: session.role }),
+    ]);
 
   if (!interview) {
     notFound();

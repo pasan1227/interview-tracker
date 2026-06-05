@@ -16,11 +16,11 @@ export default async function NewInterviewPage({
 }: NewInterviewPageProps) {
   // Matches createInterview's requireManagerOrAdmin gate so we don't
   // serve a form that submits to an action that will reject.
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const session = await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { candidateId } = await searchParams;
 
   const { candidates, positions, interviewers, stagesByPosition } =
-    await getInterviewFormOptions();
+    await getInterviewFormOptions({ viewerRole: session.role });
 
   return (
     <div className='space-y-6'>
