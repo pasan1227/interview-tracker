@@ -48,6 +48,8 @@ const profileSchema = z
     }
   );
 
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
 interface UserProfileFormProps {
   user: User;
 }
@@ -58,30 +60,24 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Default values for the form
-  const defaultValues = {
+  const defaultValues: ProfileFormValues = {
     name: user.name || '',
     password: '',
     confirmPassword: '',
   };
 
-  const form = useForm({
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues,
   });
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: ProfileFormValues) {
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
 
-    // Remove confirm password before sending to server
-    const { confirmPassword, ...updateData } = values;
-
-    // If password is empty, remove it from the payload
-    if (!updateData.password) {
-      delete updateData.password;
-    }
+    const { confirmPassword: _confirm, password, name } = values;
+    const updateData = password ? { name, password } : { name };
 
     try {
       await updateUser(user.id, updateData);

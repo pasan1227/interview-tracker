@@ -55,6 +55,11 @@ const updateUserSchema = z.object({
     }),
 });
 
+// Use the broader (password-optional) shape so the same Resolver type works
+// in both create and edit modes. The required-password rule on create is
+// enforced at runtime by zodResolver(newUserSchema).
+type UserFormValues = z.infer<typeof updateUserSchema>;
+
 interface UserFormProps {
   user?: User | null;
   isEdit?: boolean;
@@ -65,43 +70,36 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use the appropriate schema based on whether we're editing or creating
   const schema = isEdit ? updateUserSchema : newUserSchema;
 
-  // Default values for the form
-  const defaultValues: any = {
+  const defaultValues: UserFormValues = {
     name: user?.name || '',
     email: user?.email || '',
     role: user?.role || UserRole.USER,
     password: '',
   };
 
-  const form = useForm({
+  const form = useForm<UserFormValues>({
     resolver: zodResolver(schema),
     defaultValues,
   });
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: UserFormValues) {
     setIsSubmitting(true);
     setError(null);
 
     try {
       if (isEdit && user) {
-        // If password is empty, remove it from the payload
-        if (!values.password) {
-          delete values.password;
-        }
-
-        // Update existing user
-        await updateUser(user.id, values);
-        router.push('/dashboard/settings/users');
-        router.refresh();
+        // Strip empty password on edit so the action treats it as "no change".
+        const { password, ...rest } = values;
+        await updateUser(user.id, password ? values : rest);
       } else {
-        // Create new user
-        await createUser(values);
-        router.push('/dashboard/settings/users');
-        router.refresh();
+        // The newUserSchema resolver guarantees password is set on create,
+        // but the broader form-values type doesn't reflect that.
+        await createUser({ ...values, password: values.password! });
       }
+      router.push('/dashboard/settings/users');
+      router.refresh();
     } catch (error) {
       console.error('Error submitting form:', error);
       setError('Failed to save user. Please try again.');

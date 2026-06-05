@@ -34,7 +34,7 @@ export function InterviewStatusAction({
   const router = useRouter();
 
   const handleStatusChange = async (
-    action: (formData: FormData) => Promise<any>
+    action: (formData: FormData) => Promise<{ success: boolean }>
   ) => {
     setIsLoading(true);
     try {

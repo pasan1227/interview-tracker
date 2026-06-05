@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { updateSettings } from '@/actions/settings';
+import { Settings } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 // Form schema
@@ -45,7 +46,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 interface GeneralSettingsFormProps {
-  settings: any;
+  settings: Settings;
 }
 
 export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
