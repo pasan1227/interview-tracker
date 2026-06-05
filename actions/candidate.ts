@@ -32,6 +32,7 @@ export async function createCandidate(input: CreateCandidateInput) {
   }
 
   revalidatePath('/dashboard/candidates');
+  revalidatePath('/dashboard');
   return candidate;
 }
 
@@ -54,6 +55,7 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
 
   revalidatePath(`/dashboard/candidates/${id}`);
   revalidatePath('/dashboard/candidates');
+  revalidatePath('/dashboard');
   return candidate;
 }
 
@@ -64,6 +66,7 @@ export async function deleteCandidate(id: string) {
   await deleteCandidateData(id);
 
   revalidatePath('/dashboard/candidates');
+  revalidatePath('/dashboard');
   return true;
 }
 
@@ -89,6 +92,7 @@ export async function updateCandidateStatus(id: string, status: string) {
 
   revalidatePath(`/dashboard/candidates/${id}`);
   revalidatePath('/dashboard/candidates');
+  revalidatePath('/dashboard');
   return candidate;
 }
 
