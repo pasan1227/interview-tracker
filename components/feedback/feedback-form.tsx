@@ -7,7 +7,14 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Recommendation, Interview, Candidate, Position } from '@/lib/generated/prisma/browser';
+import {
+  Candidate,
+  Feedback,
+  Interview,
+  Position,
+  Recommendation,
+  SkillAssessment,
+} from '@/lib/generated/prisma/browser';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -52,8 +59,10 @@ const feedbackSchema = z.object({
 
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
 
+type FeedbackWithSkills = Feedback & { skillAssessments: SkillAssessment[] };
+
 interface FeedbackFormProps {
-  feedback?: any; // Add proper typing if needed
+  feedback?: FeedbackWithSkills | null;
   interview: Interview & {
     candidate: Candidate;
     position: Position;
