@@ -8,15 +8,12 @@ import { StageForm } from '@/components/workflows/stage-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditStagePageProps {
-  params: Promise<{
-    workflowId: string;
-    stageId: string;
-  }>;
+  params: Promise<{ id: string; stageId: string }>;
 }
 
 export default async function EditStagePage({ params }: EditStagePageProps) {
   const session = await auth();
-  const { workflowId, stageId } = await params;
+  const { id: workflowId, stageId } = await params;
 
   await requirePageRole(UserRole.ADMIN);
 

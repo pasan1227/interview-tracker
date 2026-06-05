@@ -7,14 +7,12 @@ import { getWorkflowById } from '@/data/workflow';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { notFound } from 'next/navigation';
 interface NewStagePageProps {
-  params: Promise<{
-    workflowId: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function NewStagePage({ params }: NewStagePageProps) {
   const session = await auth();
-  const { workflowId } = await params;
+  const { id: workflowId } = await params;
 
   await requirePageRole(UserRole.ADMIN);
 

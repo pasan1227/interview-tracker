@@ -11,14 +11,12 @@ import { getWorkflowById } from '@/data/workflow';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface WorkflowPageProps {
-  params: Promise<{
-    workflowId: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function WorkflowPage({ params }: WorkflowPageProps) {
   await requirePageRole(UserRole.ADMIN);
-  const { workflowId } = await params;
+  const { id: workflowId } = await params;
 
   const workflow = await getWorkflowById(workflowId);
 

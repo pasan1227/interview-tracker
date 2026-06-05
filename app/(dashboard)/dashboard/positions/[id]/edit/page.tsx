@@ -6,16 +6,14 @@ import { PositionForm } from '@/components/positions/position-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditPositionPageProps {
-  params: Promise<{
-    positionId: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditPositionPage({
   params,
 }: EditPositionPageProps) {
   const session = await auth();
-  const { positionId } = await params;
+  const { id: positionId } = await params;
 
   await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
 

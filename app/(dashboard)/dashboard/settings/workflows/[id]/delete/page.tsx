@@ -8,14 +8,14 @@ import { WorkflowDeleteForm } from '@/components/workflows/workflow-delete-form'
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteWorkflowPageProps {
-  params: Promise<{ workflowId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function DeleteWorkflowPageRoute({
   params,
 }: DeleteWorkflowPageProps) {
   await requirePageRole(UserRole.ADMIN);
-  const { workflowId } = await params;
+  const { id: workflowId } = await params;
 
   const workflow = await getWorkflowById(workflowId);
   if (!workflow) notFound();

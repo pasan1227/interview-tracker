@@ -8,16 +8,14 @@ import { PositionDeleteForm } from '@/components/positions/position-delete-form'
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeletePositionPageProps {
-  params: Promise<{
-    positionId: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function DeletePositionPageRoute({
   params,
 }: DeletePositionPageProps) {
   await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
-  const { positionId } = await params;
+  const { id: positionId } = await params;
 
   const [position, candidateCount, interviewCount] = await Promise.all([
     db.position.findUnique({

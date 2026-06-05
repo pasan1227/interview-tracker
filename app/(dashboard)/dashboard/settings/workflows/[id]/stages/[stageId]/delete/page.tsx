@@ -8,17 +8,14 @@ import { StageDeleteForm } from '@/components/workflows/stage-delete-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteStagePageProps {
-  params: Promise<{
-    workflowId: string;
-    stageId: string;
-  }>;
+  params: Promise<{ id: string; stageId: string }>;
 }
 
 export default async function DeleteStagePageRoute({
   params,
 }: DeleteStagePageProps) {
   await requirePageRole(UserRole.ADMIN);
-  const { workflowId, stageId } = await params;
+  const { id: workflowId, stageId } = await params;
 
   const stage = await db.stage.findUnique({
     where: { id: stageId, workflowId },

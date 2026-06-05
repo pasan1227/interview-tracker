@@ -8,16 +8,14 @@ import { WorkflowForm } from '@/components/workflows/workflow-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditWorkflowPageProps {
-  params: Promise<{
-    workflowId: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditWorkflowPage({
   params,
 }: EditWorkflowPageProps) {
   const session = await auth();
-  const { workflowId } = await params;
+  const { id: workflowId } = await params;
 
 
   await requirePageRole(UserRole.ADMIN);
