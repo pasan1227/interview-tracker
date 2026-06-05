@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function NewWorkflowPage() {
   const session = await auth();

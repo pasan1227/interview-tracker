@@ -13,7 +13,7 @@ import {
   deleteStage as deleteStageData,
   reorderStages as reorderStagesData,
 } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { db } from '@/lib/db';
 
 export async function createWorkflow(data: any) {

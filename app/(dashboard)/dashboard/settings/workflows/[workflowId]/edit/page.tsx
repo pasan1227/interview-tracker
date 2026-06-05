@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getWorkflowById } from '@/data/workflow';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditWorkflowPageProps {
   params: Promise<{

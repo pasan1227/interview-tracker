@@ -96,8 +96,9 @@ export function DashboardCharts({ stats }: DashboardChartsProps) {
                   }) => {
                     const RADIAN = Math.PI / 180;
                     const radius = outerRadius + 25;
-                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    const angle = midAngle ?? 0;
+                    const x = cx + radius * Math.cos(-angle * RADIAN);
+                    const y = cy + radius * Math.sin(-angle * RADIAN);
 
                     return (
                       <text
@@ -143,7 +144,7 @@ export function DashboardCharts({ stats }: DashboardChartsProps) {
                   fill='#8884d8'
                   dataKey='value'
                   label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
+                    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                 >
                   {sourceData.map((entry, index) => (

@@ -9,7 +9,7 @@ import {
   deleteUser as deleteUserData,
   createUser as createUserData,
 } from '@/data/user';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export async function createUser(data: any) {
   const session = await auth();

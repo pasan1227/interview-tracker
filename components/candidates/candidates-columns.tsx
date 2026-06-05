@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontalIcon, ExternalLinkIcon } from 'lucide-react';
-import { Candidate, CandidateStatus, Position } from '@/lib/generated/prisma';
+import { Candidate, CandidateStatus, Position } from '@/lib/generated/prisma/browser';
 
 // Extended type for candidates with related data
 export type CandidateWithRelations = Candidate & {

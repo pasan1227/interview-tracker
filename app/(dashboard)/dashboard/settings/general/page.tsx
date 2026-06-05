@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getSettings } from '@/data/settings';
 import { GeneralSettingsForm } from '@/components/settings/general-settings-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function GeneralSettingsPage() {
   const session = await auth();

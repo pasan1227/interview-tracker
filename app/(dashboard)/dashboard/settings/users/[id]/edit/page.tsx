@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getUserById } from '@/data/user';
 import { UserForm } from '@/components/users/user-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditUserPageProps {
   params: Promise<{

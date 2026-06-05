@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import bcrypt from 'bcryptjs';
 
 export async function getUserByEmail(email: string) {

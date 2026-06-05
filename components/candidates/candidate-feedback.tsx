@@ -3,7 +3,7 @@
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { StarIcon } from 'lucide-react';
-import { Feedback, Recommendation, User } from '@/lib/generated/prisma';
+import { Feedback, Recommendation, User } from '@/lib/generated/prisma/browser';
 
 interface CandidateFeedbackProps {
   feedbacks: (Feedback & {

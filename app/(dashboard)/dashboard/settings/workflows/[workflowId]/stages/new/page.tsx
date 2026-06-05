@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { StageForm } from '@/components/workflows/stage-form';
 import { getWorkflowById } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { notFound, redirect } from 'next/navigation';
 interface NewStagePageProps {
   params: Promise<{

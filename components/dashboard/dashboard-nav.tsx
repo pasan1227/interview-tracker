@@ -14,7 +14,7 @@ import {
   BarChart,
   Send,
 } from 'lucide-react';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DashboardNavProps {
   role?: UserRole;

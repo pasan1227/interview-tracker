@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { updateSettings as updateSettingsData } from '@/data/settings';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export async function updateSettings(data: any) {
   const session = await auth();

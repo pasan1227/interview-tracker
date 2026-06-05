@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { UserForm } from '@/components/users/user-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function NewUserPage() {
   const session = await auth();

@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { StageDeleteForm } from '@/components/workflows/stage-delete-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteStagePageProps {
   params: Promise<{

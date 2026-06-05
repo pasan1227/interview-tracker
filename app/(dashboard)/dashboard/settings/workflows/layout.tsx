@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/settings/workflows/layout.tsx
 
 import { auth } from '@/auth';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { redirect } from 'next/navigation';
 
 export default async function WorkflowsLayout({

@@ -5,7 +5,7 @@ import {
   CandidateStatus,
   InterviewStatus,
   Recommendation,
-} from '@/lib/generated/prisma';
+} from '@/lib/generated/prisma/browser';
 import { format, subMonths } from 'date-fns';
 
 export interface ReportFilters {

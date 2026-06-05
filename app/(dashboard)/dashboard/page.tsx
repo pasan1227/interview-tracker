@@ -11,7 +11,7 @@ import {
   getDashboardStats,
 } from '@/data/dashboard';
 import { Suspense } from 'react';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function DashboardPage() {
   const session = await auth();

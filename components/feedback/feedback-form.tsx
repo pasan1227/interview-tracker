@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Recommendation, Interview, Candidate, Position } from '@/lib/generated/prisma';
+import { Recommendation, Interview, Candidate, Position } from '@/lib/generated/prisma/browser';
 import { Button } from '@/components/ui/button';
 import {
   Form,

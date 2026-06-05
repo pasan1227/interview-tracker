@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 import { getWorkflowById } from '@/data/workflow';
 import { Button } from '@/components/ui/button';
 import { WorkflowDeleteForm } from '@/components/workflows/workflow-delete-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteWorkflowPageProps {
   params: Promise<{

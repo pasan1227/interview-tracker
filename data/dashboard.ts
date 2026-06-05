@@ -1,7 +1,7 @@
 // lib/data/dashboard.ts
 
 import { db } from '@/lib/db';
-import { CandidateStatus, InterviewStatus } from '@/lib/generated/prisma';
+import { CandidateStatus, InterviewStatus } from '@/lib/generated/prisma/browser';
 import { addDays, subDays, subMonths } from 'date-fns';
 
 export interface DashboardStats {

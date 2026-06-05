@@ -23,7 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createWorkflow, updateWorkflow } from '@/actions/workflow';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { Workflow } from '@/lib/generated/prisma';
+import { Workflow } from '@/lib/generated/prisma/browser';
 
 // Form schema
 const workflowSchema = z.object({

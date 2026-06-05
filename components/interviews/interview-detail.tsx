@@ -13,7 +13,7 @@ import {
   Position,
   Stage,
   User,
-} from '@/lib/generated/prisma';
+} from '@/lib/generated/prisma/browser';
 import { format } from 'date-fns';
 import {
   BriefcaseIcon,

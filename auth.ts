@@ -6,7 +6,7 @@ import NextAuth from 'next-auth';
 import { getAccountByUserId } from './data/account';
 import { getTwoFactorConfirmationByUserId } from './data/two-factor-confirmation';
 import { getUserById, getUserByEmail } from './data/user';
-import { UserRole } from './lib/generated/prisma';
+import { UserRole } from './lib/generated/prisma/client';
 
 export const {
   handlers: { GET, POST },

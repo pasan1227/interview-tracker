@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { InterviewStatus, InterviewType } from "@/lib/generated/prisma";
+import { InterviewStatus, InterviewType } from "@/lib/generated/prisma/browser";
 import { FilterIcon, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -241,7 +241,6 @@ export function InterviewsFilters() {
             selected={dateRange}
             onSelect={setDateRange}
             numberOfMonths={2}
-            initialFocus
           />
           <div className="border-t p-3 flex justify-end space-x-2">
             <Button

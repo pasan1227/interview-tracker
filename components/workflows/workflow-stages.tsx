@@ -32,7 +32,7 @@ import { GripVertical, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Stage, Workflow } from '@/lib/generated/prisma';
+import { Stage, Workflow } from '@/lib/generated/prisma/browser';
 
 interface WorkflowWithStages extends Workflow {
   stages: Stage[];

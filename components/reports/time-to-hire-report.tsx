@@ -131,7 +131,7 @@ export function TimeToHireReport({ filters }: TimeToHireReportProps) {
                   <LabelList
                     dataKey='avgDays'
                     position='right'
-                    formatter={(value: number) => `${value} days`}
+                    formatter={(value) => `${value} days`}
                   />
                 </Bar>
               </BarChart>

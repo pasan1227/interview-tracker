@@ -98,7 +98,7 @@ export function CandidateStatusReport({ filters }: CandidateStatusReportProps) {
                   nameKey='label'
                   label={({ name, value, percent }) =>
                     value > 0
-                      ? `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
+                      ? `${name}: ${value} (${((percent ?? 0) * 100).toFixed(0)}%)`
                       : ''
                   }
                   labelLine={false}

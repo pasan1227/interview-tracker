@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { PositionForm } from '@/components/positions/position-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditPositionPageProps {
   params: Promise<{

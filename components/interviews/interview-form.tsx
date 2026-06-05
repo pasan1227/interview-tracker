@@ -35,7 +35,7 @@ import {
   InterviewStatus,
   InterviewType,
   User,
-} from '@/lib/generated/prisma';
+} from '@/lib/generated/prisma/browser';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ReloadIcon } from '@radix-ui/react-icons';
@@ -389,7 +389,6 @@ export function InterviewForm({
                           field.onChange(newDate);
                         }
                       }}
-                      initialFocus
                     />
                     <div className='border-t p-3'>
                       <div className='flex justify-between items-center'>
@@ -455,7 +454,6 @@ export function InterviewForm({
                           field.onChange(newDate);
                         }
                       }}
-                      initialFocus
                     />
                     <div className='border-t p-3'>
                       <div className='flex justify-between items-center'>

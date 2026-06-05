@@ -1,7 +1,7 @@
 // lib/data/interview.ts
 
 import { db } from '@/lib/db';
-import { InterviewStatus, InterviewType, Prisma } from '@/lib/generated/prisma';
+import { InterviewStatus, InterviewType, Prisma } from '@/lib/generated/prisma/browser';
 
 interface GetInterviewsParams {
   page?: number;

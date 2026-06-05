@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createStage, updateStage } from '@/actions/workflow';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { Stage } from '@/lib/generated/prisma';
+import { Stage } from '@/lib/generated/prisma/browser';
 
 // Form schema
 const stageSchema = z.object({

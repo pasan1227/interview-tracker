@@ -9,7 +9,7 @@ import {
   updatePosition as updatePositionData,
   deletePosition as deletePositionData,
 } from '@/data/position';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export async function createPosition(data: any) {
   const session = await auth();

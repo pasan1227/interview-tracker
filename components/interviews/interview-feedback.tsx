@@ -1,6 +1,6 @@
 // components/interviews/interview-feedback.tsx
 
-import { Feedback, Recommendation, User } from '@/lib/generated/prisma';
+import { Feedback, Recommendation, User } from '@/lib/generated/prisma/browser';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

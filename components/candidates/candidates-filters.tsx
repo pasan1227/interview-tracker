@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePositions } from '@/hooks/use-positions';
-import { CandidateStatus } from '@/lib/generated/prisma';
+import { CandidateStatus } from '@/lib/generated/prisma/browser';
 import { FilterIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';

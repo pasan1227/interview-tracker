@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Candidate, CandidateStatus } from '@/lib/generated/prisma';
+import { Candidate, CandidateStatus } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

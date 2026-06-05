@@ -30,7 +30,7 @@ import { usePositions } from '@/hooks/use-positions';
 import { createCandidate, updateCandidate } from '@/actions/candidate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { Candidate, CandidateStatus } from '@/lib/generated/prisma';
+import { Candidate, CandidateStatus } from '@/lib/generated/prisma/browser';
 
 // Form schema
 const candidateSchema = z.object({

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusIcon } from 'lucide-react';
 import { addCandidateNote } from '@/actions/candidate';
-import { Note } from '@/lib/generated/prisma';
+import { Note } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 interface CandidateNotesProps {

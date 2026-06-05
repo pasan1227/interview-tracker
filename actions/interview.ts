@@ -7,7 +7,7 @@ import {
   getInterviewById,
   updateInterview as updateInterviewData,
 } from '@/data/interview';
-import { InterviewStatus } from '@/lib/generated/prisma';
+import { InterviewStatus } from '@/lib/generated/prisma/browser';
 import {
   sendFeedbackReminderEmail,
   sendInterviewScheduleEmail,

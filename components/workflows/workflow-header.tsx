@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { Workflow } from '@/lib/generated/prisma';
+import { Workflow } from '@/lib/generated/prisma/browser';
 
 interface WorkflowWithStages extends Workflow {
   stages: { id: string; name: string; order: number }[];

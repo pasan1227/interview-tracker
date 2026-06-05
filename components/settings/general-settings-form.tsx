@@ -35,7 +35,7 @@ const settingsSchema = z.object({
   companyLogo: z.string().optional().nullable(),
   emailNotifications: z.boolean(),
   feedbackReminders: z.boolean(),
-  defaultInterviewLength: z.coerce
+  defaultInterviewLength: z
     .number()
     .int()
     .min(15, 'Must be at least 15 minutes')

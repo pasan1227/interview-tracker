@@ -1,7 +1,7 @@
 // lib/data/candidate.ts
 
 import { db } from '@/lib/db';
-import { CandidateStatus, Prisma } from '@/lib/generated/prisma';
+import { CandidateStatus, Prisma } from '@/lib/generated/prisma/browser';
 
 interface GetCandidatesParams {
   page?: number;

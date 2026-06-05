@@ -196,7 +196,6 @@ export function ReportFilters({
                   onSelect={(range) => {
                     setDate({ from: range?.from, to: range?.to });
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>

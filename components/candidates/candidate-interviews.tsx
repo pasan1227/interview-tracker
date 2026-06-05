@@ -5,7 +5,7 @@ import { formatDateTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, ClockIcon, MapPinIcon, UsersIcon } from 'lucide-react';
-import { Interview, InterviewStatus, Stage, User } from '@/lib/generated/prisma';
+import { Interview, InterviewStatus, Stage, User } from '@/lib/generated/prisma/browser';
 
 interface CandidateInterviewsProps {
   interviews: (Interview & {

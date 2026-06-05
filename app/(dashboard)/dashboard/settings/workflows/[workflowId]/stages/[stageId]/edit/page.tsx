@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { StageForm } from '@/components/workflows/stage-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditStagePageProps {
   params: Promise<{

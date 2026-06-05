@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { PositionForm } from '@/components/positions/position-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { db } from '@/lib/db';
 
 export default async function NewPositionPage() {

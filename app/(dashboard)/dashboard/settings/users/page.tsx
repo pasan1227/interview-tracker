@@ -7,7 +7,7 @@ import { getUsers } from '@/data/user';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { UsersList } from '@/components/users/users-list';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function UsersPage() {
   const session = await auth();

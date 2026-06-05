@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { PositionsList } from '@/components/positions/positions-list';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function PositionsPage() {
   const session = await auth();

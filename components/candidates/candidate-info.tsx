@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Candidate, Position } from '@/lib/generated/prisma';
+import { Candidate, Position } from '@/lib/generated/prisma/browser';
 import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, MailIcon, PhoneIcon, TagIcon } from 'lucide-react';
 

@@ -18,7 +18,7 @@ import {
   CheckSquareIcon,
   SlidersHorizontalIcon,
 } from 'lucide-react';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 export default async function SettingsPage() {
   const session = await auth();

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Position } from '@/lib/generated/prisma';
+import { Position } from '@/lib/generated/prisma/browser';
 import { useEffect, useState } from 'react';
 
 export function usePositions() {

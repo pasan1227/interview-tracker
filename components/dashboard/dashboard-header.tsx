@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from '@/lib/generated/prisma';
+import { User } from '@/lib/generated/prisma/browser';
 
 interface DashboardHeaderProps {
   user: User;

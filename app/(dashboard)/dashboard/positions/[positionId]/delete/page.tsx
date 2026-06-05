@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { PositionDeleteForm } from '@/components/positions/position-delete-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeletePositionPageProps {
   params: Promise<{

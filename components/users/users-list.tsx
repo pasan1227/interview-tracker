@@ -3,7 +3,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, UserRole } from '@/lib/generated/prisma';
+import { User, UserRole } from '@/lib/generated/prisma/browser';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

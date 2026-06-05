@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 import { getUserById } from '@/data/user';
 import { Button } from '@/components/ui/button';
 import { UserDeleteForm } from '@/components/users/user-delete-form';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteUserPageProps {
   params: Promise<{

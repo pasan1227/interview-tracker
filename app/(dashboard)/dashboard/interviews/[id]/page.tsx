@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { InterviewDetail } from '@/components/interviews/interview-detail';
 import { InterviewStatusAction } from '@/components/interviews/interview-status-action';
 import { PencilIcon, TrashIcon, ClipboardIcon } from 'lucide-react';
-import { InterviewStatus } from '@/lib/generated/prisma';
+import { InterviewStatus } from '@/lib/generated/prisma/browser';
 
 interface InterviewDetailPageProps {
   params: Promise<{ id: string }>;

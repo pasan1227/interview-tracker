@@ -144,11 +144,12 @@ export function InterviewOutcomesReport({
                     outerRadius={100}
                     dataKey='count'
                     nameKey='label'
-                    label={({ name, percent }) =>
-                      percent > 0.05
-                        ? `${name} (${(percent * 100).toFixed(0)}%)`
-                        : ''
-                    }
+                    label={({ name, percent }) => {
+                      const p = percent ?? 0;
+                      return p > 0.05
+                        ? `${name} (${(p * 100).toFixed(0)}%)`
+                        : '';
+                    }}
                     labelLine={false}
                   >
                     {data.map((entry) => (

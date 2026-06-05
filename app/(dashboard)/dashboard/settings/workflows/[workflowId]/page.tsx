@@ -8,7 +8,7 @@ import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { WorkflowHeader } from '@/components/workflows/workflow-header';
 import { WorkflowStages } from '@/components/workflows/workflow-stages';
 import { getWorkflowById } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface WorkflowPageProps {
   params: Promise<{

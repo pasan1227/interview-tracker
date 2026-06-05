@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getFeedbacksByInterviewer } from '@/data/feedback';
-import { Recommendation } from '@/lib/generated/prisma';
+import { Recommendation } from '@/lib/generated/prisma/browser';
 import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, StarIcon } from 'lucide-react';
 import Link from 'next/link';

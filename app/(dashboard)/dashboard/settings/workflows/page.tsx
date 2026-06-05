@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { Button } from '@/components/ui/button';
 import { WorkflowsList } from '@/components/workflows/workflows-list';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
