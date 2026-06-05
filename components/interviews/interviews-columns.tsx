@@ -22,6 +22,7 @@ import {
   Stage,
   User,
 } from '@/lib/generated/prisma/browser';
+import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import {
@@ -133,16 +134,9 @@ export const InterviewColumns: ColumnDef<InterviewWithRelations>[] = [
     header: 'Status',
     cell: ({ row }) => {
       const status = row.original.status as InterviewStatus;
-      const statusConfig = {
-        [InterviewStatus.SCHEDULED]: { color: 'bg-blue-50 text-blue-600' },
-        [InterviewStatus.COMPLETED]: { color: 'bg-green-50 text-green-600' },
-        [InterviewStatus.CANCELED]: { color: 'bg-red-50 text-red-600' },
-        [InterviewStatus.NO_SHOW]: { color: 'bg-yellow-50 text-yellow-600' },
-      };
-
-      const { color } =
-        statusConfig[status] || statusConfig[InterviewStatus.SCHEDULED];
-
+      const color =
+        INTERVIEW_STATUS_BADGE[status] ??
+        INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
       return (
         <Badge variant='outline' className={`${color} border-0`}>
           {status.replace(/_/g, ' ')}

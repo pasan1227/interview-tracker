@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InterviewDetail } from '@/components/interviews/interview-detail';
 import { InterviewStatusAction } from '@/components/interviews/interview-status-action';
+import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { PencilIcon, TrashIcon, ClipboardIcon } from 'lucide-react';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
 
@@ -31,15 +32,9 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
-  const statusConfig = {
-    [InterviewStatus.SCHEDULED]: 'bg-blue-50 text-blue-600',
-    [InterviewStatus.COMPLETED]: 'bg-green-50 text-green-600',
-    [InterviewStatus.CANCELED]: 'bg-red-50 text-red-600',
-    [InterviewStatus.NO_SHOW]: 'bg-yellow-50 text-yellow-600',
-  };
-
   const statusClass =
-    statusConfig[interview.status] || statusConfig[InterviewStatus.SCHEDULED];
+    INTERVIEW_STATUS_BADGE[interview.status] ??
+    INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
 
   // Check if the current user is an interviewer for this interview
   const isInterviewer = interview.interviewers.some(

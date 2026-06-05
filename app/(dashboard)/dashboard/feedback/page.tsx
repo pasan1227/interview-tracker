@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getFeedbacksByInterviewer } from '@/data/feedback';
-import { Recommendation } from '@/lib/generated/prisma/browser';
+import { RECOMMENDATION_BADGE } from '@/lib/constants/status-styles';
 import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, StarIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -57,14 +57,6 @@ async function FeedbackList({ userId }: { userId: string }) {
     );
   }
 
-  const recommendationColors = {
-    [Recommendation.STRONG_HIRE]: 'bg-green-50 text-green-600',
-    [Recommendation.HIRE]: 'bg-green-50 text-green-600',
-    [Recommendation.NO_DECISION]: 'bg-gray-50 text-gray-600',
-    [Recommendation.NO_HIRE]: 'bg-red-50 text-red-600',
-    [Recommendation.STRONG_NO_HIRE]: 'bg-red-50 text-red-600',
-  };
-
   return (
     <div className='rounded-md border'>
       <Table>
@@ -107,7 +99,7 @@ async function FeedbackList({ userId }: { userId: string }) {
               <TableCell>
                 <Badge
                   variant='outline'
-                  className={`${recommendationColors[feedback.recommendation]} border-0`}
+                  className={`${RECOMMENDATION_BADGE[feedback.recommendation]} border-0`}
                 >
                   {feedback.recommendation.replace(/_/g, ' ')}
                 </Badge>

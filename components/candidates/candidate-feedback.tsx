@@ -2,8 +2,12 @@
 
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import {
+  RECOMMENDATION_BADGE,
+  RECOMMENDATION_LABEL,
+} from '@/lib/constants/status-styles';
 import { StarIcon } from 'lucide-react';
-import { Feedback, Recommendation, User } from '@/lib/generated/prisma/browser';
+import { Feedback, User } from '@/lib/generated/prisma/browser';
 
 interface CandidateFeedbackProps {
   feedbacks: (Feedback & {
@@ -29,41 +33,19 @@ export function CandidateFeedback({ feedbacks }: CandidateFeedbackProps) {
     );
   }
 
-  const recommendationConfig = {
-    [Recommendation.STRONG_HIRE]: {
-      color: 'bg-green-50 text-green-600',
-      label: 'Strong Hire',
-    },
-    [Recommendation.HIRE]: {
-      color: 'bg-green-50 text-green-600',
-      label: 'Hire',
-    },
-    [Recommendation.NO_DECISION]: {
-      color: 'bg-gray-50 text-gray-600',
-      label: 'No Decision',
-    },
-    [Recommendation.NO_HIRE]: {
-      color: 'bg-red-50 text-red-600',
-      label: 'No Hire',
-    },
-    [Recommendation.STRONG_NO_HIRE]: {
-      color: 'bg-red-50 text-red-600',
-      label: 'Strong No Hire',
-    },
-  };
-
   return (
     <div className='space-y-6'>
       {feedbacks.map((feedback) => {
-        const rec = recommendationConfig[feedback.recommendation];
+        const color = RECOMMENDATION_BADGE[feedback.recommendation];
+        const label = RECOMMENDATION_LABEL[feedback.recommendation];
 
         return (
           <div key={feedback.id} className='rounded-md border p-4'>
             <div className='flex items-center justify-between mb-3'>
               <div className='flex items-center gap-3'>
                 <h3 className='font-medium'>{feedback.interviewer.name}</h3>
-                <Badge variant='outline' className={`${rec.color} border-0`}>
-                  {rec.label}
+                <Badge variant='outline' className={`${color} border-0`}>
+                  {label}
                 </Badge>
               </div>
               <div className='text-sm text-muted-foreground'>
