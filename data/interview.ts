@@ -5,18 +5,31 @@ import {
   Prisma,
   UserRole,
 } from '@/lib/generated/prisma/browser';
+import {
+  buildPaginatedResult,
+  paginate,
+  type PaginatedQuery,
+  type PaginatedResult,
+} from '@/lib/pagination';
 import { SAFE_USER_SELECT } from './user';
 
-interface GetInterviewsParams {
-  page?: number;
-  limit?: number;
-  search?: string;
+interface GetInterviewsParams extends PaginatedQuery {
   status?: string;
   type?: string;
   dateFrom?: Date;
   dateTo?: Date;
   userId?: string;
 }
+
+type InterviewListItem = Prisma.InterviewGetPayload<{
+  include: {
+    candidate: true;
+    position: true;
+    interviewers: { select: { id: true; name: true; email: true; image: true } };
+    stage: true;
+    feedbacks: { select: { id: true; interviewerId: true } };
+  };
+}>;
 
 export async function getInterviews({
   page = 1,
@@ -27,11 +40,10 @@ export async function getInterviews({
   dateFrom,
   dateTo,
   userId,
-}: GetInterviewsParams) {
+}: GetInterviewsParams): Promise<PaginatedResult<InterviewListItem>> {
   try {
-    const skip = (page - 1) * limit;
+    const { skip, take, limit: actualLimit } = paginate({ page, limit });
 
-    // Build filter conditions
     const where: Prisma.InterviewWhereInput = {};
 
     if (search) {
@@ -54,70 +66,40 @@ export async function getInterviews({
 
     if (dateFrom || dateTo) {
       where.startTime = {};
-
-      if (dateFrom) {
-        where.startTime.gte = dateFrom;
-      }
-
-      if (dateTo) {
-        where.startTime.lte = dateTo;
-      }
+      if (dateFrom) where.startTime.gte = dateFrom;
+      if (dateTo) where.startTime.lte = dateTo;
     }
 
-    // If userId is provided, get interviews where the user is an interviewer
     if (userId) {
-      where.interviewers = {
-        some: {
-          id: userId,
-        },
-      };
+      where.interviewers = { some: { id: userId } };
     }
 
-    // Get total count for pagination
-    const totalInterviews = await db.interview.count({ where });
-
-    // Get interviews with related data
-    const interviews = await db.interview.findMany({
-      where,
-      include: {
-        candidate: true,
-        position: true,
-        interviewers: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+    const [total, items] = await Promise.all([
+      db.interview.count({ where }),
+      db.interview.findMany({
+        where,
+        include: {
+          candidate: true,
+          position: true,
+          interviewers: {
+            select: { id: true, name: true, email: true, image: true },
           },
+          stage: true,
+          feedbacks: { select: { id: true, interviewerId: true } },
         },
-        stage: true,
-        feedbacks: {
-          select: {
-            id: true,
-            interviewerId: true,
-          },
-        },
-      },
-      orderBy: {
-        startTime: 'asc',
-      },
-      skip,
-      take: limit,
-    });
+        orderBy: { startTime: 'asc' },
+        skip,
+        take,
+      }),
+    ]);
 
-    const totalPages = Math.ceil(totalInterviews / limit);
-
-    return {
-      interviews,
-      totalInterviews,
-      totalPages,
-    };
+    return buildPaginatedResult(items, total, actualLimit);
   } catch (error) {
     console.error('Failed to fetch interviews:', error);
     return {
-      interviews: [],
-      totalInterviews: 0,
-      totalPages: 0,
+      items: [],
+      total: 0,
+      totalPages: 1,
     };
   }
 }

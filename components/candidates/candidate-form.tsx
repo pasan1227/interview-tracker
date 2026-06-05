@@ -2,10 +2,10 @@
 
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useFormAction } from '@/hooks/use-form-action';
 import {
   CreateCandidateSchema,
   type CreateCandidateInput,
@@ -50,8 +50,6 @@ export function CandidateForm({
   isEdit = false,
 }: CandidateFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Default values for the form
   const defaultValues: Partial<CandidateFormValues> = {
@@ -71,33 +69,26 @@ export function CandidateForm({
     mode: 'onBlur',
   });
 
-  async function onSubmit(values: CandidateFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: CandidateFormValues) => {
       if (isEdit && candidate) {
-        // Update existing candidate
         await updateCandidate(candidate.id, values);
-        router.push(`/dashboard/candidates/${candidate.id}`);
-        router.refresh();
-      } else {
-        // Create new candidate
-        const newCandidate = await createCandidate(values);
-        router.push(`/dashboard/candidates/${newCandidate.id}`);
-        router.refresh();
+        return { id: candidate.id };
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('Failed to save candidate. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      return await createCandidate(values);
+    },
+    {
+      errorMessage: 'Failed to save candidate. Please try again.',
+      onSuccess: ({ id }) => {
+        router.push(`/dashboard/candidates/${id}`);
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

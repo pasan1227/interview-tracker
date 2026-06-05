@@ -15,7 +15,7 @@ export async function CandidatesList({
   status,
   position,
 }: CandidatesListProps) {
-  const { candidates, totalCandidates, totalPages } = await getCandidates({
+  const { items, total, totalPages } = await getCandidates({
     page,
     search,
     status,
@@ -26,8 +26,8 @@ export async function CandidatesList({
 
   return (
     <PaginatedDataTable
-      data={candidates}
-      total={totalCandidates}
+      data={items}
+      total={total}
       itemLabel={{ singular: 'candidate', plural: 'candidates' }}
       columns={CandidateColumns}
       page={page}

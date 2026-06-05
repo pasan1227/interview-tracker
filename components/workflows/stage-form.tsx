@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,8 +41,6 @@ export function StageForm({
   isEdit = false,
 }: StageFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Default values for the form
   const defaultValues: Partial<StageFormValues> = {
@@ -55,30 +53,26 @@ export function StageForm({
     defaultValues,
   });
 
-  async function onSubmit(values: StageFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: StageFormValues) => {
       if (isEdit && stage) {
         await updateStage(stage.id, values);
       } else {
         await createStage(workflowId, values);
       }
-
-      router.push(`/dashboard/settings/workflows/${workflowId}`);
-      router.refresh();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('Failed to save stage. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    },
+    {
+      errorMessage: 'Failed to save stage. Please try again.',
+      onSuccess: () => {
+        router.push(`/dashboard/settings/workflows/${workflowId}`);
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

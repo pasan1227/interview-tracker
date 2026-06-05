@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,8 +55,8 @@ interface UserProfileFormProps {
 
 export function UserProfileForm({ user }: Readonly<UserProfileFormProps>) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // useFormAction owns isSubmitting + error. success is form-specific
+  // (the hook doesn't manage success messages) so it stays local.
   const [success, setSuccess] = useState<string | null>(null);
 
   const form = useForm<ProfileFormValues>({
@@ -68,12 +69,8 @@ export function UserProfileForm({ user }: Readonly<UserProfileFormProps>) {
     },
   });
 
-  async function onSubmit(values: ProfileFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: ProfileFormValues) => {
       await updateUser(user.id, {
         name: values.name,
         ...(values.newPassword
@@ -83,27 +80,32 @@ export function UserProfileForm({ user }: Readonly<UserProfileFormProps>) {
             }
           : {}),
       });
-      form.reset({
-        name: values.name,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-      setSuccess('Profile updated successfully');
-      router.refresh();
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      const message =
-        err instanceof Error ? err.message : 'Failed to update profile.';
-      setError(message);
-    } finally {
-      setIsSubmitting(false);
+      return values;
+    },
+    {
+      errorMessage: 'Failed to update profile.',
+      onSuccess: (values) => {
+        form.reset({
+          name: values.name,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setSuccess('Profile updated successfully');
+        router.refresh();
+      },
     }
-  }
+  );
+
+  // Clear any stale success banner when a new submit kicks off.
+  const submitWithReset = async (values: ProfileFormValues) => {
+    setSuccess(null);
+    await submit(values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submitWithReset)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

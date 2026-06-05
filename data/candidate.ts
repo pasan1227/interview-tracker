@@ -1,14 +1,21 @@
 import { db } from '@/lib/db';
 import { CandidateStatus, Prisma } from '@/lib/generated/prisma/browser';
+import {
+  buildPaginatedResult,
+  paginate,
+  type PaginatedQuery,
+  type PaginatedResult,
+} from '@/lib/pagination';
 import { SAFE_USER_SELECT } from './user';
 
-interface GetCandidatesParams {
-  page?: number;
-  limit?: number;
-  search?: string;
+interface GetCandidatesParams extends PaginatedQuery {
   status?: string;
   position?: string;
 }
+
+type CandidateListItem = Prisma.CandidateGetPayload<{
+  include: { position: true };
+}>;
 
 export async function getCandidates({
   page = 1,
@@ -16,11 +23,10 @@ export async function getCandidates({
   search = '',
   status = '',
   position = '',
-}: GetCandidatesParams) {
+}: GetCandidatesParams): Promise<PaginatedResult<CandidateListItem>> {
   try {
-    const skip = (page - 1) * limit;
+    const { skip, take, limit: actualLimit } = paginate({ page, limit });
 
-    // Build filter conditions
     const where: Prisma.CandidateWhereInput = {};
 
     if (search) {
@@ -40,36 +46,21 @@ export async function getCandidates({
       where.positionId = position;
     }
 
-    // Get total count for pagination
-    const totalCandidates = await db.candidate.count({ where });
+    const [total, items] = await Promise.all([
+      db.candidate.count({ where }),
+      db.candidate.findMany({
+        where,
+        include: { position: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
 
-    // Get candidates with related data
-    const candidates = await db.candidate.findMany({
-      where,
-      include: {
-        position: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    });
-
-    const totalPages = Math.ceil(totalCandidates / limit);
-
-    return {
-      candidates,
-      totalCandidates,
-      totalPages,
-    };
+    return buildPaginatedResult(items, total, actualLimit);
   } catch (error) {
     console.error('Failed to fetch candidates:', error);
-    return {
-      candidates: [],
-      totalCandidates: 0,
-      totalPages: 0,
-    };
+    return { items: [], total: 0, totalPages: 1 };
   }
 }
 

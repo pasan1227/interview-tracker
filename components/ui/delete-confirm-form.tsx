@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { TrashIcon } from 'lucide-react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -29,8 +30,19 @@ export function DeleteConfirmForm({
 }: DeleteConfirmFormProps) {
   const router = useRouter();
   const [confirmation, setConfirmation] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { submit, isSubmitting, error, setError } = useFormAction(
+    async () => {
+      await onDelete();
+    },
+    {
+      errorMessage: `Failed to delete ${errorLabel}. Please try again.`,
+      onSuccess: () => {
+        router.push(redirectTo);
+        router.refresh();
+      },
+    }
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,17 +50,7 @@ export function DeleteConfirmForm({
       setError(`Please type '${CONFIRM_WORD}' to confirm`);
       return;
     }
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await onDelete();
-      router.push(redirectTo);
-      router.refresh();
-    } catch (err) {
-      console.error(`Failed to delete ${errorLabel}:`, err);
-      setError(`Failed to delete ${errorLabel}. Please try again.`);
-      setIsSubmitting(false);
-    }
+    await submit(undefined);
   }
 
   return (

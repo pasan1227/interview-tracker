@@ -37,7 +37,8 @@ import {
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { addHours, setHours, setMinutes } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useForm } from 'react-hook-form';
 import { useStagesForPosition } from './use-stages-for-position';
 
@@ -70,8 +71,6 @@ export function InterviewForm({
   isEdit = false,
 }: InterviewFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<InterviewFormValues>({
     resolver: zodResolver(CreateInterviewSchema),
@@ -98,29 +97,26 @@ export function InterviewForm({
     }
   }, [candidateId, candidates, form, isEdit]);
 
-  async function onSubmit(values: InterviewFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: InterviewFormValues) => {
       if (isEdit && interview) {
         await updateInterview(interview.id, values);
-        router.push(`/dashboard/interviews/${interview.id}`);
-      } else {
-        const created = await createInterview(values);
-        router.push(`/dashboard/interviews/${created.id}`);
+        return { id: interview.id };
       }
-      router.refresh();
-    } catch (err) {
-      console.error('Error submitting form:', err);
-      setError('Failed to save interview. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      return await createInterview(values);
+    },
+    {
+      errorMessage: 'Failed to save interview. Please try again.',
+      onSuccess: ({ id }) => {
+        router.push(`/dashboard/interviews/${id}`);
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

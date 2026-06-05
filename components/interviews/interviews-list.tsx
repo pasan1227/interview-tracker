@@ -20,7 +20,7 @@ export async function InterviewsList({
 }: InterviewsListProps) {
   const { dateFrom, dateTo } = parseDateFilter(date);
 
-  const { interviews, totalInterviews, totalPages } = await getInterviews({
+  const { items, total, totalPages } = await getInterviews({
     page,
     search,
     status,
@@ -33,8 +33,8 @@ export async function InterviewsList({
 
   return (
     <PaginatedDataTable
-      data={interviews}
-      total={totalInterviews}
+      data={items}
+      total={total}
       itemLabel={{ singular: 'interview', plural: 'interviews' }}
       columns={InterviewColumns}
       page={page}

@@ -2,7 +2,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,8 +49,6 @@ export function PositionForm({
   isEdit = false,
 }: PositionFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Find default workflow
   const defaultWorkflow = workflows.find((w) => w.isDefault);
@@ -74,33 +73,26 @@ export function PositionForm({
     }
   }, [defaultWorkflow, form, position?.workflowId, isEdit]);
 
-  async function onSubmit(values: PositionFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: PositionFormValues) => {
       if (isEdit && position) {
-        // Update existing position
         await updatePosition(position.id, values);
-        router.push(`/dashboard/positions`);
-        router.refresh();
       } else {
-        // Create new position
         await createPosition(values);
-        router.push(`/dashboard/positions`);
-        router.refresh();
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('Failed to save position. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    },
+    {
+      errorMessage: 'Failed to save position. Please try again.',
+      onSuccess: () => {
+        router.push('/dashboard/positions');
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,8 +75,6 @@ interface UserFormProps {
 
 export function UserForm({ user, isEdit = false }: UserFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const schema = isEdit ? updateUserSchema : newUserSchema;
 
@@ -92,11 +90,8 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
     defaultValues,
   });
 
-  async function onSubmit(values: UserFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: UserFormValues) => {
       if (isEdit && user) {
         // Strip empty password on edit so the action treats it as "no change".
         const { password, name, email, role } = values;
@@ -107,25 +102,22 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
           ...(password ? { newPassword: password } : {}),
         });
       } else {
-        // The newUserSchema resolver guarantees password is set on create,
-        // but the broader form-values type doesn't reflect that.
+        // newUserSchema's resolver guarantees password is set on create.
         await createUser({ ...values, password: values.password! });
       }
-      router.push('/dashboard/settings/users');
-      router.refresh();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      const message =
-        error instanceof Error ? error.message : 'Failed to save user.';
-      setError(message);
-    } finally {
-      setIsSubmitting(false);
+    },
+    {
+      errorMessage: 'Failed to save user.',
+      onSuccess: () => {
+        router.push('/dashboard/settings/users');
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

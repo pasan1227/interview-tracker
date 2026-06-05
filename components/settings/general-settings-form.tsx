@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -40,8 +41,8 @@ interface GeneralSettingsFormProps {
 }
 
 export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // useFormAction owns isSubmitting + error. success stays local because
+  // the hook doesn't manage banners.
   const [success, setSuccess] = useState<string | null>(null);
 
   // Default values for the form
@@ -58,25 +59,24 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
     defaultValues,
   });
 
-  async function onSubmit(values: SettingsFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: SettingsFormValues) => {
       await updateSettings(values);
-      setSuccess('Settings updated successfully');
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      setError('Failed to update settings. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    },
+    {
+      errorMessage: 'Failed to update settings. Please try again.',
+      onSuccess: () => setSuccess('Settings updated successfully'),
     }
-  }
+  );
+
+  const submitWithReset = async (values: SettingsFormValues) => {
+    setSuccess(null);
+    await submit(values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submitWithReset)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useFormAction } from '@/hooks/use-form-action';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,8 +37,6 @@ interface WorkflowFormProps {
 
 export function WorkflowForm({ workflow, isEdit = false }: WorkflowFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Default values for the form
   const defaultValues: Partial<WorkflowFormValues> = {
@@ -52,33 +50,26 @@ export function WorkflowForm({ workflow, isEdit = false }: WorkflowFormProps) {
     defaultValues,
   });
 
-  async function onSubmit(values: WorkflowFormValues) {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
+  const { submit, isSubmitting, error } = useFormAction(
+    async (values: WorkflowFormValues) => {
       if (isEdit && workflow) {
-        // Update existing workflow
         await updateWorkflow(workflow.id, values);
-        router.push(`/dashboard/settings/workflows/${workflow.id}`);
-        router.refresh();
-      } else {
-        // Create new workflow
-        const newWorkflow = await createWorkflow(values);
-        router.push(`/dashboard/settings/workflows/${newWorkflow.id}`);
-        router.refresh();
+        return { id: workflow.id };
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('Failed to save workflow. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      return await createWorkflow(values);
+    },
+    {
+      errorMessage: 'Failed to save workflow. Please try again.',
+      onSuccess: ({ id }) => {
+        router.push(`/dashboard/settings/workflows/${id}`);
+        router.refresh();
+      },
     }
-  }
+  );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+      <form onSubmit={form.handleSubmit(submit)} className='space-y-6'>
         {error && (
           <Alert variant='destructive'>
             <AlertDescription>{error}</AlertDescription>
