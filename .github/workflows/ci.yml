@@ -1,0 +1,56 @@
+name: CI
+
+# Runs on every PR plus pushes to long-lived branches so that a broken main
+# is loud. Concurrency cancels superseded runs so back-to-back force pushes
+# don't queue up wasted minutes.
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: lint • type-check • build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Placeholders that satisfy lib/env.ts at boot. Real values aren't
+    # needed because this job doesn't connect to a DB or send email — it
+    # only lints, type-checks, and runs `next build` to collect page data.
+    #
+    # DATABASE_URL must parse as a URL.
+    # AUTH_SECRET must be ≥ 32 chars.
+    # Anything else is optional and is left unset so the OAuth-pair check
+    # in lib/env.ts doesn't trip.
+    env:
+      DATABASE_URL: 'postgres://ci:ci@localhost:5432/ci'
+      AUTH_SECRET: 'ci-secret-not-used-at-runtime-padding-1234'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      # `yarn install` runs `postinstall: prisma generate`, so the Prisma
+      # client at lib/generated/prisma is on disk before lint/type-check
+      # see it.
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Type-check
+        run: yarn type-check
+
+      - name: Build
+        run: yarn build
