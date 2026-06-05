@@ -41,8 +41,17 @@ function html(strings: TemplateStringsArray, ...values: unknown[]): string {
 // extra headers (Bcc:, Cc:, etc.). Collapse any newline runs to a space.
 const headerSafe = (value: string) => value.replace(/[\r\n]+/g, ' ');
 
-const fromAddress = () =>
-  env.EMAIL_FROM || 'Acme <onboarding@resend.dev>';
+// In production every email must come from a domain we control. Falling back
+// to the shared `onboarding@resend.dev` lands real production mail in spam
+// and prevents DMARC alignment. In development we still allow the fallback
+// so contributors can run the app without setting up Resend.
+function fromAddress(): string {
+  if (env.EMAIL_FROM) return env.EMAIL_FROM;
+  if (env.NODE_ENV === 'production') {
+    throw new Error('EMAIL_FROM env var is required in production.');
+  }
+  return 'Acme <onboarding@resend.dev>';
+}
 
 // ---------- Senders ----------
 
@@ -169,7 +178,7 @@ export async function sendInterviewScheduleEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from: env.EMAIL_FROM || 'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
@@ -249,7 +258,7 @@ export async function sendFeedbackReminderEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from: env.EMAIL_FROM || 'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
