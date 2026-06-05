@@ -1,30 +1,25 @@
-// routes.ts
-
 /**
- * An array of routes that are accessible to the public
- * These routes do not require authentication
+ * Public routes — no authentication required.
  */
 export const publicRoutes = ['/', '/about', '/pricing'];
 
 /**
- * An array of routes that are used for authentication
- * These routes will redirect logged in users to /dashboard
+ * Auth routes — logged-in users are redirected away from these.
  */
 export const authRoutes = [
   '/login',
   '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/new-verification'
+  '/reset',
+  '/new-password',
+  '/new-verification',
 ];
 
 /**
- * The prefix for API authentication routes
- * Routes that start with this prefix are used for API authentication purposes
+ * Prefix for NextAuth's API routes — never intercepted by middleware.
  */
 export const apiAuthPrefix = '/api/auth';
 
 /**
- * The default redirect path after logging in
+ * Default landing path after a successful login.
  */
 export const DEFAULT_LOGIN_REDIRECT = '/dashboard';

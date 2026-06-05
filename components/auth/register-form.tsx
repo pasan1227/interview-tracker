@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { RegisterSchema } from '@/lib/validations/auth';
 import { CardWrapper } from '@/components/auth/card-wrapper';
+import { FormBanner } from '@/components/auth/form-banner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -136,32 +137,8 @@ export function RegisterForm() {
             )}
           />
 
-          {error && (
-            <div
-              className='rounded-md border px-3 py-2 text-[13px]'
-              style={{
-                borderColor: 'color-mix(in oklch, var(--destructive) 30%, transparent)',
-                backgroundColor:
-                  'color-mix(in oklch, var(--destructive) 8%, transparent)',
-                color: 'var(--destructive)',
-              }}
-            >
-              {error}
-            </div>
-          )}
-          {success && (
-            <div
-              className='rounded-md border px-3 py-2 text-[13px]'
-              style={{
-                borderColor: 'color-mix(in oklch, var(--forest) 30%, transparent)',
-                backgroundColor:
-                  'color-mix(in oklch, var(--forest) 8%, transparent)',
-                color: 'var(--forest)',
-              }}
-            >
-              {success}
-            </div>
-          )}
+          {error && <FormBanner variant='error'>{error}</FormBanner>}
+          {success && <FormBanner variant='success'>{success}</FormBanner>}
 
           <Button
             type='submit'

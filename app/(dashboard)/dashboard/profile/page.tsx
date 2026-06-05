@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { UserProfileForm } from '@/components/users/user-profile-form';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/session';
 
 export default async function ProfilePage() {
   const session = await auth();

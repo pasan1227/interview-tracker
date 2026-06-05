@@ -2,6 +2,7 @@
 
 import { login } from '@/actions/auth/login';
 import { CardWrapper } from '@/components/auth/card-wrapper';
+import { FormBanner } from '@/components/auth/form-banner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -13,43 +14,38 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LoginSchema } from '@/lib/validations/auth';
-import { DEFAULT_LOGIN_REDIRECT } from '@/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const callbackUrl = searchParams.get('callbackUrl');
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [twoFactor, setTwoFactor] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   async function onSubmit(values: z.infer<typeof LoginSchema>) {
     setIsPending(true);
     setError(null);
+    setInfo(null);
 
     try {
       const result = await login(values, callbackUrl);
-
-      if (result?.error) {
-        setError(result.error);
-        setIsPending(false);
-      } else if (result?.success) {
-        router.push(DEFAULT_LOGIN_REDIRECT);
-        setIsPending(false);
-      }
+      if (result?.error) setError(result.error);
+      else if (result?.verifyEmail) setInfo(result.verifyEmail);
+      else if (result?.twoFactor) setTwoFactor(true);
+      setIsPending(false);
     } catch (error) {
       if (
         error &&
@@ -77,69 +73,101 @@ export function LoginForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className='flex flex-col gap-4'
         >
-          <FormField
-            control={form.control}
-            name='email'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className='text-[13px] font-medium'>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type='email'
-                    placeholder='name@company.com'
-                    autoComplete='email'
-                    disabled={isPending}
-                    className='h-11 bg-card'
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name='password'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className='text-[13px] font-medium'>
-                  Password
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type='password'
-                    placeholder='••••••••'
-                    autoComplete='current-password'
-                    disabled={isPending}
-                    className='h-11 bg-card'
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {error && (
-            <div
-              className='rounded-md border px-3 py-2 text-[13px]'
-              style={{
-                borderColor: 'color-mix(in oklch, var(--destructive) 30%, transparent)',
-                backgroundColor:
-                  'color-mix(in oklch, var(--destructive) 8%, transparent)',
-                color: 'var(--destructive)',
-              }}
-            >
-              {error}
-            </div>
+          {!twoFactor && (
+            <>
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className='text-[13px] font-medium'>
+                      Email
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type='email'
+                        placeholder='name@company.com'
+                        autoComplete='email'
+                        disabled={isPending}
+                        className='h-11 bg-card'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='password'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='flex items-baseline justify-between'>
+                      <FormLabel className='text-[13px] font-medium'>
+                        Password
+                      </FormLabel>
+                      <Link
+                        href='/reset'
+                        className='text-[12px] text-muted-foreground hover:text-foreground'
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type='password'
+                        placeholder='••••••••'
+                        autoComplete='current-password'
+                        disabled={isPending}
+                        className='h-11 bg-card'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           )}
+
+          {twoFactor && (
+            <FormField
+              control={form.control}
+              name='code'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='text-[13px] font-medium'>
+                    Two-factor code
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      inputMode='numeric'
+                      autoComplete='one-time-code'
+                      placeholder='123456'
+                      disabled={isPending}
+                      className='h-11 bg-card tracking-[0.4em]'
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {error && <FormBanner variant='error'>{error}</FormBanner>}
+          {info && <FormBanner variant='info'>{info}</FormBanner>}
 
           <Button
             type='submit'
             disabled={isPending}
             className='h-11 w-full gap-2 rounded-md text-[14px] font-medium'
           >
-            {isPending ? 'Signing in…' : 'Sign in'}
+            {isPending
+              ? 'Signing in…'
+              : twoFactor
+                ? 'Verify code'
+                : 'Sign in'}
             {!isPending && <ArrowRight className='size-4' strokeWidth={2} />}
           </Button>
         </form>

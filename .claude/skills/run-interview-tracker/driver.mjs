@@ -78,7 +78,7 @@ async function login(page) {
   await page.fill('input[type=password]', PASS);
   await Promise.all([
     page.waitForURL(/\/dashboard/, { timeout: 60_000 }),
-    page.click('button:has-text("Login")'),
+    page.click('button[type=submit]:has-text("Sign in")'),
   ]);
   await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
 }

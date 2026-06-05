@@ -1,13 +1,11 @@
+import { BCRYPT_COST } from '@/lib/auth-constants';
 import { db } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { UserRole } from '@/lib/generated/prisma/client';
 import bcrypt from 'bcryptjs';
 
 export async function getUserByEmail(email: string) {
   try {
-    const user = await db?.user?.findUnique({
-      where: { email },
-    });
-    return user;
+    return await db.user.findUnique({ where: { email } });
   } catch (error) {
     console.error('Error fetching user by email:', error);
     return null;
@@ -16,10 +14,7 @@ export async function getUserByEmail(email: string) {
 
 export async function getUserById(id: string) {
   try {
-    const user = await db?.user?.findUnique({
-      where: { id },
-    });
-    return user;
+    return await db.user.findUnique({ where: { id } });
   } catch (error) {
     console.error('Error fetching user by ID:', error);
     return null;
@@ -37,45 +32,70 @@ export async function createUser({
   password: string;
   role?: UserRole;
 }) {
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
 
-  return db?.user?.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    },
+  return db.user.create({
+    data: { name, email, password: hashedPassword, role },
   });
 }
 
-export async function updateUser(id: string, data: any) {
+// Fields a regular user may update on their own profile.
+// Privileged fields (role, emailVerified, isTwoFactorEnabled) require adminUpdateUser.
+const USER_SELF_FIELDS = ['name', 'email', 'image', 'password'] as const;
+const ADMIN_FIELDS = [...USER_SELF_FIELDS, 'role'] as const;
+
+export type UpdateUserInput = Partial<{
+  name: string;
+  email: string;
+  image: string;
+  password: string;
+}>;
+
+export type AdminUpdateUserInput = UpdateUserInput & { role?: UserRole };
+
+async function buildUpdateData(
+  data: Record<string, unknown>,
+  allowed: readonly string[]
+) {
+  const out: Record<string, unknown> = {};
+  for (const field of allowed) {
+    const value = data[field];
+    if (value === undefined) continue;
+    out[field] =
+      field === 'password'
+        ? await bcrypt.hash(value as string, BCRYPT_COST)
+        : value;
+  }
+  return out;
+}
+
+export async function updateUser(id: string, data: UpdateUserInput) {
   try {
-    // If password is being updated, hash it
-    const updateData = { ...data };
-
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 10);
-    }
-
-    const user = await db.user.update({
+    return await db.user.update({
       where: { id },
-      data: updateData,
+      data: await buildUpdateData(data, USER_SELF_FIELDS),
     });
-
-    return user;
   } catch (error) {
     console.error('Failed to update user:', error);
     throw error;
   }
 }
 
+export async function adminUpdateUser(id: string, data: AdminUpdateUserInput) {
+  try {
+    return await db.user.update({
+      where: { id },
+      data: await buildUpdateData(data, ADMIN_FIELDS),
+    });
+  } catch (error) {
+    console.error('Failed to update user (admin):', error);
+    throw error;
+  }
+}
+
 export async function deleteUser(id: string) {
   try {
-    await db.user.delete({
-      where: { id },
-    });
-
+    await db.user.delete({ where: { id } });
     return true;
   } catch (error) {
     console.error('Failed to delete user:', error);
@@ -85,23 +105,8 @@ export async function deleteUser(id: string) {
 
 export async function getUsers({ includeAdmins = false } = {}) {
   try {
-    // By default, exclude admin users for safety
-    const where = includeAdmins
-      ? {}
-      : {
-          role: {
-            not: UserRole.ADMIN,
-          },
-        };
-
-    const users = await db.user.findMany({
-      where,
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    return users;
+    const where = includeAdmins ? {} : { role: { not: UserRole.ADMIN } };
+    return await db.user.findMany({ where, orderBy: { name: 'asc' } });
   } catch (error) {
     console.error('Failed to fetch users:', error);
     return [];
