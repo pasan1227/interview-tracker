@@ -37,7 +37,7 @@ export default async function EditWorkflowPage({
         </p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <WorkflowForm workflow={workflow} isEdit />
       </div>
     </div>

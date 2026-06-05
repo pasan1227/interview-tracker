@@ -34,7 +34,7 @@ export default async function NewStagePage({ params }: NewStagePageProps) {
         </p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <StageForm workflowId={workflow.id} />
       </div>
     </div>

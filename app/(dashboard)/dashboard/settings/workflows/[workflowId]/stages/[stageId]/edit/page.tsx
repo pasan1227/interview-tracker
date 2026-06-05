@@ -44,7 +44,7 @@ export default async function EditStagePage({ params }: EditStagePageProps) {
         </p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <StageForm stage={stage} workflowId={workflowId} isEdit />
       </div>
     </div>

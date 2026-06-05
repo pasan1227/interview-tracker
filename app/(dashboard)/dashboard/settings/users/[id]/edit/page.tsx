@@ -33,7 +33,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
         <p className='text-muted-foreground'>Update user account details</p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <UserForm user={user} isEdit />
       </div>
     </div>

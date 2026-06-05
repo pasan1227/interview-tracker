@@ -208,7 +208,13 @@ async function _getDashboardStats(): Promise<DashboardStats> {
   }
 }
 
-export async function getUpcomingInterviews(limit = 5) {
+// Request-scoped memoization — same justification as getDashboardStats.
+// The dashboard root renders Upcoming + Recent in parallel Suspense
+// boundaries; a future header widget or layout that also pulls them
+// won't issue a duplicate query.
+export const getUpcomingInterviews = cache(_getUpcomingInterviews);
+
+async function _getUpcomingInterviews(limit = 5) {
   try {
     const now = new Date();
     const nextWeek = addDays(now, 7);
@@ -232,7 +238,9 @@ export async function getUpcomingInterviews(limit = 5) {
   }
 }
 
-export async function getRecentCandidates(limit = 5) {
+export const getRecentCandidates = cache(_getRecentCandidates);
+
+async function _getRecentCandidates(limit = 5) {
   try {
     return await db.candidate.findMany({
       include: { position: true },

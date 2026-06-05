@@ -42,7 +42,7 @@ export default async function EditPositionPage({
         <p className='text-muted-foreground'>Update position details</p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <PositionForm position={position} workflows={workflows} isEdit />
       </div>
     </div>

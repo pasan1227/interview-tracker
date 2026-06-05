@@ -144,10 +144,16 @@ export async function deleteInterview(id: string) {
 
 export async function updateInterviewStatus(id: string, status: string) {
   const { status: parsed } = InterviewStatusSchema.parse({ status });
-  await authorizeInterviewMutation(id);
+  const { interview: current } = await authorizeInterviewMutation(id);
 
   const interview = await updateInterviewData(id, { status: parsed });
-  await handleStatusChangeEmails(id, parsed);
+
+  // Only fire the status-change emails on an actual transition. Without
+  // this guard, repeated "Mark as completed" clicks (or any no-op
+  // status write) would spam reminder/schedule emails — once each click.
+  if (parsed !== current.status) {
+    await handleStatusChangeEmails(id, parsed);
+  }
 
   revalidatePath(`/dashboard/interviews/${id}`);
   revalidatePath('/dashboard/interviews');

@@ -30,7 +30,7 @@ export default async function NewInterviewPage({
         </p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <InterviewForm
           defaultCandidateId={candidateId}
           candidates={candidates}

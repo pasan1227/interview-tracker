@@ -6,7 +6,7 @@ import {
   updatePosition as updatePositionData,
 } from '@/data/position';
 import { getStagesForPosition as getStagesForPositionData } from '@/data/interview';
-import { requireManagerOrAdmin, requireSession } from '@/lib/authz';
+import { requireManagerOrAdmin } from '@/lib/authz';
 import {
   PositionInputSchema,
   type PositionInput,
@@ -15,11 +15,13 @@ import { revalidatePath } from 'next/cache';
 
 /**
  * Workflow stages for the given position, used by the interview form to
- * populate the stage dropdown when the user picks a position. Read-only;
- * any authenticated user may call it.
+ * populate the stage dropdown when the user picks a position. Manager+
+ * only — non-privileged users could otherwise enumerate every position's
+ * workflow stages from the URL, and the interview form is itself
+ * manager+ gated, so widening here would only give an oracle.
  */
 export async function getStagesForPosition(positionId: string) {
-  await requireSession();
+  await requireManagerOrAdmin();
   const stages = await getStagesForPositionData(positionId);
   return stages.map((s) => ({ id: s.id, name: s.name, order: s.order }));
 }

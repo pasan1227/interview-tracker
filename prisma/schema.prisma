@@ -140,6 +140,10 @@ model Candidate {
   @@index([createdAt])
   @@index([updatedAt])
   @@index([isActive])
+  // Composites cover WHERE status=… ORDER BY createdAt DESC and
+  // WHERE positionId=… ORDER BY createdAt DESC on the list page.
+  @@index([status, createdAt(sort: Desc)])
+  @@index([positionId, createdAt(sort: Desc)])
 }
 
 model Position {
@@ -185,6 +189,8 @@ model Interview {
   @@index([status])
   @@index([candidateId])
   @@index([positionId])
+  // Covers the list page's WHERE status=… ORDER BY startTime ASC.
+  @@index([status, startTime])
 }
 
 model Feedback {

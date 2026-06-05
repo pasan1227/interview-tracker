@@ -1,45 +1,34 @@
 // app/(dashboard)/dashboard/candidates/page.tsx
 
-import { auth } from '@/auth';
+import { requirePageSession } from '@/lib/authz';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { ResourceSearch } from '@/components/ui/resource-search';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { getPositions } from '@/data/position';
+import { CandidatesSearchParamsSchema } from '@/lib/search-params';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Loading from './loading';
 
 interface CandidatesPageProps {
-  searchParams: Promise<{
-    page?: string;
-    search?: string;
-    status?: string;
-    position?: string;
-  }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function CandidatesPage({
   searchParams,
 }: CandidatesPageProps) {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
+  await requirePageSession();
 
   const [awaitedParams, positions] = await Promise.all([
     searchParams,
     getPositions({ activeOnly: true }),
   ]);
 
-  const page = Number(awaitedParams.page) || 1;
-  const search = awaitedParams.search || '';
-  const status = awaitedParams.status || '';
-  const position = awaitedParams.position || '';
+  const { page, search, status, position } =
+    CandidatesSearchParamsSchema.parse(awaitedParams);
 
   const positionOptions = positions.map((p) => ({ id: p.id, title: p.title }));
 

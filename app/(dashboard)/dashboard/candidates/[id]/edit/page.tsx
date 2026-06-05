@@ -34,7 +34,7 @@ export default async function EditCandidatePage({
         </p>
       </div>
 
-      <div className='rounded-md border p-6 bg-white'>
+      <div className='rounded-xl border border-border bg-card p-6'>
         <CandidateForm candidate={candidate} positions={positionOptions} isEdit />
       </div>
     </div>

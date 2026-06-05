@@ -15,6 +15,7 @@ import {
   type UpdateCandidateInput,
 } from '@/lib/validations/dashboard';
 import { revalidatePath } from 'next/cache';
+import * as z from 'zod';
 
 export async function createCandidate(input: CreateCandidateInput) {
   const user = await requireManagerOrAdmin();
@@ -71,6 +72,19 @@ export async function deleteCandidate(id: string) {
 
 export async function addCandidateNote(candidateId: string, content: string) {
   await requireManagerOrAdmin();
+  // Validate candidateId shape before letting it reach Prisma, then
+  // confirm the candidate actually exists. Without these, the action
+  // accepted any arbitrary string and silently failed via the FK
+  // constraint, which is fine in practice but means a typo'd
+  // candidateId from the client produces an opaque DB error.
+  const cuidParse = z.string().cuid().safeParse(candidateId);
+  if (!cuidParse.success) throw new Error('Invalid candidate ID');
+  const exists = await db.candidate.findUnique({
+    where: { id: candidateId },
+    select: { id: true },
+  });
+  if (!exists) throw new Error('Candidate not found');
+
   const trimmed = content.trim();
   if (!trimmed) throw new Error('Note cannot be empty');
   if (trimmed.length > 10_000) throw new Error('Note is too long');
