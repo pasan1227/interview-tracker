@@ -116,6 +116,18 @@ export const UpdateFeedbackSchema = z.object({
   skillAssessments: z.array(SkillAssessmentSchema).max(50).default([]),
 });
 
+// ---------- Position ----------
+//
+// workflowId comes through as `cuid` which already strips '' / null /
+// undefined to "no workflow attached".
+
+export const PositionInputSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(200),
+  department: z.string().trim().max(120).optional().nullable(),
+  workflowId: cuid,
+  isActive: z.boolean().optional(),
+});
+
 // ---------- Workflow / Stage ----------
 
 export const WorkflowInputSchema = z.object({
@@ -164,6 +176,7 @@ export type UpdateInterviewInput = z.input<typeof UpdateInterviewSchema>;
 export type CreateFeedbackInput = z.input<typeof CreateFeedbackSchema>;
 export type UpdateFeedbackInput = z.input<typeof UpdateFeedbackSchema>;
 export type ReportFiltersInput = z.input<typeof ReportFiltersSchema>;
+export type PositionInput = z.input<typeof PositionInputSchema>;
 export type WorkflowInput = z.input<typeof WorkflowInputSchema>;
 export type StageInput = z.input<typeof StageInputSchema>;
 export type UpdateSettingsInput = z.input<typeof UpdateSettingsSchema>;
