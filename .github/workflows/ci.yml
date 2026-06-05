@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   ci:
-    name: lint • type-check • build
+    name: lint • type-check • test • build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -51,6 +51,9 @@ jobs:
 
       - name: Type-check
         run: yarn type-check
+
+      - name: Test
+        run: yarn test
 
       - name: Build
         run: yarn build
