@@ -1,10 +1,7 @@
-// components/interviews/interviews-filters.tsx
+'use client';
 
-"use client";
-
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -12,137 +9,67 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
+} from '@/components/ui/dropdown-menu';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { InterviewStatus, InterviewType } from "@/lib/generated/prisma/browser";
-import { FilterIcon, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { DateRange } from "react-day-picker";
+} from '@/components/ui/popover';
+import { useUrlFilters } from '@/hooks/use-url-filters';
+import { InterviewStatus, InterviewType } from '@/lib/generated/prisma/browser';
+import { format } from 'date-fns';
+import { CalendarIcon, FilterIcon } from 'lucide-react';
+import { useState } from 'react';
+import { DateRange } from 'react-day-picker';
+
+const KEYS = ['status', 'type', 'date'] as const;
+const RESET = ['page'] as const;
+
+const DATE_PRESETS = [
+  { value: 'today', label: 'Today' },
+  { value: 'tomorrow', label: 'Tomorrow' },
+  { value: 'this-week', label: 'This Week' },
+  { value: 'next-week', label: 'Next Week' },
+] as const;
 
 export function InterviewsFilters() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-  
-  const currentStatus = searchParams.get("status") || "";
-  const currentType = searchParams.get("type") || "";
-  const currentDate = searchParams.get("date") || "";
-  
-  // For date range picker
+  const { get, push, clear, isActive, isPending } = useUrlFilters({
+    keys: KEYS,
+    resetKeys: RESET,
+  });
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  
-  const handleStatusChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    
-    if (value) {
-      params.set("status", value);
-    } else {
-      params.delete("status");
-    }
-    
-    // Reset to first page when filtering
-    params.delete("page");
-    
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-  
-  const handleTypeChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    
-    if (value) {
-      params.set("type", value);
-    } else {
-      params.delete("type");
-    }
-    
-    // Reset to first page when filtering
-    params.delete("page");
-    
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-  
-  const handleDateChange = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    
-    if (value) {
-      params.set("date", value);
-    } else {
-      params.delete("date");
-    }
-    
-    // Reset to first page when filtering
-    params.delete("page");
-    
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-  
+
+  const currentStatus = get('status');
+  const currentType = get('type');
+  const currentDate = get('date');
+
   const handleDateRangeApply = () => {
     if (!dateRange?.from) return;
-    
-    const params = new URLSearchParams(searchParams);
-    
-    if (dateRange.to) {
-      // Date range (format: "2025-05-10|2025-05-15")
-      const fromStr = format(dateRange.from, "yyyy-MM-dd");
-      const toStr = format(dateRange.to, "yyyy-MM-dd");
-      params.set("date", `${fromStr}|${toStr}`);
-    } else {
-      // Single day
-      const fromStr = format(dateRange.from, "yyyy-MM-dd");
-      params.set("date", `${fromStr}|${fromStr}`);
-    }
-    
-    // Reset to first page when filtering
-    params.delete("page");
-    
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
+    const from = format(dateRange.from, 'yyyy-MM-dd');
+    const to = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : from;
+    push({ date: `${from}|${to}` });
   };
-  
-  const handleClearFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete("status");
-    params.delete("type");
-    params.delete("date");
-    params.delete("page");
-    
+
+  const handleClear = () => {
     setDateRange(undefined);
-    
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
+    clear();
   };
-  
-  const isFiltered = currentStatus || currentType || currentDate;
-  
+
   return (
-    <div className="flex items-center gap-2">
+    <div className='flex items-center gap-2'>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <FilterIcon className="mr-2 h-4 w-4" />
+          <Button variant='outline' size='sm'>
+            <FilterIcon className='mr-2 h-4 w-4' />
             Filters
-            {isFiltered && <span className="ml-1 text-xs">(Active)</span>}
+            {isActive && <span className='ml-1 text-xs'>(Active)</span>}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align='end' className='w-56'>
           <DropdownMenuLabel>Status</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={!currentStatus}
-            onCheckedChange={() => handleStatusChange("")}
+            onCheckedChange={() => push({ status: null })}
           >
             All Statuses
           </DropdownMenuCheckboxItem>
@@ -150,18 +77,18 @@ export function InterviewsFilters() {
             <DropdownMenuCheckboxItem
               key={status}
               checked={currentStatus === status}
-              onCheckedChange={() => handleStatusChange(status)}
+              onCheckedChange={() => push({ status })}
             >
-              {status.replace(/_/g, " ")}
+              {status.replace(/_/g, ' ')}
             </DropdownMenuCheckboxItem>
           ))}
-          
+
           <DropdownMenuSeparator />
-          
+
           <DropdownMenuLabel>Type</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={!currentType}
-            onCheckedChange={() => handleTypeChange("")}
+            onCheckedChange={() => push({ type: null })}
           >
             All Types
           </DropdownMenuCheckboxItem>
@@ -169,55 +96,40 @@ export function InterviewsFilters() {
             <DropdownMenuCheckboxItem
               key={type}
               checked={currentType === type}
-              onCheckedChange={() => handleTypeChange(type)}
+              onCheckedChange={() => push({ type })}
             >
-              {type.replace(/_/g, " ")}
+              {type.replace(/_/g, ' ')}
             </DropdownMenuCheckboxItem>
           ))}
-          
+
           <DropdownMenuSeparator />
-          
+
           <DropdownMenuLabel>Date</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={!currentDate}
-            onCheckedChange={() => handleDateChange("")}
+            onCheckedChange={() => push({ date: null })}
           >
             All Dates
           </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={currentDate === "today"}
-            onCheckedChange={() => handleDateChange("today")}
-          >
-            Today
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={currentDate === "tomorrow"}
-            onCheckedChange={() => handleDateChange("tomorrow")}
-          >
-            Tomorrow
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={currentDate === "this-week"}
-            onCheckedChange={() => handleDateChange("this-week")}
-          >
-            This Week
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={currentDate === "next-week"}
-            onCheckedChange={() => handleDateChange("next-week")}
-          >
-            Next Week
-          </DropdownMenuCheckboxItem>
-          
-          {isFiltered && (
+          {DATE_PRESETS.map((preset) => (
+            <DropdownMenuCheckboxItem
+              key={preset.value}
+              checked={currentDate === preset.value}
+              onCheckedChange={() => push({ date: preset.value })}
+            >
+              {preset.label}
+            </DropdownMenuCheckboxItem>
+          ))}
+
+          {isActive && (
             <>
               <DropdownMenuSeparator />
-              <div className="p-2">
+              <div className='p-2'>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleClearFilters}
+                  variant='outline'
+                  size='sm'
+                  className='w-full'
+                  onClick={handleClear}
                   disabled={isPending}
                 >
                   Clear Filters
@@ -227,33 +139,33 @@ export function InterviewsFilters() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      
+
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm">
-            <CalendarIcon className="mr-2 h-4 w-4" />
+          <Button variant='outline' size='sm'>
+            <CalendarIcon className='mr-2 h-4 w-4' />
             Date Range
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className='w-auto p-0' align='end'>
           <Calendar
-            mode="range"
+            mode='range'
             selected={dateRange}
             onSelect={setDateRange}
             numberOfMonths={2}
           />
-          <div className="border-t p-3 flex justify-end space-x-2">
+          <div className='border-t p-3 flex justify-end space-x-2'>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => setDateRange(undefined)}
             >
               Clear
             </Button>
             <Button
-              size="sm"
+              size='sm'
               onClick={handleDateRangeApply}
-              disabled={!dateRange?.from}
+              disabled={!dateRange?.from || isPending}
             >
               Apply
             </Button>
