@@ -1,6 +1,5 @@
-// lib/data/position.ts
-
 import { db } from '@/lib/db';
+import type { Prisma } from '@/lib/generated/prisma/browser';
 
 export async function getPositions({
   activeOnly = true,
@@ -42,27 +41,21 @@ export async function getPositionById(id: string, includeWorkflow = false) {
   }
 }
 
-export async function createPosition(data: any) {
+export async function createPosition(data: Prisma.PositionCreateInput) {
   try {
-    const position = await db.position.create({
-      data,
-    });
-
-    return position;
+    return await db.position.create({ data });
   } catch (error) {
     console.error('Failed to create position:', error);
     throw error;
   }
 }
 
-export async function updatePosition(id: string, data: any) {
+export async function updatePosition(
+  id: string,
+  data: Prisma.PositionUpdateInput
+) {
   try {
-    const position = await db.position.update({
-      where: { id },
-      data,
-    });
-
-    return position;
+    return await db.position.update({ where: { id }, data });
   } catch (error) {
     console.error('Failed to update position:', error);
     throw error;
