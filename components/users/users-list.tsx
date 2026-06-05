@@ -1,13 +1,9 @@
-// components/users/users-list.tsx
-
 'use client';
 
-import Link from 'next/link';
-import { User } from '@/lib/generated/prisma/browser';
-import { Badge } from '@/components/ui/badge';
-import { USER_ROLE_BADGE } from '@/lib/constants/status-styles';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ListEmptyState } from '@/components/ui/list-empty-state';
 import {
   Table,
   TableBody,
@@ -16,8 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { USER_ROLE_BADGE } from '@/lib/constants/status-styles';
+import { User } from '@/lib/generated/prisma/browser';
 import { formatDate } from '@/lib/utils';
 import { PencilIcon, TrashIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface UsersListProps {
   users: User[];
@@ -26,12 +25,11 @@ interface UsersListProps {
 export function UsersList({ users }: UsersListProps) {
   if (users.length === 0) {
     return (
-      <div className='flex h-[400px] flex-col items-center justify-center space-y-2 p-8 text-center border rounded-md'>
-        <h3 className='text-lg font-semibold'>No users found</h3>
-        <p className='text-sm text-muted-foreground'>
-          Add users to give them access to the system
-        </p>
-      </div>
+      <ListEmptyState
+        bordered
+        title='No users found'
+        description='Add users to give them access to the system'
+      />
     );
   }
 

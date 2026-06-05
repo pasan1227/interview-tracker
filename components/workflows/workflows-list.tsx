@@ -1,10 +1,6 @@
-// components/workflows/workflows-list.tsx
-
-import { getWorkflows } from '@/data/workflow';
-import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ListEmptyState } from '@/components/ui/list-empty-state';
 import {
   Table,
   TableBody,
@@ -13,19 +9,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { getWorkflows } from '@/data/workflow';
+import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import Link from 'next/link';
 
 export async function WorkflowsList() {
   const workflows = await getWorkflows();
 
   if (workflows.length === 0) {
     return (
-      <div className='flex h-[400px] flex-col items-center justify-center space-y-2 p-8 text-center border rounded-md'>
-        <h3 className='text-lg font-semibold'>No workflows found</h3>
-        <p className='text-sm text-muted-foreground'>
-          Create a workflow to get started
-        </p>
-      </div>
+      <ListEmptyState
+        bordered
+        title='No workflows found'
+        description='Create a workflow to get started'
+      />
     );
   }
 
