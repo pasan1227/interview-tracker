@@ -25,8 +25,10 @@ export const login = async (
   const { email, password, code } = validated.data;
 
   const ip = await clientIp();
-  const ipLimit = rateLimit(`login:ip:${ip}`, { limit: 20, windowMs: 60_000 });
-  const emailLimit = rateLimit(`login:email:${email}`, { limit: 5, windowMs: 60_000 });
+  const [ipLimit, emailLimit] = await Promise.all([
+    rateLimit(`login:ip:${ip}`, { limit: 20, windowMs: 60_000 }),
+    rateLimit(`login:email:${email}`, { limit: 5, windowMs: 60_000 }),
+  ]);
   if (!ipLimit.ok || !emailLimit.ok) {
     return { error: 'Too many attempts. Please try again in a moment.' };
   }

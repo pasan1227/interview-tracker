@@ -37,6 +37,8 @@ model User {
   conductedInterviews Interview[] @relation("interviewer")
   providedFeedbacks   Feedback[]
   createdInterviews   Interview[] @relation("createdByUser")
+
+  @@index([role])
 }
 
 model Account {
@@ -136,6 +138,8 @@ model Candidate {
   @@index([positionId])
   @@index([source])
   @@index([createdAt])
+  @@index([updatedAt])
+  @@index([isActive])
 }
 
 model Position {
@@ -149,6 +153,8 @@ model Position {
   interviews Interview[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@index([isActive])
 }
 
 model Interview {
@@ -202,6 +208,7 @@ model Feedback {
   @@index([interviewerId])
   @@index([candidateId])
   @@index([interviewId])
+  @@index([interviewerId, createdAt])
 }
 
 model SkillAssessment {
@@ -238,6 +245,7 @@ model Stage {
   updatedAt   DateTime    @updatedAt
 
   @@index([workflowId])
+  @@index([workflowId, order])
 }
 
 model Tag {

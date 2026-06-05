@@ -25,7 +25,7 @@ export async function getUserById(id: string) {
 // page that renders the user object, or anywhere else that doesn't need
 // the bcrypt hash. Selecting a column-list excludes `password` at the DB
 // boundary instead of relying on every caller to scrub it.
-const SAFE_USER_SELECT = {
+export const SAFE_USER_SELECT = {
   id: true,
   name: true,
   email: true,

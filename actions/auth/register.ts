@@ -21,7 +21,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
   const { email, name, password } = validated.data;
 
   const ip = await clientIp();
-  const ipLimit = rateLimit(`register:ip:${ip}`, { limit: 10, windowMs: 60_000 });
+  const ipLimit = await rateLimit(`register:ip:${ip}`, { limit: 10, windowMs: 60_000 });
   if (!ipLimit.ok) {
     return { error: 'Too many attempts. Please try again in a moment.' };
   }

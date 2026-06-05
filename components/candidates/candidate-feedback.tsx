@@ -7,11 +7,11 @@ import {
   RECOMMENDATION_LABEL,
 } from '@/lib/constants/status-styles';
 import { StarIcon } from 'lucide-react';
-import { Feedback, User } from '@/lib/generated/prisma/browser';
+import { Feedback } from '@/lib/generated/prisma/browser';
 
 interface CandidateFeedbackProps {
   feedbacks: (Feedback & {
-    interviewer: User;
+    interviewer: { id: string; name: string | null };
     skillAssessments: {
       id: string;
       skill: string;

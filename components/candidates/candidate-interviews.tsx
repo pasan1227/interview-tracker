@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { CalendarIcon, ClockIcon, MapPinIcon, UsersIcon } from 'lucide-react';
-import { Interview, InterviewStatus, Stage, User } from '@/lib/generated/prisma/browser';
+import { Interview, InterviewStatus, Stage } from '@/lib/generated/prisma/browser';
 
 interface CandidateInterviewsProps {
   interviews: (Interview & {
-    interviewers: User[];
+    // Narrow to the fields the row actually renders. Keeping password off
+    // the prop type stops future server-side `include: { interviewers: true }`
+    // from re-introducing the leak through this surface.
+    interviewers: Array<{ id: string; name: string | null }>;
     stage: Stage | null;
   })[];
 }

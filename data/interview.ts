@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { InterviewStatus, InterviewType, Prisma } from '@/lib/generated/prisma/browser';
+import { SAFE_USER_SELECT } from './user';
 
 interface GetInterviewsParams {
   page?: number;
@@ -166,7 +167,7 @@ export async function createInterview(data: any) {
       include: {
         candidate: true,
         position: true,
-        interviewers: true,
+        interviewers: { select: SAFE_USER_SELECT },
         stage: true,
       },
     });
@@ -186,7 +187,7 @@ export async function updateInterview(id: string, data: any) {
       include: {
         candidate: true,
         position: true,
-        interviewers: true,
+        interviewers: { select: SAFE_USER_SELECT },
         stage: true,
       },
     });

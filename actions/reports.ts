@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import {
   CandidateStatus,
   InterviewStatus,
+  Prisma,
   Recommendation,
 } from '@/lib/generated/prisma/client';
 import {
@@ -250,97 +251,57 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {
-      status: CandidateStatus.HIRED,
-    };
+    // Build filter fragments once; Prisma.sql interpolates safely. Null
+    // sentinels keep the WHERE clause shape constant — the planner can
+    // short-circuit each predicate.
+    const startDate = filters.startDate ?? null;
+    const endDate = filters.endDate ?? null;
+    const positionId = filters.positionId ?? null;
+    const source = filters.source ?? null;
 
-    if (filters.startDate) {
-      where.updatedAt = {
-        ...where.updatedAt,
-        gte: filters.startDate,
-      };
-    }
+    // Per-position averages. EXTRACT(EPOCH FROM diff)/86400 → days as float.
+    const perPosition = await db.$queryRaw<
+      Array<{ position: string; avg_days: number; count: bigint }>
+    >`
+      SELECT
+        COALESCE(p."title", 'Unknown') AS position,
+        ROUND(AVG(EXTRACT(EPOCH FROM (c."updatedAt" - c."createdAt")) / 86400))::int AS avg_days,
+        COUNT(*)::bigint AS count
+      FROM "Candidate" c
+      LEFT JOIN "Position" p ON p."id" = c."positionId"
+      WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND (${startDate}::timestamp IS NULL OR c."updatedAt" >= ${startDate}::timestamp)
+        AND (${endDate}::timestamp   IS NULL OR c."updatedAt" <= ${endDate}::timestamp)
+        AND (${positionId}::text     IS NULL OR c."positionId" = ${positionId})
+        AND (${source}::text         IS NULL OR c."source" = ${source})
+      GROUP BY COALESCE(p."title", 'Unknown')
+      ORDER BY avg_days ASC
+    `;
 
-    if (filters.endDate) {
-      where.updatedAt = {
-        ...where.updatedAt,
-        lte: filters.endDate,
-      };
-    }
-
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
-    }
-
-    if (filters.source) {
-      where.source = filters.source;
-    }
-
-    // Get hired candidates
-    const hiredCandidates = await db.candidate.findMany({
-      where,
-      select: {
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        position: {
-          select: {
-            title: true,
-          },
-        },
-      },
-    });
-
-    // Calculate time to hire for each candidate (in days)
-    const candidateData = hiredCandidates.map((candidate) => {
-      const daysToHire = Math.ceil(
-        (candidate.updatedAt.getTime() - candidate.createdAt.getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
-
-      return {
-        id: candidate.id,
-        daysToHire,
-        position: candidate.position?.title || 'Unknown',
-      };
-    });
-
-    // Calculate average time to hire
-    const totalDays = candidateData.reduce(
-      (sum, item) => sum + item.daysToHire,
-      0
-    );
-    const avgTimeToHire =
-      candidateData.length > 0
-        ? Math.round(totalDays / candidateData.length)
-        : 0;
-
-    // Group by position
-    const positionGroups: Record<string, { total: number; count: number }> = {};
-
-    candidateData.forEach((item) => {
-      if (!positionGroups[item.position]) {
-        positionGroups[item.position] = { total: 0, count: 0 };
-      }
-
-      positionGroups[item.position].total += item.daysToHire;
-      positionGroups[item.position].count += 1;
-    });
-
-    // Calculate average by position
-    const positionAverages = Object.entries(positionGroups)
-      .map(([position, data]) => ({
-        position,
-        avgDays: Math.round(data.total / data.count),
-        count: data.count,
-      }))
-      .sort((a, b) => a.avgDays - b.avgDays);
+    // Overall average across all hires (not the avg of per-position avgs,
+    // which would weight small positions equally).
+    const [overall] = await db.$queryRaw<
+      Array<{ avg_days: number | null; total: bigint }>
+    >`
+      SELECT
+        ROUND(AVG(EXTRACT(EPOCH FROM (c."updatedAt" - c."createdAt")) / 86400))::int AS avg_days,
+        COUNT(*)::bigint AS total
+      FROM "Candidate" c
+      WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND (${startDate}::timestamp IS NULL OR c."updatedAt" >= ${startDate}::timestamp)
+        AND (${endDate}::timestamp   IS NULL OR c."updatedAt" <= ${endDate}::timestamp)
+        AND (${positionId}::text     IS NULL OR c."positionId" = ${positionId})
+        AND (${source}::text         IS NULL OR c."source" = ${source})
+    `;
 
     return {
-      avgTimeToHire,
-      positionAverages,
-      totalHires: candidateData.length,
+      avgTimeToHire: overall?.avg_days ?? 0,
+      positionAverages: perPosition.map((r) => ({
+        position: r.position,
+        avgDays: r.avg_days,
+        count: Number(r.count),
+      })),
+      totalHires: Number(overall?.total ?? 0),
     };
   } catch (error) {
     console.error('Failed to fetch time to hire report:', error);
@@ -359,76 +320,48 @@ export async function getInterviewOutcomeReport(
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {
+    // Shared interview-side filter used by both the recommendation
+    // groupBy and the two totals counts. Built once with Prisma's typed
+    // builder so dropping or renaming a column is a compile error, not a
+    // silent semantic shift.
+    const interviewWhere: Prisma.InterviewWhereInput = {
       status: InterviewStatus.COMPLETED,
+      ...(filters.startDate || filters.endDate
+        ? {
+            startTime: {
+              ...(filters.startDate && { gte: filters.startDate }),
+              ...(filters.endDate && { lte: filters.endDate }),
+            },
+          }
+        : {}),
+      ...(filters.positionId
+        ? { candidate: { positionId: filters.positionId } }
+        : {}),
     };
 
-    if (filters.startDate) {
-      where.startTime = {
-        ...where.startTime,
-        gte: filters.startDate,
-      };
-    }
+    const [counts, totalInterviews, interviewsWithFeedback] = await Promise.all([
+      db.feedback.groupBy({
+        by: ['recommendation'],
+        _count: { _all: true },
+        where: { interview: interviewWhere },
+      }),
+      db.interview.count({ where: interviewWhere }),
+      db.interview.count({
+        where: { ...interviewWhere, feedbacks: { some: {} } },
+      }),
+    ]);
 
-    if (filters.endDate) {
-      where.startTime = {
-        ...where.startTime,
-        lte: filters.endDate,
-      };
-    }
-
-    if (filters.positionId) {
-      where.candidate = {
-        positionId: filters.positionId,
-      };
-    }
-
-    // Get completed interviews with their feedback
-    const interviews = await db.interview.findMany({
-      where,
-      include: {
-        feedbacks: {
-          select: {
-            recommendation: true,
-          },
-        },
-      },
-    });
-
-    // Group by recommendation
-    const recommendationCounts: Record<Recommendation, number> = {
-      [Recommendation.STRONG_HIRE]: 0,
-      [Recommendation.HIRE]: 0,
-      [Recommendation.NO_DECISION]: 0,
-      [Recommendation.NO_HIRE]: 0,
-      [Recommendation.STRONG_NO_HIRE]: 0,
-    };
-
-    // Count recommendations
-    interviews.forEach((interview) => {
-      interview.feedbacks.forEach((feedback) => {
-        recommendationCounts[feedback.recommendation]++;
-      });
-    });
-
-    // Transform into a format suitable for charts
-    const outcomeData = Object.entries(recommendationCounts).map(
-      ([recommendation, count]) => ({
-        recommendation,
-        count,
-      })
+    // Fill in zero buckets for missing recommendations so the chart axis
+    // is stable across filter changes.
+    const byRecommendation = new Map<Recommendation, number>(
+      counts.map((c) => [c.recommendation, c._count._all])
     );
+    const outcomeData = Object.values(Recommendation).map((recommendation) => ({
+      recommendation,
+      count: byRecommendation.get(recommendation) ?? 0,
+    }));
 
-    // Calculate totals
-    const totalFeedback = outcomeData.reduce(
-      (sum, item) => sum + item.count,
-      0
-    );
-    const totalInterviews = interviews.length;
-    const interviewsWithFeedback = interviews.filter(
-      (i) => i.feedbacks.length > 0
-    ).length;
+    const totalFeedback = outcomeData.reduce((sum, r) => sum + r.count, 0);
 
     return {
       data: outcomeData,
@@ -452,75 +385,46 @@ export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build where clause based on filters
-    const where: any = {
-      status: CandidateStatus.HIRED,
-    };
-
-    // Calculate date range - default to last 12 months if not specified
+    // Default to a rolling 12-month window so the chart always has
+    // something to show.
     const endDate = filters.endDate || new Date();
     const startDate = filters.startDate || subMonths(endDate, 11);
+    const positionId = filters.positionId ?? null;
+    const source = filters.source ?? null;
 
-    where.updatedAt = {
-      gte: startDate,
-      lte: endDate,
-    };
+    const rows = await db.$queryRaw<
+      Array<{ month: Date; count: bigint }>
+    >`
+      SELECT
+        date_trunc('month', c."updatedAt") AS month,
+        COUNT(*)::bigint AS count
+      FROM "Candidate" c
+      WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND c."updatedAt" >= ${startDate}::timestamp
+        AND c."updatedAt" <= ${endDate}::timestamp
+        AND (${positionId}::text IS NULL OR c."positionId" = ${positionId})
+        AND (${source}::text     IS NULL OR c."source" = ${source})
+      GROUP BY 1
+      ORDER BY 1
+    `;
 
-    if (filters.positionId) {
-      where.positionId = filters.positionId;
-    }
-
-    if (filters.source) {
-      where.source = filters.source;
-    }
-
-    // Get hired candidates
-    const hiredCandidates = await db.candidate.findMany({
-      where,
-      select: {
-        id: true,
-        updatedAt: true,
-      },
-    });
-
-    // Prepare month buckets
-    const monthlyData: Record<string, number> = {};
-
-    // Initialize all months with 0
-    let currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const monthKey = format(currentDate, 'yyyy-MM');
-      monthlyData[monthKey] = 0;
-      currentDate = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + 1,
-        1
-      );
-    }
-
-    // Count hires by month
-    hiredCandidates.forEach((candidate) => {
-      const monthKey = format(candidate.updatedAt, 'yyyy-MM');
-      if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey]++;
-      }
-    });
-
-    // Transform into array for chart
-    const monthlyHires = Object.entries(monthlyData).map(
-      ([monthKey, count]) => {
-        const [year, month] = monthKey.split('-');
-        return {
-          month: `${format(new Date(parseInt(year), parseInt(month) - 1, 1), 'MMM yyyy')}`,
-          count,
-        };
-      }
+    // Fill missing months with zero so the chart x-axis is continuous.
+    const byKey = new Map(
+      rows.map((r) => [format(r.month, 'yyyy-MM'), Number(r.count)])
     );
+    const data: Array<{ month: string; count: number }> = [];
+    let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+    while (cursor <= endMonth) {
+      data.push({
+        month: format(cursor, 'MMM yyyy'),
+        count: byKey.get(format(cursor, 'yyyy-MM')) ?? 0,
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
 
-    return {
-      data: monthlyHires,
-      totalHires: hiredCandidates.length,
-    };
+    const totalHires = data.reduce((sum, r) => sum + r.count, 0);
+    return { data, totalHires };
   } catch (error) {
     console.error('Failed to fetch monthly hires report:', error);
     return {

@@ -6,6 +6,7 @@ import { auth } from '@/auth';
 import { getCandidateById } from '@/data/candidate';
 import { Button } from '@/components/ui/button';
 import { CandidateDeleteForm } from '@/components/candidates/candidate-delete-form';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 // Define the props type according to Next.js 15 standards
 interface PageProps {
@@ -17,11 +18,16 @@ export default async function DeleteCandidatePage({ params }: PageProps) {
 
   const { id } = await params;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
   }
+  if (
+    session.user.role !== UserRole.ADMIN &&
+    session.user.role !== UserRole.MANAGER
+  ) {
+    redirect('/dashboard');
+  }
 
-  // No need to await params anymore - it's already a resolved value in Next.js 15
   const candidate = await getCandidateById(id);
 
   if (!candidate) {

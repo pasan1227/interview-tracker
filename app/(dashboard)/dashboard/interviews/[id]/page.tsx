@@ -10,7 +10,7 @@ import { InterviewDetail } from '@/components/interviews/interview-detail';
 import { InterviewStatusAction } from '@/components/interviews/interview-status-action';
 import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { PencilIcon, TrashIcon, ClipboardIcon } from 'lucide-react';
-import { InterviewStatus } from '@/lib/generated/prisma/browser';
+import { InterviewStatus, UserRole } from '@/lib/generated/prisma/browser';
 
 interface InterviewDetailPageProps {
   params: Promise<{ id: string }>;
@@ -22,7 +22,7 @@ export default async function InterviewDetailPage({
   const session = await auth();
   const { id } = await params;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
   }
 
@@ -32,14 +32,23 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
-  const statusClass =
-    INTERVIEW_STATUS_BADGE[interview.status] ??
-    INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
-
-  // Check if the current user is an interviewer for this interview
+  // Visibility gate: managers/admins, the interview creator, and the
+  // listed interviewers can view this page. Everyone else lands on the
+  // dashboard. Mirrors authorizeInterviewMutation in actions/interview.ts.
   const isInterviewer = interview.interviewers.some(
     (interviewer) => interviewer.id === session.user.id
   );
+  const isCreator = interview.createdById === session.user.id;
+  const isManagerOrAdmin =
+    session.user.role === UserRole.ADMIN ||
+    session.user.role === UserRole.MANAGER;
+  if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
+    redirect('/dashboard');
+  }
+
+  const statusClass =
+    INTERVIEW_STATUS_BADGE[interview.status] ??
+    INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
 
   // Check if the current user has already submitted feedback
   const hasSubmittedFeedback = interview.feedbacks.some(

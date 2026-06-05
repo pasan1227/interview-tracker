@@ -5,6 +5,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { getInterviewById } from '@/data/interview';
 import { InterviewForm } from '@/components/interviews/interview-form';
+import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditInterviewPageProps {
   params: Promise<{ id: string }>;
@@ -16,7 +17,7 @@ export default async function EditInterviewPage({
   const session = await auth();
   const { id } = await params;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
   }
 
@@ -24,6 +25,20 @@ export default async function EditInterviewPage({
 
   if (!interview) {
     notFound();
+  }
+
+  // Mutation gate: matches authorizeInterviewMutation in
+  // actions/interview.ts — managers/admins, the creator, or a listed
+  // interviewer can edit.
+  const isInterviewer = interview.interviewers.some(
+    (interviewer) => interviewer.id === session.user.id
+  );
+  const isCreator = interview.createdById === session.user.id;
+  const isManagerOrAdmin =
+    session.user.role === UserRole.ADMIN ||
+    session.user.role === UserRole.MANAGER;
+  if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
+    redirect('/dashboard');
   }
 
   // Get candidates (filtering out any non-active ones)

@@ -6,6 +6,7 @@ import { auth } from '@/auth';
 import { getInterviewById } from '@/data/interview';
 import { Button } from '@/components/ui/button';
 import { InterviewDeleteForm } from '@/components/interviews/interview-delete-form';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { format } from 'date-fns';
 
 interface DeleteInterviewPageProps {
@@ -18,7 +19,7 @@ export default async function DeleteInterviewPage({
   const session = await auth();
   const { id } = await params;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
   }
 
@@ -26,6 +27,19 @@ export default async function DeleteInterviewPage({
 
   if (!interview) {
     notFound();
+  }
+
+  // Mutation gate: matches authorizeInterviewMutation in
+  // actions/interview.ts.
+  const isInterviewer = interview.interviewers.some(
+    (interviewer) => interviewer.id === session.user.id
+  );
+  const isCreator = interview.createdById === session.user.id;
+  const isManagerOrAdmin =
+    session.user.role === UserRole.ADMIN ||
+    session.user.role === UserRole.MANAGER;
+  if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
+    redirect('/dashboard');
   }
 
   return (

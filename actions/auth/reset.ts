@@ -18,10 +18,15 @@ export const reset = async (values: z.infer<typeof ResetSchema>) => {
   const { email } = validated.data;
 
   const ip = await clientIp();
-  if (!rateLimit(`reset:ip:${ip}`, { limit: 5, windowMs: 60_000 }).ok) {
+  const ipLimit = await rateLimit(`reset:ip:${ip}`, { limit: 5, windowMs: 60_000 });
+  if (!ipLimit.ok) {
     return { error: 'Too many attempts. Please try again in a moment.' };
   }
-  if (!rateLimit(`reset:email:${email}`, { limit: 3, windowMs: 10 * 60_000 }).ok) {
+  const emailLimit = await rateLimit(`reset:email:${email}`, {
+    limit: 3,
+    windowMs: 10 * 60_000,
+  });
+  if (!emailLimit.ok) {
     return { success: GENERIC_SUCCESS };
   }
 

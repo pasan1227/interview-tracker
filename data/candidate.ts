@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { CandidateStatus, Prisma } from '@/lib/generated/prisma/browser';
+import { SAFE_USER_SELECT } from './user';
 
 interface GetCandidatesParams {
   page?: number;
@@ -80,7 +81,7 @@ export async function getCandidateById(id: string) {
         position: true,
         interviews: {
           include: {
-            interviewers: true,
+            interviewers: { select: SAFE_USER_SELECT },
             stage: true,
           },
           orderBy: {
@@ -89,7 +90,7 @@ export async function getCandidateById(id: string) {
         },
         feedbacks: {
           include: {
-            interviewer: true,
+            interviewer: { select: SAFE_USER_SELECT },
             skillAssessments: true,
           },
           orderBy: {

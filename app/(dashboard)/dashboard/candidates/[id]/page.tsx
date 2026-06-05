@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCandidateById } from '@/data/candidate';
 import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { CalendarIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -26,8 +27,18 @@ export default async function CandidateDetailsPage({
 
   const {id} = await params;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
+  }
+
+  // PII gate: candidate detail (name, email, notes, feedback) is
+  // manager/admin only. INTERVIEWER role accesses candidates via the
+  // interview detail page where their participation is verified.
+  if (
+    session.user.role !== UserRole.ADMIN &&
+    session.user.role !== UserRole.MANAGER
+  ) {
+    redirect('/dashboard');
   }
 
   const candidate = await getCandidateById(id);
