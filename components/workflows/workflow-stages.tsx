@@ -183,7 +183,7 @@ function SortableStageCard({ stage, workflowId }: SortableStageCardProps) {
               Edit
             </Link>
           </Button>
-          <Button variant='outline' size='sm' className='text-red-600' asChild>
+          <Button variant='outline' size='sm' className='text-destructive' asChild>
             <Link
               href={`/dashboard/settings/workflows/${workflowId}/stages/${stage.id}/delete`}
             >

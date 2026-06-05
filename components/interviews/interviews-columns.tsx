@@ -162,11 +162,12 @@ export const InterviewColumns: ColumnDef<InterviewWithRelations>[] = [
       return (
         <div className='flex items-center'>
           <span
-            className={
-              totalFeedbacks === totalInterviewers
-                ? 'text-green-600'
-                : 'text-amber-600'
-            }
+            style={{
+              color:
+                totalFeedbacks === totalInterviewers
+                  ? 'var(--badge-success-fg)'
+                  : 'var(--badge-warning-fg)',
+            }}
           >
             {totalFeedbacks}/{totalInterviewers}
           </span>
@@ -219,7 +220,7 @@ export const InterviewColumns: ColumnDef<InterviewWithRelations>[] = [
             <DropdownMenuItem asChild>
               <Link
                 href={`/dashboard/interviews/${interview.id}/delete`}
-                className='text-red-600'
+                className='text-destructive'
               >
                 Delete
               </Link>

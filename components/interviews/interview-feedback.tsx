@@ -51,7 +51,7 @@ export function InterviewFeedback({ feedback }: InterviewFeedbackProps) {
               </p>
             </div>
           </div>
-          <div className={`font-semibold ${recommendationColor}`}>
+          <div className='font-semibold' style={recommendationColor}>
             {recommendationLabel}
           </div>
         </div>
@@ -69,18 +69,28 @@ export function InterviewFeedback({ feedback }: InterviewFeedbackProps) {
             <h3 className='text-sm font-semibold mb-2'>Skill Assessments</h3>
             <div className='space-y-3'>
               {feedback.skillAssessments.map((assessment) => (
-                <div key={assessment.id} className='rounded-md bg-slate-50 p-3'>
+                <div key={assessment.id} className='rounded-md bg-muted p-3'>
                   <div className='flex items-center justify-between'>
                     <p className='font-medium text-sm'>{assessment.skill}</p>
-                    <div className='flex items-center gap-1'>
+                    <div
+                      className='flex items-center gap-1'
+                      role='img'
+                      aria-label={`${assessment.rating} out of 5`}
+                    >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <StarIcon
                           key={i}
-                          className={`h-4 w-4 ${
-                            i < assessment.rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
+                          aria-hidden
+                          className='h-4 w-4'
+                          strokeWidth={1.75}
+                          style={{
+                            color:
+                              i < assessment.rating
+                                ? 'var(--forest)'
+                                : 'var(--border)',
+                            fill:
+                              i < assessment.rating ? 'var(--forest)' : 'transparent',
+                          }}
                         />
                       ))}
                     </div>

@@ -72,7 +72,10 @@ export function InterviewStatusAction({
             className='cursor-pointer'
             disabled={isSubmitting && pendingStatus !== InterviewStatus.COMPLETED}
           >
-            <CheckCircle2Icon className='mr-2 h-4 w-4 text-green-600' />
+            <CheckCircle2Icon
+              className='mr-2 h-4 w-4'
+              style={{ color: 'var(--badge-success-fg)' }}
+            />
             Mark as Completed
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -80,7 +83,10 @@ export function InterviewStatusAction({
             className='cursor-pointer'
             disabled={isSubmitting && pendingStatus !== InterviewStatus.CANCELED}
           >
-            <XCircleIcon className='mr-2 h-4 w-4 text-red-600' />
+            <XCircleIcon
+              className='mr-2 h-4 w-4'
+              style={{ color: 'var(--badge-danger-fg)' }}
+            />
             Mark as Canceled
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -88,7 +94,10 @@ export function InterviewStatusAction({
             className='cursor-pointer'
             disabled={isSubmitting && pendingStatus !== InterviewStatus.NO_SHOW}
           >
-            <AlertCircleIcon className='mr-2 h-4 w-4 text-yellow-600' />
+            <AlertCircleIcon
+              className='mr-2 h-4 w-4'
+              style={{ color: 'var(--badge-warning-fg)' }}
+            />
             Mark as No-Show
           </DropdownMenuItem>
         </DropdownMenuContent>

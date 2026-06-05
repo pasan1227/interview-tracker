@@ -112,7 +112,7 @@ export function FeedbackForm({
           </Alert>
         )}
 
-        <div className='bg-slate-50 p-4 rounded-md mb-6'>
+        <div className='bg-muted p-4 rounded-md mb-6'>
           <h2 className='font-semibold text-lg mb-2'>Interview Details</h2>
           <div className='grid grid-cols-2 gap-4 text-sm'>
             <div>

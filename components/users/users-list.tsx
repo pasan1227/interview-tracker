@@ -79,7 +79,7 @@ export function UsersList({ users }: Readonly<UsersListProps>) {
                   <Button
                     size='sm'
                     variant='outline'
-                    className='text-red-600'
+                    className='text-destructive'
                     asChild
                   >
                     <Link href={`/dashboard/settings/users/${user.id}/delete`}>

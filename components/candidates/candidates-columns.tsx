@@ -105,7 +105,7 @@ export const CandidateColumns: ColumnDef<CandidateWithRelations>[] = [
             <DropdownMenuItem asChild>
               <Link
                 href={`/dashboard/candidates/${candidate.id}/delete`}
-                className='text-red-600'
+                className='text-destructive'
               >
                 Delete
               </Link>

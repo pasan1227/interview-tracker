@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormBanner } from '@/components/ui/form-banner';
 import { updateUser } from '@/actions/user';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
@@ -106,17 +106,8 @@ export function UserProfileForm({ user }: Readonly<UserProfileFormProps>) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submitWithReset)} className='space-y-6'>
-        {error && (
-          <Alert variant='destructive'>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className='bg-green-50 text-green-600 border-green-200'>
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
+        {error && <FormBanner variant='error'>{error}</FormBanner>}
+        {success && <FormBanner variant='success'>{success}</FormBanner>}
 
         <FormField
           control={form.control}

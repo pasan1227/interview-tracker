@@ -151,7 +151,7 @@ export function UserForm({ user, isEdit = false }: UserFormProps) {
                   placeholder='john@example.com'
                   {...field}
                   readOnly={isEdit} // Email cannot be changed for existing users
-                  className={isEdit ? 'bg-slate-100' : ''}
+                  className={isEdit ? 'bg-muted' : ''}
                 />
               </FormControl>
               <FormDescription>

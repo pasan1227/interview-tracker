@@ -116,7 +116,7 @@ export function WorkflowHeader({ workflow }: WorkflowHeaderProps) {
           {!workflow.isDefault && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant='outline' size='sm' className='text-red-600'>
+                <Button variant='outline' size='sm' className='text-destructive'>
                   <TrashIcon className='mr-2 h-4 w-4' />
                   Delete
                 </Button>

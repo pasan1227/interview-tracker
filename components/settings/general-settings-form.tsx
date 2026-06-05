@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormBanner } from '@/components/ui/form-banner';
 import { updateSettings } from '@/actions/settings';
 import { Settings } from '@/lib/generated/prisma/browser';
 import { ReloadIcon } from '@radix-ui/react-icons';
@@ -77,17 +77,8 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submitWithReset)} className='space-y-6'>
-        {error && (
-          <Alert variant='destructive'>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className='bg-green-50 text-green-600 border-green-200'>
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
+        {error && <FormBanner variant='error'>{error}</FormBanner>}
+        {success && <FormBanner variant='success'>{success}</FormBanner>}
 
         <FormField
           control={form.control}

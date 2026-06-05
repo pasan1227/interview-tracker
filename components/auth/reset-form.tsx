@@ -2,7 +2,7 @@
 
 import { reset } from '@/actions/auth/reset';
 import { CardWrapper } from '@/components/auth/card-wrapper';
-import { FormBanner } from '@/components/auth/form-banner';
+import { FormBanner } from '@/components/ui/form-banner';
 import { Button } from '@/components/ui/button';
 import {
   Form,
