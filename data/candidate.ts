@@ -1,5 +1,3 @@
-// lib/data/candidate.ts
-
 import { db } from '@/lib/db';
 import { CandidateStatus, Prisma } from '@/lib/generated/prisma/browser';
 import { SAFE_USER_SELECT } from './user';

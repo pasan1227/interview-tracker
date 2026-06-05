@@ -3,7 +3,7 @@ import {
   InterviewStatus,
   Recommendation,
   UserRole,
-} from '@/lib/generated/prisma/client';
+} from '@/lib/generated/prisma/browser';
 
 // One source of truth for the dashboard's color palette. Pair the BADGE
 // classes with `<Badge variant='outline' className={`${BADGE[x]} border-0`}>`.

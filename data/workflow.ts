@@ -1,5 +1,3 @@
-// lib/data/workflow.ts
-
 import { db } from '@/lib/db';
 import { Prisma } from '@/lib/generated/prisma/browser';
 

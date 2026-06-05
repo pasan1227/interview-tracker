@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { UserRole } from '@/lib/generated/prisma/client';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { redirect } from 'next/navigation';
 
 export type SessionUser = {

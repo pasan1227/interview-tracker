@@ -7,7 +7,7 @@ import {
   InterviewStatus,
   Prisma,
   Recommendation,
-} from '@/lib/generated/prisma/client';
+} from '@/lib/generated/prisma/browser';
 import {
   ReportFiltersSchema,
   type ReportFiltersInput,

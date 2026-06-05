@@ -1,6 +1,6 @@
 import { BCRYPT_COST } from '@/lib/auth-constants';
 import { db } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma/client';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import bcrypt from 'bcryptjs';
 
 export async function getUserByEmail(email: string) {

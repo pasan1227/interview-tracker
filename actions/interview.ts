@@ -13,7 +13,7 @@ import {
   requireSession,
 } from '@/lib/authz';
 import { db } from '@/lib/db';
-import { InterviewStatus } from '@/lib/generated/prisma/client';
+import { InterviewStatus } from '@/lib/generated/prisma/browser';
 import {
   sendFeedbackReminderEmail,
   sendInterviewScheduleEmail,

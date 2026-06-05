@@ -83,7 +83,9 @@ export const generateTwoFactorToken = async (email: string) => {
 // By-token lookups accept the RAW token from the URL and hash it
 // before findUnique, since that's what's in the column.
 
-export const getVerificationTokenByEmail = (email: string) =>
+// Internal only — used by generateVerificationToken to clear the
+// existing row before issuing a new one.
+const getVerificationTokenByEmail = (email: string) =>
   safeFirst(() => db.verificationToken.findFirst({ where: { email } }));
 
 export const getVerificationTokenByToken = (rawToken: string) =>
@@ -91,7 +93,9 @@ export const getVerificationTokenByToken = (rawToken: string) =>
     db.verificationToken.findUnique({ where: { token: hashToken(rawToken) } })
   );
 
-export const getPasswordResetTokenByEmail = (email: string) =>
+// Internal only — used by generatePasswordResetToken to clear the
+// existing row before issuing a new one.
+const getPasswordResetTokenByEmail = (email: string) =>
   safeFirst(() => db.passwordResetToken.findFirst({ where: { email } }));
 
 export const getPasswordResetTokenByToken = (rawToken: string) =>
@@ -101,9 +105,6 @@ export const getPasswordResetTokenByToken = (rawToken: string) =>
 
 export const getTwoFactorTokenByEmail = (email: string) =>
   safeFirst(() => db.twoFactorToken.findFirst({ where: { email } }));
-
-export const getTwoFactorTokenByToken = (token: string) =>
-  safeFirst(() => db.twoFactorToken.findUnique({ where: { token } }));
 
 async function safeFirst<T>(fn: () => Promise<T | null>): Promise<T | null> {
   try {

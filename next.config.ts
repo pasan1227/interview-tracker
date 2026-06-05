@@ -8,6 +8,52 @@ const REMOTE_IMAGE_HOSTS = [
   'avatars.githubusercontent.com', // GitHub avatars
 ] as const;
 
+// Content-Security-Policy. Built as a directive list so each line is
+// audited individually. Notes on why each entry exists:
+//
+//   script-src — Next's App Router injects inline bootstrap scripts on
+//     every render, so 'unsafe-inline' is required for production. Dev
+//     also needs 'unsafe-eval' for Turbopack/Webpack HMR; we conditional
+//     it below. A future migration to nonce-based scripts (via middleware
+//     injecting per-request nonces) would let us drop 'unsafe-inline'.
+//   style-src — Tailwind v4 + shadcn variants emit inline style overrides
+//     for theming; 'unsafe-inline' stays until those move to CSS vars only.
+//   img-src — same host allowlist next/image already uses, plus data: and
+//     blob: for inline avatars / generated previews.
+//   connect-src — RSC + server actions hit same-origin; Upstash REST
+//     (rate limiter) is the only outbound destination from the client.
+//   frame-ancestors / X-Frame-Options — both refuse framing.
+//   object-src 'none' / base-uri 'self' — kill plugin / <base> hijack
+//     vectors that have no use in this app.
+const CSP_DIRECTIVES: Record<string, string[]> = {
+  'default-src': ["'self'"],
+  'script-src': ["'self'", "'unsafe-inline'"],
+  'style-src': ["'self'", "'unsafe-inline'"],
+  'img-src': [
+    "'self'",
+    'data:',
+    'blob:',
+    'https://lh3.googleusercontent.com',
+    'https://avatars.githubusercontent.com',
+  ],
+  'font-src': ["'self'", 'data:'],
+  'connect-src': ["'self'", 'https://*.upstash.io'],
+  'frame-ancestors': ["'none'"],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'"],
+};
+
+// Turbopack/Webpack HMR uses eval() in dev. Allow it only there.
+if (process.env.NODE_ENV !== 'production') {
+  CSP_DIRECTIVES['script-src'] = [...CSP_DIRECTIVES['script-src'], "'unsafe-eval'"];
+  CSP_DIRECTIVES['connect-src'] = [...CSP_DIRECTIVES['connect-src'], 'ws:', 'wss:'];
+}
+
+const CSP_VALUE = Object.entries(CSP_DIRECTIVES)
+  .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+  .join('; ');
+
 const SECURITY_HEADERS = [
   // Force HTTPS for a year, including subdomains. Drop `preload` until you've
   // actually submitted to hstspreload.org.
@@ -24,6 +70,8 @@ const SECURITY_HEADERS = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   },
+  // Last line of defense against XSS exfil. See CSP_DIRECTIVES above.
+  { key: 'Content-Security-Policy', value: CSP_VALUE },
 ];
 
 const nextConfig: NextConfig = {

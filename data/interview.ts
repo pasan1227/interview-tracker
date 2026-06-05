@@ -1,5 +1,3 @@
-// lib/data/interview.ts
-
 import { db } from '@/lib/db';
 import {
   InterviewStatus,
