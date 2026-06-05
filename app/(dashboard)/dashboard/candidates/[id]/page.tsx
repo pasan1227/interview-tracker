@@ -1,5 +1,3 @@
-// app/(dashboard)/dashboard/candidates/[id]/page.tsx
-
 import { requirePageRole } from '@/lib/authz';
 import { CandidateFeedback } from '@/components/candidates/candidate-feedback';
 import { CandidateInfo } from '@/components/candidates/candidate-info';
@@ -9,31 +7,41 @@ import { CandidateStatusUpdate } from '@/components/candidates/candidate-status-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getCandidateById } from '@/data/candidate';
+import {
+  getCandidateFeedbackTab,
+  getCandidateHeader,
+  getCandidateInterviewsTab,
+  getCandidateNotesTab,
+} from '@/data/candidate';
 import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { CalendarIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 interface CandidateDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Header awaits the lightweight scalar+counts fetch synchronously; each
+// tab body is its own async server component wrapped in <Suspense>, so
+// the three relation queries fan out in parallel rather than blocking
+// the page header behind one giant include. Tabs are rendered in DOM by
+// the Radix Tabs primitive, so all three Suspense boundaries do fire on
+// initial paint — but they stream concurrently, not serially behind the
+// header.
+
 export default async function CandidateDetailsPage({
   params,
 }: CandidateDetailsPageProps) {
   // PII gate: candidate detail (name, email, notes, feedback) is
-  // manager/admin only. INTERVIEWER role accesses candidates via the
-  // interview detail page where their participation is verified.
+  // manager/admin only.
   await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { id } = await params;
 
-  const candidate = await getCandidateById(id);
-
-  if (!candidate) {
-    notFound();
-  }
+  const candidate = await getCandidateHeader(id);
+  if (!candidate) notFound();
 
   const statusClass =
     CANDIDATE_STATUS_BADGE[candidate.status] ?? CANDIDATE_STATUS_BADGE.NEW;
@@ -85,38 +93,66 @@ export default async function CandidateDetailsPage({
         <TabsList>
           <TabsTrigger value='info'>Information</TabsTrigger>
           <TabsTrigger value='interviews'>
-            Interviews ({candidate.interviews.length})
+            Interviews ({candidate._count.interviews})
           </TabsTrigger>
           <TabsTrigger value='feedback'>
-            Feedback ({candidate.feedbacks.length})
+            Feedback ({candidate._count.feedbacks})
           </TabsTrigger>
           <TabsTrigger value='notes'>
-            Notes ({candidate.notes.length})
+            Notes ({candidate._count.notes})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value='info' className='p-4 bg-white rounded-md border'>
+        <TabsContent value='info' className='rounded-md border bg-card p-4'>
           <CandidateInfo candidate={candidate} />
         </TabsContent>
 
         <TabsContent
           value='interviews'
-          className='p-4 bg-white rounded-md border'
+          className='rounded-md border bg-card p-4'
         >
-          <CandidateInterviews interviews={candidate.interviews} />
+          <Suspense fallback={<TabSkeleton />}>
+            <InterviewsSection candidateId={id} />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent
-          value='feedback'
-          className='p-4 bg-white rounded-md border'
-        >
-          <CandidateFeedback feedbacks={candidate.feedbacks} />
+        <TabsContent value='feedback' className='rounded-md border bg-card p-4'>
+          <Suspense fallback={<TabSkeleton />}>
+            <FeedbackSection candidateId={id} />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent value='notes' className='p-4 bg-white rounded-md border'>
-          <CandidateNotes notes={candidate.notes} candidateId={candidate.id} />
+        <TabsContent value='notes' className='rounded-md border bg-card p-4'>
+          <Suspense fallback={<TabSkeleton />}>
+            <NotesSection candidateId={id} />
+          </Suspense>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+async function InterviewsSection({ candidateId }: { candidateId: string }) {
+  const interviews = await getCandidateInterviewsTab(candidateId);
+  return <CandidateInterviews interviews={interviews} />;
+}
+
+async function FeedbackSection({ candidateId }: { candidateId: string }) {
+  const feedbacks = await getCandidateFeedbackTab(candidateId);
+  return <CandidateFeedback feedbacks={feedbacks} />;
+}
+
+async function NotesSection({ candidateId }: { candidateId: string }) {
+  const notes = await getCandidateNotesTab(candidateId);
+  return <CandidateNotes notes={notes} candidateId={candidateId} />;
+}
+
+function TabSkeleton() {
+  return (
+    <div className='space-y-3' aria-hidden>
+      <div className='h-20 rounded-md bg-secondary' />
+      <div className='h-20 rounded-md bg-secondary' />
+      <div className='h-20 rounded-md bg-secondary' />
     </div>
   );
 }

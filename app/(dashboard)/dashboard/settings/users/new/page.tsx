@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/settings/users/new/page.tsx
 
-import { UserForm } from '@/components/users/user-form';
+import { UserForm } from '@/components/users/user-form-lazy';
 import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
 

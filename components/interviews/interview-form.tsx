@@ -43,12 +43,21 @@ import { useStagesForPosition } from './use-stages-for-position';
 
 type InterviewFormValues = CreateInterviewInput;
 
+// Prop types here match what data/interview.ts:getInterviewForForm and
+// data/interview-form.ts:getInterviewFormOptions actually return — namely
+// SAFE_USER_SELECT shape (no password) and `name: string | null` because
+// User.name is nullable in the schema. The previous tighter shape
+// required three @ts-expect-error suppressions on the consuming pages.
 interface InterviewFormProps {
-  interview?: (Interview & { interviewers: User[] }) | null;
+  interview?:
+    | (Interview & {
+        interviewers: Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>[];
+      })
+    | null;
   defaultCandidateId?: string;
-  candidates: { id: string; name: string }[];
+  candidates: { id: string; name: string; positionId?: string | null }[];
   positions: { id: string; title: string }[];
-  interviewers: { id: string; name: string; email: string }[];
+  interviewers: { id: string; name: string | null; email: string }[];
   isEdit?: boolean;
 }
 
@@ -291,7 +300,7 @@ export function InterviewForm({
                 <MultiSelect
                   options={interviewers.map((i) => ({
                     value: i.id,
-                    label: i.name,
+                    label: i.name ?? i.email,
                   }))}
                   selected={field.value}
                   onChange={field.onChange}

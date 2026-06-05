@@ -3,7 +3,7 @@
 import {
   createInterview as createInterviewData,
   deleteInterview as deleteInterviewData,
-  getInterviewById,
+  getInterviewForEmails,
   updateInterview as updateInterviewData,
 } from '@/data/interview';
 import {
@@ -80,7 +80,7 @@ export async function createInterview(input: CreateInterviewInput) {
     },
   });
 
-  const complete = await getInterviewById(interview.id);
+  const complete = await getInterviewForEmails(interview.id);
   if (complete) await sendNewInterviewNotifications(complete);
 
   revalidatePath('/dashboard/interviews');
@@ -183,7 +183,7 @@ export async function markInterviewAsNoShow(formData: FormData) {
 // Email failures are logged but never block the mutation.
 async function handleStatusChangeEmails(interviewId: string, newStatus: InterviewStatus) {
   try {
-    const interview = await getInterviewById(interviewId);
+    const interview = await getInterviewForEmails(interviewId);
     if (!interview) return;
 
     if (newStatus === InterviewStatus.COMPLETED) {

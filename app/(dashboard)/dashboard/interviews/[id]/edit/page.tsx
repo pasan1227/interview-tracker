@@ -1,10 +1,10 @@
 // app/(dashboard)/dashboard/interviews/[id]/edit/page.tsx (continued)
 
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/auth';
-import { getInterviewById } from '@/data/interview';
+import { requirePageSession } from '@/lib/authz';
+import { getInterviewForForm } from '@/data/interview';
 import { getInterviewFormOptions } from '@/data/interview-form';
-import { InterviewForm } from '@/components/interviews/interview-form';
+import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditInterviewPageProps {
@@ -14,19 +14,13 @@ interface EditInterviewPageProps {
 export default async function EditInterviewPage({
   params,
 }: EditInterviewPageProps) {
-  const session = await auth();
+  const session = await requirePageSession();
   const { id } = await params;
-
-  if (!session?.user) {
-    redirect('/login');
-  }
 
   // Interview lookup + form bootstrap run in parallel. Gate runs after
   // we have the interview record.
-  const [interview, { candidates, positions, interviewers }] = await Promise.all([
-    getInterviewById(id),
-    getInterviewFormOptions(),
-  ]);
+  const [interview, { candidates, positions, interviewers }] =
+    await Promise.all([getInterviewForForm(id), getInterviewFormOptions()]);
 
   if (!interview) {
     notFound();
@@ -36,12 +30,11 @@ export default async function EditInterviewPage({
   // actions/interview.ts — managers/admins, the creator, or a listed
   // interviewer can edit.
   const isInterviewer = interview.interviewers.some(
-    (interviewer) => interviewer.id === session.user.id
+    (interviewer) => interviewer.id === session.id
   );
-  const isCreator = interview.createdById === session.user.id;
+  const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
-    session.user.role === UserRole.ADMIN ||
-    session.user.role === UserRole.MANAGER;
+    session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
   if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
     redirect('/dashboard');
   }
@@ -55,11 +48,9 @@ export default async function EditInterviewPage({
 
       <div className='rounded-md border p-6 bg-white'>
         <InterviewForm
-          //@ts-expect-error Interview type mismatch
           interview={interview}
           candidates={candidates}
           positions={positions}
-          //@ts-expect-error Interview type mismatch
           interviewers={interviewers}
           isEdit
         />

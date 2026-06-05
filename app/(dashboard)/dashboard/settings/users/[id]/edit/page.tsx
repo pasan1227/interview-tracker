@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
 import { getSafeUserById } from '@/data/user';
-import { UserForm } from '@/components/users/user-form';
+import { UserForm } from '@/components/users/user-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditUserPageProps {

@@ -150,6 +150,43 @@ export async function getInterviewByIdForViewer(
   };
 }
 
+// Edit form's needs: scalar fields + candidate/position labels +
+// current interviewer roster. Skips feedbacks + skill assessments
+// which the form doesn't render.
+export async function getInterviewForForm(id: string) {
+  try {
+    return await db.interview.findUnique({
+      where: { id },
+      include: {
+        candidate: { select: { id: true, name: true, email: true } },
+        position: { select: { id: true, title: true } },
+        interviewers: { select: SAFE_USER_SELECT },
+        stage: { select: { id: true, name: true, order: true } },
+      },
+    });
+  } catch (error) {
+    console.error('Failed to fetch interview for form:', error);
+    return null;
+  }
+}
+
+// Email side-effects only need recipients + subject-line fields, not
+// the full feedback tree.
+export async function getInterviewForEmails(id: string) {
+  try {
+    return await db.interview.findUnique({
+      where: { id },
+      include: {
+        candidate: { select: { id: true, name: true, email: true } },
+        interviewers: { select: SAFE_USER_SELECT },
+      },
+    });
+  } catch (error) {
+    console.error('Failed to fetch interview for emails:', error);
+    return null;
+  }
+}
+
 export async function getInterviewById(id: string) {
   try {
     const interview = await db.interview.findUnique({

@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/candidates/[id]/delete/page.tsx
 
 import { notFound } from 'next/navigation';
-import { getCandidateById } from '@/data/candidate';
+import { getCandidateForDelete } from '@/data/candidate';
 import { requirePageRole } from '@/lib/authz';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { CandidateDeleteForm } from '@/components/candidates/candidate-delete-form';
@@ -15,7 +15,7 @@ export default async function DeleteCandidatePageRoute({ params }: PageProps) {
   await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
   const { id } = await params;
 
-  const candidate = await getCandidateById(id);
+  const candidate = await getCandidateForDelete(id);
 
   if (!candidate) {
     notFound();
@@ -35,9 +35,9 @@ export default async function DeleteCandidatePageRoute({ params }: PageProps) {
         { label: 'Status', value: candidate.status.replace(/_/g, ' ') },
       ]}
       impact={[
-        { label: 'interviews', count: candidate.interviews.length },
-        { label: 'feedback entries', count: candidate.feedbacks.length },
-        { label: 'notes', count: candidate.notes.length },
+        { label: 'interviews', count: candidate._count.interviews },
+        { label: 'feedback entries', count: candidate._count.feedbacks },
+        { label: 'notes', count: candidate._count.notes },
       ]}
       cancelHref={`/dashboard/candidates/${candidate.id}`}
     >

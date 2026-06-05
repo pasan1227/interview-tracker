@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { requirePageRole } from '@/lib/authz';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { PositionForm } from '@/components/positions/position-form';
+import { PositionForm } from '@/components/positions/position-form-lazy';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditPositionPageProps {

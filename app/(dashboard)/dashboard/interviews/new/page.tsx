@@ -2,7 +2,7 @@
 
 import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
-import { InterviewForm } from '@/components/interviews/interview-form';
+import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { getInterviewFormOptions } from '@/data/interview-form';
 
 interface NewInterviewPageProps {
@@ -35,7 +35,6 @@ export default async function NewInterviewPage({
           defaultCandidateId={candidateId}
           candidates={candidates}
           positions={positions}
-          //@ts-expect-error Interview type mismatch
           interviewers={interviewers!}
         />
       </div>

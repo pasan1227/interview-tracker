@@ -84,6 +84,7 @@ const nextConfig: NextConfig = {
       'date-fns',
       'recharts',
       '@radix-ui/react-icons',
+      '@tanstack/react-table',
     ],
   },
   images: {

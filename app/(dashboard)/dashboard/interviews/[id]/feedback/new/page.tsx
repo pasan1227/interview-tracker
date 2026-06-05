@@ -3,7 +3,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getInterviewById } from '@/data/interview';
-import { FeedbackForm } from '@/components/feedback/feedback-form';
+import { FeedbackForm } from '@/components/feedback/feedback-form-lazy';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
 
 interface NewFeedbackPageProps {

@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/positions/new/page.tsx
 
-import { PositionForm } from '@/components/positions/position-form';
+import { PositionForm } from '@/components/positions/position-form-lazy';
 import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
 import { db } from '@/lib/db';

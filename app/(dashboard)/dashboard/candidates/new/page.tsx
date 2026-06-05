@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/candidates/new/page.tsx
 
 import { auth } from '@/auth';
-import { CandidateForm } from '@/components/candidates/candidate-form';
+import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
 import { getPositions } from '@/data/position';
 import { redirect } from 'next/navigation';
 

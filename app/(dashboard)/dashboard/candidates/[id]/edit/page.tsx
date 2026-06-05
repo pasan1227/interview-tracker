@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/candidates/[id]/edit/page.tsx
 
-import { CandidateForm } from '@/components/candidates/candidate-form';
-import { getCandidateById } from '@/data/candidate';
+import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
+import { getCandidateForForm } from '@/data/candidate';
 import { getPositions } from '@/data/position';
 import { requirePageRole } from '@/lib/authz';
 import { UserRole } from '@/lib/generated/prisma/browser';
@@ -18,7 +18,7 @@ export default async function EditCandidatePage({
   const { id } = await params;
 
   const [candidate, positions] = await Promise.all([
-    getCandidateById(id),
+    getCandidateForForm(id),
     getPositions({ activeOnly: true }),
   ]);
   if (!candidate) notFound();
