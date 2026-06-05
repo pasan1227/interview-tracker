@@ -44,7 +44,7 @@ export function CandidateFeedback({ feedbacks }: CandidateFeedbackProps) {
             <div className='flex items-center justify-between mb-3'>
               <div className='flex items-center gap-3'>
                 <h3 className='font-medium'>{feedback.interviewer.name}</h3>
-                <Badge variant='outline' className={`${color} border-0`}>
+                <Badge variant='outline' style={color} className='border-0'>
                   {label}
                 </Badge>
               </div>
@@ -67,21 +67,33 @@ export function CandidateFeedback({ feedbacks }: CandidateFeedbackProps) {
                   {feedback.skillAssessments.map((assessment) => (
                     <div
                       key={assessment.id}
-                      className='rounded-md bg-slate-50 p-3'
+                      className='rounded-md bg-muted p-3'
                     >
                       <div className='flex items-center justify-between'>
                         <p className='font-medium text-sm'>
                           {assessment.skill}
                         </p>
-                        <div className='flex items-center gap-1'>
+                        <div
+                          className='flex items-center gap-1'
+                          role='img'
+                          aria-label={`${assessment.rating} out of 5`}
+                        >
                           {Array.from({ length: 5 }).map((_, i) => (
                             <StarIcon
                               key={i}
-                              className={`h-4 w-4 ${
-                                i < assessment.rating
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
+                              aria-hidden
+                              className='h-4 w-4'
+                              strokeWidth={1.75}
+                              style={{
+                                color:
+                                  i < assessment.rating
+                                    ? 'var(--forest)'
+                                    : 'var(--border)',
+                                fill:
+                                  i < assessment.rating
+                                    ? 'var(--forest)'
+                                    : 'transparent',
+                              }}
                             />
                           ))}
                         </div>

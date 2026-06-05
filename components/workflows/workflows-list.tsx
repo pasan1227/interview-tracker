@@ -10,6 +10,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getWorkflows } from '@/data/workflow';
+import {
+  WORKFLOW_DEFAULT_BADGE,
+  WORKFLOW_INACTIVE_BADGE,
+} from '@/lib/constants/status-styles';
 import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -48,14 +52,16 @@ export async function WorkflowsList() {
                 {workflow.isDefault ? (
                   <Badge
                     variant='outline'
-                    className='bg-green-50 text-green-600 border-0'
+                    style={WORKFLOW_DEFAULT_BADGE}
+                    className='border-0'
                   >
                     Default
                   </Badge>
                 ) : (
                   <Badge
                     variant='outline'
-                    className='bg-slate-50 text-slate-600 border-0'
+                    style={WORKFLOW_INACTIVE_BADGE}
+                    className='border-0'
                   >
                     Custom
                   </Badge>

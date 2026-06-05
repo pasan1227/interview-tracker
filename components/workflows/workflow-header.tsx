@@ -18,6 +18,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import { PencilIcon, TrashIcon, CheckCircleIcon } from 'lucide-react';
 import { setWorkflowAsDefault } from '@/actions/workflow';
+import { WORKFLOW_DEFAULT_BADGE } from '@/lib/constants/status-styles';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -65,7 +66,7 @@ export function WorkflowHeader({ workflow }: WorkflowHeaderProps) {
         <div className='flex items-center justify-between'>
           <CardTitle>{workflow.name}</CardTitle>
           {workflow.isDefault && (
-            <Badge className='bg-green-100 text-green-800 border-0'>
+            <Badge style={WORKFLOW_DEFAULT_BADGE} className='border-0'>
               Default Workflow
             </Badge>
           )}

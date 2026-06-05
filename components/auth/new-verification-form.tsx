@@ -51,7 +51,10 @@ export function NewVerificationForm() {
           <div className='flex flex-col items-center space-y-6 text-center'>
             {isLoading && (
               <div className='flex flex-col items-center space-y-4'>
-                <ReloadIcon className='h-6 w-6 animate-spin text-blue-500' aria-label='Loading' />
+                <ReloadIcon
+                  className='h-6 w-6 animate-spin text-muted-foreground'
+                  aria-label='Loading'
+                />
                 <p className='text-sm text-muted-foreground animate-pulse'>
                   Verifying your email address...
                 </p>
@@ -60,14 +63,28 @@ export function NewVerificationForm() {
 
             {!isLoading && success && (
               <div className='flex flex-col items-center space-y-4'>
-                <div className='rounded-full bg-green-100 p-3'>
-                  <CheckCircle className='h-6 w-6 text-green-600' />
+                <div
+                  className='rounded-full p-3'
+                  style={{
+                    backgroundColor: 'var(--badge-success-bg)',
+                    color: 'var(--badge-success-fg)',
+                  }}
+                >
+                  <CheckCircle className='h-6 w-6' />
                 </div>
                 <div className='space-y-2'>
-                  <h2 className='text-lg font-semibold text-green-800'>
+                  <h2
+                    className='text-lg font-semibold'
+                    style={{ color: 'var(--forest)' }}
+                  >
                     Email Verified!
                   </h2>
-                  <p className='text-sm text-green-600'>{success}</p>
+                  <p
+                    className='text-sm'
+                    style={{ color: 'var(--forest)' }}
+                  >
+                    {success}
+                  </p>
                 </div>
                 <Button asChild className='mt-4'>
                   <Link href='/login'>Continue to Login</Link>
@@ -77,14 +94,20 @@ export function NewVerificationForm() {
 
             {!isLoading && error && (
               <div className='flex flex-col items-center space-y-4'>
-                <div className='rounded-full bg-red-100 p-3'>
-                  <AlertCircle className='h-6 w-6 text-red-600' />
+                <div
+                  className='rounded-full p-3'
+                  style={{
+                    backgroundColor: 'var(--badge-danger-bg)',
+                    color: 'var(--badge-danger-fg)',
+                  }}
+                >
+                  <AlertCircle className='h-6 w-6' />
                 </div>
                 <div className='space-y-2'>
-                  <h2 className='text-lg font-semibold text-red-800'>
+                  <h2 className='text-lg font-semibold text-destructive'>
                     Verification Failed
                   </h2>
-                  <p className='text-sm text-red-600'>{error}</p>
+                  <p className='text-sm text-destructive'>{error}</p>
                 </div>
                 <div className='flex space-x-2'>
                   <Button variant='outline' asChild>

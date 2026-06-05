@@ -71,7 +71,7 @@ export function DashboardHeader({ user }: Readonly<DashboardHeaderProps>) {
           >
             <span
               className='inline-block size-1.5 rounded-full'
-              style={{ backgroundColor: '#22C55E' }}
+              style={{ backgroundColor: 'var(--status-ok)' }}
             />
             All systems operational
           </div>

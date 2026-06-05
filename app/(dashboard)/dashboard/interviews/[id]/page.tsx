@@ -59,7 +59,7 @@ export default async function InterviewDetailPage({
         <div>
           <div className='flex items-center gap-3'>
             <h1 className='text-3xl font-bold'>{interview.title}</h1>
-            <Badge variant='outline' className={`${statusClass} border-0`}>
+            <Badge variant='outline' style={statusClass} className='border-0'>
               {interview.status.replace(/_/g, ' ')}
             </Badge>
           </div>

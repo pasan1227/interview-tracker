@@ -61,7 +61,8 @@ export function UsersList({ users }: Readonly<UsersListProps>) {
               <TableCell>
                 <Badge
                   variant='outline'
-                  className={`${USER_ROLE_BADGE[user.role]} border-0`}
+                  style={USER_ROLE_BADGE[user.role]}
+                  className='border-0'
                 >
                   {user.role}
                 </Badge>

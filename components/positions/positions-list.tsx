@@ -10,6 +10,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getPositions } from '@/data/position';
+import {
+  POSITION_ACTIVE_BADGE,
+  POSITION_INACTIVE_BADGE,
+} from '@/lib/constants/status-styles';
 import { formatDate } from '@/lib/utils';
 import { PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -53,14 +57,16 @@ export async function PositionsList() {
                 {position.isActive ? (
                   <Badge
                     variant='outline'
-                    className='bg-green-50 text-green-600 border-0'
+                    style={POSITION_ACTIVE_BADGE}
+                    className='border-0'
                   >
                     Active
                   </Badge>
                 ) : (
                   <Badge
                     variant='outline'
-                    className='bg-red-50 text-red-600 border-0'
+                    style={POSITION_INACTIVE_BADGE}
+                    className='border-0'
                   >
                     Inactive
                   </Badge>

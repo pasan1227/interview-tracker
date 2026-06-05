@@ -109,7 +109,8 @@ async function FeedbackList({ userId }: { userId: string }) {
               <TableCell>
                 <Badge
                   variant='outline'
-                  className={`${RECOMMENDATION_BADGE[feedback.recommendation]} border-0`}
+                  style={RECOMMENDATION_BADGE[feedback.recommendation]}
+                  className='border-0'
                 >
                   {feedback.recommendation.replace(/_/g, ' ')}
                 </Badge>

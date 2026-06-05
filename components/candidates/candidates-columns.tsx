@@ -57,7 +57,7 @@ export const CandidateColumns: ColumnDef<CandidateWithRelations>[] = [
       const color =
         CANDIDATE_STATUS_BADGE[status] ?? CANDIDATE_STATUS_BADGE.NEW;
       return (
-        <Badge variant='outline' className={`${color} border-0`}>
+        <Badge variant='outline' style={color} className='border-0'>
           {status.replace(/_/g, ' ')}
         </Badge>
       );

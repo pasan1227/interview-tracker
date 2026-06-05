@@ -45,7 +45,7 @@ export function CandidateInterviews({ interviews }: CandidateInterviewsProps) {
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-3'>
                 <h3 className='font-medium'>{interview.title}</h3>
-                <Badge variant='outline' className={`${color} border-0`}>
+                <Badge variant='outline' style={color} className='border-0'>
                   {interview.status.replace(/_/g, ' ')}
                 </Badge>
               </div>

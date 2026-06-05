@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  FEEDBACK_PENDING_BADGE,
+  FEEDBACK_SUBMITTED_BADGE,
+} from '@/lib/constants/status-styles';
+import {
   Candidate,
   Feedback,
   Interview,
@@ -202,7 +206,8 @@ export function InterviewDetail({
                       (hasFeedback ? (
                         <Badge
                           variant='outline'
-                          className='bg-green-50 text-green-600 border-0'
+                          style={FEEDBACK_SUBMITTED_BADGE}
+                          className='border-0'
                         >
                           <CheckCircleIcon className='mr-1 h-3 w-3' />
                           Feedback Submitted
@@ -210,7 +215,8 @@ export function InterviewDetail({
                       ) : (
                         <Badge
                           variant='outline'
-                          className='bg-amber-50 text-amber-600 border-0'
+                          style={FEEDBACK_PENDING_BADGE}
+                          className='border-0'
                         >
                           <XCircleIcon className='mr-1 h-3 w-3' />
                           Pending Feedback

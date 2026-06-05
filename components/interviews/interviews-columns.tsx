@@ -141,7 +141,7 @@ export const InterviewColumns: ColumnDef<InterviewWithRelations>[] = [
         INTERVIEW_STATUS_BADGE[status] ??
         INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
       return (
-        <Badge variant='outline' className={`${color} border-0`}>
+        <Badge variant='outline' style={color} className='border-0'>
           {status.replace(/_/g, ' ')}
         </Badge>
       );
