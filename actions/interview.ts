@@ -77,6 +77,7 @@ export async function createInterview(input: CreateInterviewInput) {
 
   revalidatePath('/dashboard/interviews');
   revalidatePath(`/dashboard/candidates/${data.candidateId}`);
+  revalidatePath('/dashboard');
   return interview;
 }
 
@@ -106,6 +107,7 @@ export async function updateInterview(id: string, input: UpdateInterviewInput) {
   if (interview.candidateId) {
     revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
   }
+  revalidatePath('/dashboard');
   return interview;
 }
 
@@ -116,6 +118,7 @@ export async function deleteInterview(id: string) {
 
   revalidatePath('/dashboard/interviews');
   revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
+  revalidatePath('/dashboard');
   return true;
 }
 
@@ -131,6 +134,7 @@ export async function updateInterviewStatus(id: string, status: string) {
   if (interview.candidateId) {
     revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
   }
+  revalidatePath('/dashboard');
   return interview;
 }
 

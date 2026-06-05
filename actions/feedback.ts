@@ -50,6 +50,7 @@ export async function createFeedback(input: CreateFeedbackInput) {
   revalidatePath(`/dashboard/interviews/${feedback.interviewId}`);
   revalidatePath(`/dashboard/candidates/${feedback.candidateId}`);
   revalidatePath('/dashboard/feedback');
+  revalidatePath('/dashboard');
   return feedback;
 }
 
@@ -77,6 +78,7 @@ export async function updateFeedback(id: string, input: UpdateFeedbackInput) {
   revalidatePath(`/dashboard/candidates/${feedback.candidateId}`);
   revalidatePath(`/dashboard/feedback/${id}`);
   revalidatePath('/dashboard/feedback');
+  revalidatePath('/dashboard');
   return feedback;
 }
 
@@ -97,5 +99,6 @@ export async function deleteFeedback(id: string) {
   revalidatePath(`/dashboard/interviews/${existing.interviewId}`);
   revalidatePath(`/dashboard/candidates/${existing.candidateId}`);
   revalidatePath('/dashboard/feedback');
+  revalidatePath('/dashboard');
   return true;
 }
