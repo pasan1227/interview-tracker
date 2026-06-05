@@ -3,9 +3,9 @@
 import {
   createInterview as createInterviewData,
   deleteInterview as deleteInterviewData,
-  getInterviewForEmails,
   updateInterview as updateInterviewData,
 } from '@/data/interview';
+import { enqueueInterviewEffect } from '@/effects/interview-mail';
 import {
   AuthzError,
   isManagerOrAdmin,
@@ -14,11 +14,6 @@ import {
 } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
-import {
-  sendFeedbackReminderEmail,
-  sendInterviewScheduleEmail,
-  sendNewInterviewNotifications,
-} from '@/lib/mail';
 import {
   CreateInterviewSchema,
   InterviewStatusSchema,
@@ -80,8 +75,7 @@ export async function createInterview(input: CreateInterviewInput) {
     },
   });
 
-  const complete = await getInterviewForEmails(interview.id);
-  if (complete) await sendNewInterviewNotifications(complete);
+  enqueueInterviewEffect({ type: 'created', interviewId: interview.id });
 
   revalidatePath('/dashboard/interviews');
   revalidatePath(`/dashboard/candidates/${data.candidateId}`);
@@ -119,7 +113,11 @@ export async function updateInterview(id: string, input: UpdateInterviewInput) {
   const interview = await updateInterviewData(id, updateData);
 
   if (data.status && data.status !== current.status) {
-    await handleStatusChangeEmails(id, data.status);
+    enqueueInterviewEffect({
+      type: 'status-changed',
+      interviewId: id,
+      newStatus: data.status,
+    });
   }
 
   revalidatePath(`/dashboard/interviews/${id}`);
@@ -152,7 +150,11 @@ export async function updateInterviewStatus(id: string, status: string) {
   // this guard, repeated "Mark as completed" clicks (or any no-op
   // status write) would spam reminder/schedule emails — once each click.
   if (parsed !== current.status) {
-    await handleStatusChangeEmails(id, parsed);
+    enqueueInterviewEffect({
+      type: 'status-changed',
+      interviewId: id,
+      newStatus: parsed,
+    });
   }
 
   revalidatePath(`/dashboard/interviews/${id}`);
@@ -185,50 +187,4 @@ export async function markInterviewAsNoShow(formData: FormData) {
   return setStatusFromForm(formData, InterviewStatus.NO_SHOW);
 }
 
-// ---------- Email side-effects ----------
-// Email failures are logged but never block the mutation.
-async function handleStatusChangeEmails(interviewId: string, newStatus: InterviewStatus) {
-  try {
-    const interview = await getInterviewForEmails(interviewId);
-    if (!interview) return;
-
-    if (newStatus === InterviewStatus.COMPLETED) {
-      await Promise.all(
-        interview.interviewers
-          .filter((i) => i.email)
-          .map((interviewer) =>
-            sendFeedbackReminderEmail({
-              to: interviewer.email!,
-              interviewerName: interviewer.name ?? '',
-              candidateName: interview.candidate.name,
-              interviewTitle: interview.title,
-              interviewDateTime: interview.startTime,
-              interviewId,
-            })
-          )
-      );
-      return;
-    }
-
-    if (newStatus === InterviewStatus.SCHEDULED) {
-      const interviewerNames = interview.interviewers.map((i) => i.name ?? '');
-      const scheduleArgs = {
-        candidateName: interview.candidate.name,
-        interviewTitle: interview.title,
-        interviewDateTime: interview.startTime,
-        interviewerNames,
-        location: interview.location ?? undefined,
-        notes: interview.notes ?? undefined,
-      };
-      const recipients = [
-        ...interview.interviewers.filter((i) => i.email).map((i) => i.email!),
-        ...(interview.candidate.email ? [interview.candidate.email] : []),
-      ];
-      await Promise.all(
-        recipients.map((to) => sendInterviewScheduleEmail({ to, ...scheduleArgs }))
-      );
-    }
-  } catch (error) {
-    console.error('Error sending status change emails:', error);
-  }
-}
+// Email side-effects live in @/effects/interview-mail.ts.
