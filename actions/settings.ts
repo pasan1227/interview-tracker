@@ -6,7 +6,7 @@ import {
   UpdateSettingsSchema,
   type UpdateSettingsInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
+import { revalidateSettings } from '@/lib/revalidate';
 
 export async function updateSettings(input: UpdateSettingsInput) {
   await requireAdmin();
@@ -20,7 +20,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
     defaultInterviewLength: data.defaultInterviewLength,
   });
 
-  revalidatePath('/dashboard/settings/general');
+  revalidateSettings();
   return settings;
 }
 

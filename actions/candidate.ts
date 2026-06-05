@@ -7,6 +7,7 @@ import {
 } from '@/data/candidate';
 import { requireManagerOrAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
+import { revalidateCandidate } from '@/lib/revalidate';
 import {
   CreateCandidateSchema,
   UpdateCandidateSchema,
@@ -14,7 +15,6 @@ import {
   type CreateCandidateInput,
   type UpdateCandidateInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
 import * as z from 'zod';
 
 export async function createCandidate(input: CreateCandidateInput) {
@@ -32,8 +32,7 @@ export async function createCandidate(input: CreateCandidateInput) {
     await db.note.create({ data: { content: notes, candidateId: candidate.id } });
   }
 
-  revalidatePath('/dashboard/candidates');
-  revalidatePath('/dashboard');
+  revalidateCandidate();
   return candidate;
 }
 
@@ -54,9 +53,7 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
     await db.note.create({ data: { content: notes, candidateId: id } });
   }
 
-  revalidatePath(`/dashboard/candidates/${id}`);
-  revalidatePath('/dashboard/candidates');
-  revalidatePath('/dashboard');
+  revalidateCandidate(id);
   return candidate;
 }
 
@@ -65,8 +62,7 @@ export async function deleteCandidate(id: string) {
 
   await deleteCandidateData(id);
 
-  revalidatePath('/dashboard/candidates');
-  revalidatePath('/dashboard');
+  revalidateCandidate();
   return true;
 }
 
@@ -93,7 +89,7 @@ export async function addCandidateNote(candidateId: string, content: string) {
     data: { content: trimmed, candidateId },
   });
 
-  revalidatePath(`/dashboard/candidates/${candidateId}`);
+  revalidateCandidate(candidateId);
   return note;
 }
 
@@ -103,9 +99,7 @@ export async function updateCandidateStatus(id: string, status: string) {
 
   const candidate = await updateCandidateData(id, { status: parsed });
 
-  revalidatePath(`/dashboard/candidates/${id}`);
-  revalidatePath('/dashboard/candidates');
-  revalidatePath('/dashboard');
+  revalidateCandidate(id);
   return candidate;
 }
 

@@ -17,7 +17,7 @@ import {
   type StageInput,
   type WorkflowInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
+import { revalidateWorkflow } from '@/lib/revalidate';
 import { z } from 'zod';
 
 // Bulk-reorder accepts an ordered list of stage IDs; cap it to keep
@@ -36,7 +36,7 @@ export async function createWorkflow(input: WorkflowInput) {
     isDefault: data.isDefault ?? false,
   });
 
-  revalidatePath('/dashboard/settings/workflows');
+  revalidateWorkflow();
   return workflow;
 }
 
@@ -50,15 +50,14 @@ export async function updateWorkflow(id: string, input: WorkflowInput) {
     isDefault: data.isDefault ?? false,
   });
 
-  revalidatePath(`/dashboard/settings/workflows/${id}`);
-  revalidatePath('/dashboard/settings/workflows');
+  revalidateWorkflow(id);
   return workflow;
 }
 
 export async function deleteWorkflow(id: string) {
   await requireAdmin();
   await deleteWorkflowData(id);
-  revalidatePath('/dashboard/settings/workflows');
+  revalidateWorkflow();
   return true;
 }
 
@@ -71,8 +70,7 @@ export async function setWorkflowAsDefault(id: string) {
   await requireAdmin();
   const wfId = z.string().cuid().parse(id);
   await updateWorkflowData(wfId, { isDefault: true });
-  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
-  revalidatePath('/dashboard/settings/workflows');
+  revalidateWorkflow(wfId);
   return true;
 }
 
@@ -93,7 +91,7 @@ export async function createStage(workflowId: string, input: StageInput) {
     workflow: { connect: { id: wfId } },
   });
 
-  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
+  revalidateWorkflow(wfId);
   return stage;
 }
 
@@ -112,7 +110,7 @@ export async function updateStage(id: string, input: StageInput) {
     select: { workflowId: true },
   });
   if (updated) {
-    revalidatePath(`/dashboard/settings/workflows/${updated.workflowId}`);
+    revalidateWorkflow(updated.workflowId);
   }
 
   return stage;
@@ -122,7 +120,7 @@ export async function deleteStage(id: string, workflowId: string) {
   await requireAdmin();
   const wfId = z.string().cuid().parse(workflowId);
   await deleteStageData(id);
-  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
+  revalidateWorkflow(wfId);
   return true;
 }
 
@@ -131,6 +129,6 @@ export async function reorderStages(workflowId: string, stageIds: string[]) {
   const wfId = z.string().cuid().parse(workflowId);
   const ids = ReorderSchema.parse(stageIds);
   await reorderStagesData(wfId, ids);
-  revalidatePath(`/dashboard/settings/workflows/${wfId}`);
+  revalidateWorkflow(wfId);
   return true;
 }

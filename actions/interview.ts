@@ -14,6 +14,7 @@ import {
 } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
+import { revalidateInterview } from '@/lib/revalidate';
 import {
   CreateInterviewSchema,
   InterviewStatusSchema,
@@ -21,7 +22,6 @@ import {
   type CreateInterviewInput,
   type UpdateInterviewInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
 
 // ---------- Authorization ----------
 // Anyone authenticated can create. Mutations require ADMIN/MANAGER, or the
@@ -77,9 +77,7 @@ export async function createInterview(input: CreateInterviewInput) {
 
   enqueueInterviewEffect({ type: 'created', interviewId: interview.id });
 
-  revalidatePath('/dashboard/interviews');
-  revalidatePath(`/dashboard/candidates/${data.candidateId}`);
-  revalidatePath('/dashboard');
+  revalidateInterview({ candidateId: data.candidateId });
   return interview;
 }
 
@@ -120,12 +118,7 @@ export async function updateInterview(id: string, input: UpdateInterviewInput) {
     });
   }
 
-  revalidatePath(`/dashboard/interviews/${id}`);
-  revalidatePath('/dashboard/interviews');
-  if (interview.candidateId) {
-    revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
-  }
-  revalidatePath('/dashboard');
+  revalidateInterview({ id, candidateId: interview.candidateId });
   return interview;
 }
 
@@ -134,9 +127,7 @@ export async function deleteInterview(id: string) {
 
   await deleteInterviewData(id);
 
-  revalidatePath('/dashboard/interviews');
-  revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
-  revalidatePath('/dashboard');
+  revalidateInterview({ candidateId: interview.candidateId });
   return true;
 }
 
@@ -157,12 +148,7 @@ export async function updateInterviewStatus(id: string, status: string) {
     });
   }
 
-  revalidatePath(`/dashboard/interviews/${id}`);
-  revalidatePath('/dashboard/interviews');
-  if (interview.candidateId) {
-    revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
-  }
-  revalidatePath('/dashboard');
+  revalidateInterview({ id, candidateId: interview.candidateId });
   return interview;
 }
 

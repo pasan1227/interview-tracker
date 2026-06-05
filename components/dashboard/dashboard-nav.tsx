@@ -13,6 +13,7 @@ import {
   Send,
 } from 'lucide-react';
 import { UserRole } from '@/lib/generated/prisma/browser';
+import { DASHBOARD_ROUTES } from '@/routes';
 
 interface DashboardNavProps {
   role?: UserRole;
@@ -26,14 +27,24 @@ const ALL_ROLES = [
 ];
 const MANAGER_ROLES = [UserRole.ADMIN, UserRole.MANAGER];
 
-const NAV_ITEMS = [
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ALL_ROLES },
-  { title: 'Candidates', href: '/dashboard/candidates', icon: Users, roles: ALL_ROLES },
-  { title: 'Interviews', href: '/dashboard/interviews', icon: Calendar, roles: ALL_ROLES },
-  { title: 'Feedback', href: '/dashboard/feedback', icon: ClipboardList, roles: ALL_ROLES },
-  { title: 'Reports', href: '/dashboard/reports', icon: BarChart, roles: MANAGER_ROLES },
-  { title: 'Positions', href: '/dashboard/positions', icon: Send, roles: MANAGER_ROLES },
-  { title: 'Settings', href: '/dashboard/settings', icon: Settings, roles: [UserRole.ADMIN] },
+// Explicit type widening so DASHBOARD_ROUTES' `as const` literal href
+// strings don't narrow the array tuple and break `roles.includes(role)`
+// inference on items with a single-role list.
+interface NavItem {
+  title: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  roles: UserRole[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { title: 'Dashboard', href: DASHBOARD_ROUTES.root, icon: LayoutDashboard, roles: ALL_ROLES },
+  { title: 'Candidates', href: DASHBOARD_ROUTES.candidates.list, icon: Users, roles: ALL_ROLES },
+  { title: 'Interviews', href: DASHBOARD_ROUTES.interviews.list, icon: Calendar, roles: ALL_ROLES },
+  { title: 'Feedback', href: DASHBOARD_ROUTES.feedback, icon: ClipboardList, roles: ALL_ROLES },
+  { title: 'Reports', href: DASHBOARD_ROUTES.reports, icon: BarChart, roles: MANAGER_ROLES },
+  { title: 'Positions', href: DASHBOARD_ROUTES.positions.list, icon: Send, roles: MANAGER_ROLES },
+  { title: 'Settings', href: DASHBOARD_ROUTES.settings.root, icon: Settings, roles: [UserRole.ADMIN] },
 ];
 
 export function DashboardNav({ role }: Readonly<DashboardNavProps>) {
@@ -61,7 +72,7 @@ export function DashboardNav({ role }: Readonly<DashboardNavProps>) {
           {items.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              (item.href !== DASHBOARD_ROUTES.root && pathname.startsWith(item.href));
 
             return (
               <li key={item.href}>

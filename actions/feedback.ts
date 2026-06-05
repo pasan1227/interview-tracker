@@ -2,13 +2,13 @@
 
 import { AuthzError, isAdmin, requireSession } from '@/lib/authz';
 import { db } from '@/lib/db';
+import { revalidateFeedback } from '@/lib/revalidate';
 import {
   CreateFeedbackSchema,
   UpdateFeedbackSchema,
   type CreateFeedbackInput,
   type UpdateFeedbackInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
 
 import {
   createFeedback as createFeedbackData,
@@ -47,10 +47,10 @@ export async function createFeedback(input: CreateFeedbackInput) {
     skillAssessments: data.skillAssessments,
   });
 
-  revalidatePath(`/dashboard/interviews/${feedback.interviewId}`);
-  revalidatePath(`/dashboard/candidates/${feedback.candidateId}`);
-  revalidatePath('/dashboard/feedback');
-  revalidatePath('/dashboard');
+  revalidateFeedback({
+    interviewId: feedback.interviewId,
+    candidateId: feedback.candidateId,
+  });
   return feedback;
 }
 
@@ -74,11 +74,11 @@ export async function updateFeedback(id: string, input: UpdateFeedbackInput) {
     skillAssessments: data.skillAssessments,
   });
 
-  revalidatePath(`/dashboard/interviews/${feedback.interviewId}`);
-  revalidatePath(`/dashboard/candidates/${feedback.candidateId}`);
-  revalidatePath(`/dashboard/feedback/${id}`);
-  revalidatePath('/dashboard/feedback');
-  revalidatePath('/dashboard');
+  revalidateFeedback({
+    feedbackId: id,
+    interviewId: feedback.interviewId,
+    candidateId: feedback.candidateId,
+  });
   return feedback;
 }
 
@@ -96,9 +96,9 @@ export async function deleteFeedback(id: string) {
 
   await deleteFeedbackData(id);
 
-  revalidatePath(`/dashboard/interviews/${existing.interviewId}`);
-  revalidatePath(`/dashboard/candidates/${existing.candidateId}`);
-  revalidatePath('/dashboard/feedback');
-  revalidatePath('/dashboard');
+  revalidateFeedback({
+    interviewId: existing.interviewId,
+    candidateId: existing.candidateId,
+  });
   return true;
 }

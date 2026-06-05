@@ -21,7 +21,7 @@ import {
   type UpdateUserActionInput,
 } from '@/lib/validations/auth';
 import bcrypt from 'bcryptjs';
-import { revalidatePath } from 'next/cache';
+import { revalidateUser } from '@/lib/revalidate';
 
 export async function createUser(input: AdminCreateUserInput) {
   const actor = await requireSession();
@@ -33,7 +33,7 @@ export async function createUser(input: AdminCreateUserInput) {
   if (existing) throw new Error('A user with that email already exists');
 
   const user = await createUserData(data);
-  revalidatePath('/dashboard/settings/users');
+  revalidateUser();
   return user;
 }
 
@@ -104,9 +104,7 @@ export async function updateUser(id: string, input: UpdateUserActionInput) {
     }
   }
 
-  revalidatePath('/dashboard/settings/users');
-  revalidatePath(`/dashboard/settings/users/${id}`);
-  revalidatePath('/dashboard/profile');
+  revalidateUser(id);
   return user;
 }
 
@@ -116,6 +114,6 @@ export async function deleteUser(id: string) {
   if (actor.id === id) throw new Error('Cannot delete your own account');
 
   await deleteUserData(id);
-  revalidatePath('/dashboard/settings/users');
+  revalidateUser();
   return true;
 }

@@ -6,11 +6,11 @@ import {
   updatePosition as updatePositionData,
 } from '@/data/position';
 import { requireManagerOrAdmin } from '@/lib/authz';
+import { revalidatePosition } from '@/lib/revalidate';
 import {
   PositionInputSchema,
   type PositionInput,
 } from '@/lib/validations/dashboard';
-import { revalidatePath } from 'next/cache';
 
 export async function createPosition(input: PositionInput) {
   await requireManagerOrAdmin();
@@ -25,7 +25,7 @@ export async function createPosition(input: PositionInput) {
     isActive: data.isActive ?? true,
   });
 
-  revalidatePath('/dashboard/positions');
+  revalidatePosition();
   return position;
 }
 
@@ -42,14 +42,13 @@ export async function updatePosition(id: string, input: PositionInput) {
     isActive: data.isActive ?? true,
   });
 
-  revalidatePath(`/dashboard/positions/${id}`);
-  revalidatePath('/dashboard/positions');
+  revalidatePosition(id);
   return position;
 }
 
 export async function deletePosition(id: string) {
   await requireManagerOrAdmin();
   await deletePositionData(id);
-  revalidatePath('/dashboard/positions');
+  revalidatePosition();
   return true;
 }
