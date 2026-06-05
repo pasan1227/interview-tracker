@@ -1,5 +1,9 @@
 import { db } from '@/lib/db';
 import { Prisma } from '@/lib/generated/prisma/browser';
+// Prisma.sql + Prisma.join are runtime helpers only exported from the
+// full client variant. Type-side `Prisma.*Input` types are still the
+// /browser namespace above.
+import { Prisma as PrismaRuntime } from '@/lib/generated/prisma/client';
 
 interface WorkflowWithStages
   extends Prisma.WorkflowGetPayload<{
@@ -224,17 +228,25 @@ export async function deleteStage(id: string) {
 }
 
 export async function reorderStages(workflowId: string, stageIds: string[]) {
+  if (stageIds.length === 0) return true;
   try {
-    // Update the order of stages based on the provided array order
-    await db.$transaction(
-      stageIds.map((stageId, index) =>
-        db.stage.update({
-          where: { id: stageId },
-          data: { order: index },
-        })
-      )
+    // Single-statement reorder. Previously this fired N sequential
+    // updates inside a $transaction — one round-trip per stage. The
+    // VALUES clause builds an inline tuple list (id, order) and the
+    // UPDATE joins against it, so the planner does the whole thing
+    // in one pass. The workflowId filter keeps the update scoped —
+    // even if a stale stageId from another workflow was passed in,
+    // it won't reorder cross-workflow.
+    const tuples = stageIds.map(
+      (id, idx) => PrismaRuntime.sql`(${id}::text, ${idx}::int)`
     );
-
+    await db.$executeRaw`
+      UPDATE "Stage" AS s
+      SET "order" = c.new_order
+      FROM (VALUES ${PrismaRuntime.join(tuples)}) AS c(id, new_order)
+      WHERE s."id" = c.id
+        AND s."workflowId" = ${workflowId}
+    `;
     return true;
   } catch (error) {
     console.error('Failed to reorder stages:', error);

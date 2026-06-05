@@ -1,5 +1,5 @@
-import { auth } from '@/auth';
 import { UserRole } from '@/lib/generated/prisma/browser';
+import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
 export type SessionUser = {
@@ -21,7 +21,11 @@ export class AuthzError extends Error {
 // how to surface the error (form alert, JSON 401, etc.).
 
 export async function requireSession(): Promise<SessionUser> {
-  const session = await auth();
+  // Route through getSession() so the per-request React.cache dedupes
+  // the auth() call (which now hits getUserById on every invocation
+  // post-S4). Without this, the dashboard layout + page each issued
+  // their own jwt() → getUserById roundtrip.
+  const session = await getSession();
   if (!session?.user?.id) throw new AuthzError('Unauthorized');
   return {
     id: session.user.id,
@@ -49,7 +53,7 @@ export const requireManagerOrAdmin = () =>
 // inline pattern used in 30+ pages.
 
 export async function requirePageSession(): Promise<SessionUser> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) redirect('/login');
   return {
     id: session.user.id,
