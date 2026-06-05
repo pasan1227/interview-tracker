@@ -1,45 +1,35 @@
 'use server';
 
+import { requireManagerOrAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
 import {
   CandidateStatus,
   InterviewStatus,
   Recommendation,
-} from '@/lib/generated/prisma/browser';
+} from '@/lib/generated/prisma/client';
+import {
+  ReportFiltersSchema,
+  type ReportFiltersInput,
+} from '@/lib/validations/dashboard';
 import { format, subMonths } from 'date-fns';
+import { z } from 'zod';
 
-export interface ReportFilters {
-  startDate?: Date;
-  endDate?: Date;
-  positionId?: string;
-  source?: string;
-  minInterviews?: number;
-}
+// Public input type is the loose form-style shape; internally we coerce.
+export type ReportFilters = ReportFiltersInput;
+type ParsedFilters = z.infer<typeof ReportFiltersSchema>;
 
-// Helper function to sanitize filters
-function sanitizeFilters(filters: ReportFilters = {}): ReportFilters {
-  // Handle special case of "$undefined" serialized values
-  return {
-    startDate:
-      filters.startDate instanceof Date ? filters.startDate : undefined,
-    endDate: filters.endDate instanceof Date ? filters.endDate : undefined,
-    positionId:
-      filters.positionId && filters.positionId !== '$undefined'
-        ? filters.positionId
-        : undefined,
-    source:
-      filters.source && filters.source !== '$undefined'
-        ? filters.source
-        : undefined,
-    minInterviews:
-      filters.minInterviews && String(filters.minInterviews) !== '$undefined'
-        ? Number(filters.minInterviews)
-        : undefined,
-  };
+// Strip "$undefined" sentinels Next.js may emit through server-action
+// serialization, then validate with Zod.
+function sanitizeFilters(filters: ReportFilters = {}): ParsedFilters {
+  const cleaned = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== undefined && v !== '$undefined')
+  );
+  const result = ReportFiltersSchema.safeParse(cleaned);
+  return result.success ? result.data : {};
 }
 
 export async function getCandidateStatusReport(rawFilters: ReportFilters = {}) {
-  // Sanitize the filters to handle "$undefined" values
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
@@ -106,7 +96,7 @@ export async function getCandidateStatusReport(rawFilters: ReportFilters = {}) {
 }
 
 export async function getSourceReport(rawFilters: ReportFilters = {}) {
-  // Sanitize the filters
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
@@ -171,7 +161,7 @@ export async function getSourceReport(rawFilters: ReportFilters = {}) {
 }
 
 export async function getPositionReport(rawFilters: ReportFilters = {}) {
-  // Sanitize the filters
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
@@ -256,7 +246,7 @@ export async function getPositionReport(rawFilters: ReportFilters = {}) {
 }
 
 export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
-  // Sanitize the filters
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
@@ -365,7 +355,7 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
 export async function getInterviewOutcomeReport(
   rawFilters: ReportFilters = {}
 ) {
-  // Sanitize the filters
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {
@@ -458,7 +448,7 @@ export async function getInterviewOutcomeReport(
 }
 
 export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
-  // Sanitize the filters
+  await requireManagerOrAdmin();
   const filters = sanitizeFilters(rawFilters);
 
   try {

@@ -1,106 +1,104 @@
 'use server';
 
-import { auth } from '@/auth';
 import {
   createInterview as createInterviewData,
   deleteInterview as deleteInterviewData,
   getInterviewById,
   updateInterview as updateInterviewData,
 } from '@/data/interview';
-import { InterviewStatus } from '@/lib/generated/prisma/browser';
+import { AuthzError, isManagerOrAdmin, requireSession } from '@/lib/authz';
+import { db } from '@/lib/db';
+import { InterviewStatus } from '@/lib/generated/prisma/client';
 import {
   sendFeedbackReminderEmail,
   sendInterviewScheduleEmail,
   sendNewInterviewNotifications,
 } from '@/lib/mail';
+import {
+  CreateInterviewSchema,
+  InterviewStatusSchema,
+  UpdateInterviewSchema,
+  type CreateInterviewInput,
+  type UpdateInterviewInput,
+} from '@/lib/validations/dashboard';
 import { revalidatePath } from 'next/cache';
 
-export async function createInterview(data: any) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Format dates if they are provided as strings
-  if (typeof data.startTime === 'string') {
-    data.startTime = new Date(data.startTime);
-  }
-
-  if (typeof data.endTime === 'string') {
-    data.endTime = new Date(data.endTime);
-  }
-
-  // Add creator info
-  const interviewData = {
-    ...data,
-    createdById: session.user.id,
-    interviewers: {
-      connect: data.interviewerIds?.map((id: string) => ({ id })) || [
-        { id: session.user.id },
-      ],
+// ---------- Authorization ----------
+// Anyone authenticated can create. Mutations require ADMIN/MANAGER, or the
+// creator, or someone listed as an interviewer.
+async function authorizeInterviewMutation(interviewId: string) {
+  const user = await requireSession();
+  const interview = await db.interview.findUnique({
+    where: { id: interviewId },
+    select: {
+      id: true,
+      createdById: true,
+      candidateId: true,
+      status: true,
+      interviewers: { select: { id: true } },
     },
-  };
+  });
+  if (!interview) throw new AuthzError('Interview not found');
 
-  // Remove interviewerIds as we've processed it
-  delete interviewData.interviewerIds;
+  const allowed =
+    isManagerOrAdmin(user) ||
+    interview.createdById === user.id ||
+    interview.interviewers.some((i) => i.id === user.id);
+  if (!allowed) throw new AuthzError('Forbidden');
 
-  const interview = await createInterviewData(interviewData);
+  return { user, interview };
+}
 
-  // Fetch the complete interview with related data for emails
-  const completeInterview = await getInterviewById(interview.id);
+// ---------- Actions ----------
 
-  // Send email notifications if we have the complete data
-  if (completeInterview) {
-    await sendNewInterviewNotifications(completeInterview);
-  }
+export async function createInterview(input: CreateInterviewInput) {
+  const user = await requireSession();
+  const data = CreateInterviewSchema.parse(input);
+
+  const interview = await createInterviewData({
+    title: data.title,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    location: data.location ?? null,
+    notes: data.notes ?? null,
+    type: data.type,
+    status: data.status ?? InterviewStatus.SCHEDULED,
+    candidateId: data.candidateId,
+    positionId: data.positionId,
+    stageId: data.stageId ?? null,
+    createdById: user.id,
+    interviewers: {
+      connect: data.interviewerIds.map((id) => ({ id })),
+    },
+  });
+
+  const complete = await getInterviewById(interview.id);
+  if (complete) await sendNewInterviewNotifications(complete);
 
   revalidatePath('/dashboard/interviews');
   revalidatePath(`/dashboard/candidates/${data.candidateId}`);
   return interview;
 }
 
-export async function updateInterview(id: string, data: any) {
-  const session = await auth();
+export async function updateInterview(id: string, input: UpdateInterviewInput) {
+  const { interview: current } = await authorizeInterviewMutation(id);
+  const data = UpdateInterviewSchema.parse(input);
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Get the current interview to check for status changes
-  const currentInterview = await getInterviewById(id);
-
-  if (!currentInterview) {
-    throw new Error('Interview not found');
-  }
-
-  // Format dates if they are provided as strings
-  if (typeof data.startTime === 'string') {
-    data.startTime = new Date(data.startTime);
-  }
-
-  if (typeof data.endTime === 'string') {
-    data.endTime = new Date(data.endTime);
-  }
-
-  // Process interviewers if provided
-  const updateData: any = { ...data };
-
-  if (data.interviewerIds) {
-    updateData.interviewers = {
-      set: data.interviewerIds.map((id: string) => ({ id })),
-    };
-    delete updateData.interviewerIds;
+  const { interviewerIds, ...rest } = data;
+  const updateData: Record<string, unknown> = {
+    ...rest,
+    location: rest.location ?? undefined,
+    notes: rest.notes ?? undefined,
+    stageId: rest.stageId ?? undefined,
+  };
+  if (interviewerIds) {
+    updateData.interviewers = { set: interviewerIds.map((id) => ({ id })) };
   }
 
   const interview = await updateInterviewData(id, updateData);
 
-  // Check if the status changed
-  const statusChanged = data.status && data.status !== currentInterview.status;
-
-  // If status changed, handle email notifications
-  if (statusChanged) {
-    await handleStatusChangeEmails(id, data.status, currentInterview);
+  if (data.status && data.status !== current.status) {
+    await handleStatusChangeEmails(id, data.status);
   }
 
   revalidatePath(`/dashboard/interviews/${id}`);
@@ -111,38 +109,22 @@ export async function updateInterview(id: string, data: any) {
   return interview;
 }
 
-export async function deleteInterview(id: string, candidateId: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
+export async function deleteInterview(id: string) {
+  const { interview } = await authorizeInterviewMutation(id);
 
   await deleteInterviewData(id);
 
   revalidatePath('/dashboard/interviews');
-  revalidatePath(`/dashboard/candidates/${candidateId}`);
+  revalidatePath(`/dashboard/candidates/${interview.candidateId}`);
   return true;
 }
 
 export async function updateInterviewStatus(id: string, status: string) {
-  const session = await auth();
+  const { status: parsed } = InterviewStatusSchema.parse({ status });
+  await authorizeInterviewMutation(id);
 
-  if (!session?.user?.id) {
-    throw new Error('Unauthorized');
-  }
-
-  // Get the current interview before updating
-  const currentInterview = await getInterviewById(id);
-
-  if (!currentInterview) {
-    throw new Error('Interview not found');
-  }
-
-  const interview = await updateInterviewData(id, { status });
-
-  // Handle email notifications based on new status
-  await handleStatusChangeEmails(id, status, currentInterview);
+  const interview = await updateInterviewData(id, { status: parsed });
+  await handleStatusChangeEmails(id, parsed);
 
   revalidatePath(`/dashboard/interviews/${id}`);
   revalidatePath('/dashboard/interviews');
@@ -152,117 +134,71 @@ export async function updateInterviewStatus(id: string, status: string) {
   return interview;
 }
 
-/**
- * Helper function to handle email notifications when status changes
- */
-async function handleStatusChangeEmails(
-  interviewId: string,
-  newStatus: string,
-  currentInterview: any
-) {
+async function setStatusFromForm(formData: FormData, status: InterviewStatus) {
+  const interviewId = formData.get('interviewId');
+  if (typeof interviewId !== 'string' || !interviewId) {
+    throw new Error('Interview ID is required');
+  }
+  await updateInterviewStatus(interviewId, status);
+  return { success: true };
+}
+
+export async function markInterviewAsCompleted(formData: FormData) {
+  return setStatusFromForm(formData, InterviewStatus.COMPLETED);
+}
+
+export async function markInterviewAsCanceled(formData: FormData) {
+  return setStatusFromForm(formData, InterviewStatus.CANCELED);
+}
+
+export async function markInterviewAsNoShow(formData: FormData) {
+  return setStatusFromForm(formData, InterviewStatus.NO_SHOW);
+}
+
+// ---------- Email side-effects ----------
+// Email failures are logged but never block the mutation.
+async function handleStatusChangeEmails(interviewId: string, newStatus: InterviewStatus) {
   try {
-    // If status is changed to COMPLETED, send feedback reminders
+    const interview = await getInterviewById(interviewId);
+    if (!interview) return;
+
     if (newStatus === InterviewStatus.COMPLETED) {
-      // Send feedback reminder emails to all interviewers
-      for (const interviewer of currentInterview.interviewers) {
-        if (interviewer.email) {
-          await sendFeedbackReminderEmail({
-            to: interviewer.email,
-            interviewerName:
-              `${interviewer.firstName} ${interviewer.lastName}`.trim(),
-            candidateName:
-              `${currentInterview.candidate.firstName} ${currentInterview.candidate.lastName}`.trim(),
-            interviewTitle: currentInterview.title,
-            interviewDateTime: currentInterview.startTime,
-            interviewId: interviewId,
-          });
-        }
-      }
-    }
-    // If status is changed to SCHEDULED (e.g. from CANCELED back to SCHEDULED)
-    else if (newStatus === InterviewStatus.SCHEDULED) {
-      const interviewerNames = currentInterview.interviewers.map(
-        (interviewer: any) =>
-          `${interviewer.firstName} ${interviewer.lastName}`.trim()
+      await Promise.all(
+        interview.interviewers
+          .filter((i) => i.email)
+          .map((interviewer) =>
+            sendFeedbackReminderEmail({
+              to: interviewer.email!,
+              interviewerName: interviewer.name ?? '',
+              candidateName: interview.candidate.name,
+              interviewTitle: interview.title,
+              interviewDateTime: interview.startTime,
+              interviewId,
+            })
+          )
       );
+      return;
+    }
 
-      // Send scheduling emails to interviewers and candidate
-      for (const interviewer of currentInterview.interviewers) {
-        if (interviewer.email) {
-          await sendInterviewScheduleEmail({
-            to: interviewer.email,
-            candidateName:
-              `${currentInterview.candidate.firstName} ${currentInterview.candidate.lastName}`.trim(),
-            interviewTitle: currentInterview.title,
-            interviewDateTime: currentInterview.startTime,
-            interviewerNames,
-            location: currentInterview.location || undefined,
-            notes: currentInterview.notes || undefined,
-          });
-        }
-      }
-
-      // Send to candidate if they have an email
-      if (currentInterview.candidate.email) {
-        await sendInterviewScheduleEmail({
-          to: currentInterview.candidate.email,
-          candidateName:
-            `${currentInterview.candidate.firstName} ${currentInterview.candidate.lastName}`.trim(),
-          interviewTitle: currentInterview.title,
-          interviewDateTime: currentInterview.startTime,
-          interviewerNames,
-          location: currentInterview.location || undefined,
-          notes: currentInterview.notes || undefined,
-        });
-      }
+    if (newStatus === InterviewStatus.SCHEDULED) {
+      const interviewerNames = interview.interviewers.map((i) => i.name ?? '');
+      const scheduleArgs = {
+        candidateName: interview.candidate.name,
+        interviewTitle: interview.title,
+        interviewDateTime: interview.startTime,
+        interviewerNames,
+        location: interview.location ?? undefined,
+        notes: interview.notes ?? undefined,
+      };
+      const recipients = [
+        ...interview.interviewers.filter((i) => i.email).map((i) => i.email!),
+        ...(interview.candidate.email ? [interview.candidate.email] : []),
+      ];
+      await Promise.all(
+        recipients.map((to) => sendInterviewScheduleEmail({ to, ...scheduleArgs }))
+      );
     }
   } catch (error) {
     console.error('Error sending status change emails:', error);
-    // Don't throw the error - we don't want to fail the status update if emails fail
   }
-}
-
-/**
- * Server action for marking an interview as completed via form submission
- */
-export async function markInterviewAsCompleted(formData: FormData) {
-  const interviewId = formData.get('interviewId') as string;
-
-  if (!interviewId) {
-    throw new Error('Interview ID is required');
-  }
-
-  await updateInterviewStatus(interviewId, InterviewStatus.COMPLETED);
-
-  return { success: true };
-}
-
-/**
- * Server action for marking an interview as canceled via form submission
- */
-export async function markInterviewAsCanceled(formData: FormData) {
-  const interviewId = formData.get('interviewId') as string;
-
-  if (!interviewId) {
-    throw new Error('Interview ID is required');
-  }
-
-  await updateInterviewStatus(interviewId, InterviewStatus.CANCELED);
-
-  return { success: true };
-}
-
-/**
- * Server action for marking an interview as no-show via form submission
- */
-export async function markInterviewAsNoShow(formData: FormData) {
-  const interviewId = formData.get('interviewId') as string;
-
-  if (!interviewId) {
-    throw new Error('Interview ID is required');
-  }
-
-  await updateInterviewStatus(interviewId, InterviewStatus.NO_SHOW);
-
-  return { success: true };
 }

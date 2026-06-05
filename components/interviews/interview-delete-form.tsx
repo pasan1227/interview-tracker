@@ -13,12 +13,10 @@ import { useState } from 'react';
 
 interface InterviewDeleteFormProps {
   interviewId: string;
-  candidateId: string;
 }
 
 export function InterviewDeleteForm({
   interviewId,
-  candidateId,
 }: InterviewDeleteFormProps) {
   const router = useRouter();
   const [confirmation, setConfirmation] = useState('');
@@ -37,7 +35,7 @@ export function InterviewDeleteForm({
     setError(null);
 
     try {
-      await deleteInterview(interviewId, candidateId);
+      await deleteInterview(interviewId);
       router.push('/dashboard/interviews');
       router.refresh();
     } catch (error) {
