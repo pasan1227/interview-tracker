@@ -1,21 +1,19 @@
-import { cn } from '@/lib/utils';
-import { Poppins } from 'next/font/google';
 import { FC } from 'react';
 
 interface HeaderProps {
   label: string;
+  title?: string;
 }
 
-const font = Poppins({
-  subsets: ['latin'],
-  weight: ['600'],
-});
-
-const Header: FC<HeaderProps> = ({ label }) => {
+const Header: FC<HeaderProps> = ({ label, title = 'Welcome back' }) => {
   return (
-    <div className='w-full flex flex-col gap-y-4 items-center justify-center'>
-      <h1 className={cn('text3xl font-semibold', font.className)}>🔐 Auth</h1>
-      <p className='text-muted-foreground text-sm'>{label}</p>
+    <div className='flex flex-col gap-2'>
+      <h1 className='text-[26px] font-semibold leading-[1.1] tracking-[-0.02em]'>
+        {title}
+      </h1>
+      <p className='text-[14px] leading-[1.5] text-muted-foreground'>
+        {label}
+      </p>
     </div>
   );
 };

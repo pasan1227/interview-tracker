@@ -1,5 +1,3 @@
-// components/auth/register-form.tsx
-
 'use client';
 
 import { useState } from 'react';
@@ -7,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { RegisterSchema } from '@/lib/validations/auth';
+import { CardWrapper } from '@/components/auth/card-wrapper';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,7 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { register } from '@/actions/auth/register';
 
 export function RegisterForm() {
@@ -64,27 +63,30 @@ export function RegisterForm() {
   }
 
   return (
-    <div className='w-full max-w-md space-y-6'>
-      <div className='space-y-2 text-center'>
-        <h1 className='text-3xl font-bold'>Create an account</h1>
-        <p className='text-gray-500'>
-          Enter your information to create an account
-        </p>
-      </div>
-
+    <CardWrapper
+      headerTitle='Create your account'
+      headerLabel='Start a free 30-day trial. No credit card required.'
+      backButtonLabel='Already have an account? Sign in'
+      backButtonHref='/login'
+    >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className='flex flex-col gap-4'
+        >
           <FormField
             control={form.control}
             name='name'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel className='text-[13px] font-medium'>Name</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder='John Doe'
+                    placeholder='Jane Doe'
+                    autoComplete='name'
                     disabled={isPending}
+                    className='h-11 bg-card'
                   />
                 </FormControl>
                 <FormMessage />
@@ -96,13 +98,15 @@ export function RegisterForm() {
             name='email'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className='text-[13px] font-medium'>Email</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type='email'
-                    placeholder='name@example.com'
+                    placeholder='name@company.com'
+                    autoComplete='email'
                     disabled={isPending}
+                    className='h-11 bg-card'
                   />
                 </FormControl>
                 <FormMessage />
@@ -114,43 +118,61 @@ export function RegisterForm() {
             name='password'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel className='text-[13px] font-medium'>
+                  Password
+                </FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type='password'
-                    placeholder='••••••••'
+                    placeholder='Use 8 or more characters'
+                    autoComplete='new-password'
                     disabled={isPending}
+                    className='h-11 bg-card'
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           {error && (
-            <div className='p-3 rounded-md bg-red-50 text-red-500 text-sm'>
+            <div
+              className='rounded-md border px-3 py-2 text-[13px]'
+              style={{
+                borderColor: 'color-mix(in oklch, var(--destructive) 30%, transparent)',
+                backgroundColor:
+                  'color-mix(in oklch, var(--destructive) 8%, transparent)',
+                color: 'var(--destructive)',
+              }}
+            >
               {error}
             </div>
           )}
           {success && (
-            <div className='p-3 rounded-md bg-green-50 text-green-500 text-sm'>
+            <div
+              className='rounded-md border px-3 py-2 text-[13px]'
+              style={{
+                borderColor: 'color-mix(in oklch, var(--forest) 30%, transparent)',
+                backgroundColor:
+                  'color-mix(in oklch, var(--forest) 8%, transparent)',
+                color: 'var(--forest)',
+              }}
+            >
               {success}
             </div>
           )}
-          <Button type='submit' className='w-full' disabled={isPending}>
-            {isPending ? 'Creating account...' : 'Register'}
+
+          <Button
+            type='submit'
+            disabled={isPending}
+            className='h-11 w-full gap-2 rounded-md text-[14px] font-medium'
+          >
+            {isPending ? 'Creating account…' : 'Create account'}
+            {!isPending && <ArrowRight className='size-4' strokeWidth={2} />}
           </Button>
         </form>
       </Form>
-
-      <div className='text-center text-sm'>
-        <p className='text-gray-500'>
-          Already have an account?{' '}
-          <Link href='/login' className='text-primary font-medium'>
-            Login
-          </Link>
-        </p>
-      </div>
-    </div>
+    </CardWrapper>
   );
 }

@@ -1,8 +1,5 @@
-// components/dashboard/dashboard-overview.tsx
-
 'use client';
 
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Candidate, Interview } from '@/lib/generated/prisma/browser';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLinkIcon } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface OverviewItem {
@@ -33,82 +30,97 @@ export function DashboardOverview({
   title,
   data,
   viewAllHref,
-}: DashboardOverviewProps) {
-  // Transform data to standard format
+}: Readonly<DashboardOverviewProps>) {
   const items: OverviewItem[] = data.map((item) => {
     if ('startTime' in item) {
-      // It's an interview
       const interview = item as Interview & {
         candidate: { name: string };
         position: { title: string };
       };
-
       return {
         id: interview.id,
         title: interview.title,
-        subtitle: `${interview.candidate.name} - ${interview.position.title}`,
+        subtitle: `${interview.candidate.name} · ${interview.position.title}`,
         date: new Date(interview.startTime),
         href: `/dashboard/interviews/${interview.id}`,
       };
-    } else {
-      // It's a candidate
-      const candidate = item as Candidate & {
-        position: { title: string } | null;
-      };
-
-      return {
-        id: candidate.id,
-        title: candidate.name,
-        subtitle: candidate.position?.title || 'No position',
-        date: new Date(candidate.createdAt),
-        href: `/dashboard/candidates/${candidate.id}`,
-      };
     }
+    const candidate = item as Candidate & {
+      position: { title: string } | null;
+    };
+    return {
+      id: candidate.id,
+      title: candidate.name,
+      subtitle: candidate.position?.title || 'No position',
+      date: new Date(candidate.createdAt),
+      href: `/dashboard/candidates/${candidate.id}`,
+    };
   });
 
   return (
-    <Card>
-      <CardHeader className='pb-2'>
-        <CardTitle>{title}</CardTitle>
+    <Card className='rounded-xl border-border bg-card shadow-none'>
+      <CardHeader className='flex flex-row items-center justify-between gap-3 border-b border-border'>
+        <CardTitle className='text-[15px] font-medium tracking-[-0.01em]'>
+          {title}
+        </CardTitle>
+        <span
+          className='text-[11.5px] font-medium uppercase tracking-[0.12em]'
+          style={{ color: 'var(--muted-foreground)' }}
+        >
+          {items.length} {items.length === 1 ? 'item' : 'items'}
+        </span>
       </CardHeader>
-      <CardContent className='pb-2'>
+      <CardContent className='p-0'>
         {items.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-6 text-center'>
-            <p className='text-sm text-muted-foreground'>No items to display</p>
+          <div className='flex flex-col items-center justify-center py-12 text-center'>
+            <p
+              className='text-[13px]'
+              style={{ color: 'var(--muted-foreground)' }}
+            >
+              Nothing here yet.
+            </p>
           </div>
         ) : (
-          <div className='space-y-4'>
+          <ul className='divide-y divide-border'>
             {items.map((item) => (
-              <div
+              <li
                 key={item.id}
-                className='flex items-center justify-between border-b pb-3 last:border-0'
+                className='flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-secondary/60'
               >
-                <div>
+                <div className='min-w-0 flex-1'>
                   <Link
                     href={item.href}
-                    className='font-medium hover:underline'
+                    className='block truncate text-[14px] font-medium leading-tight hover:underline'
                   >
                     {item.title}
                   </Link>
-                  <p className='text-sm text-muted-foreground'>
+                  <p
+                    className='mt-0.5 truncate text-[12.5px]'
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
                     {item.subtitle}
                   </p>
                 </div>
-                <div className='text-xs text-muted-foreground'>
+                <div
+                  className='shrink-0 text-[12px]'
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
                   {formatDistanceToNow(item.date, { addSuffix: true })}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </CardContent>
-      <CardFooter>
-        <Button variant='ghost' size='sm' className='w-full' asChild>
-          <Link href={viewAllHref}>
-            View All
-            <ExternalLinkIcon className='ml-2 h-4 w-4' />
-          </Link>
-        </Button>
+      <CardFooter className='border-t border-border px-6 py-3'>
+        <Link
+          href={viewAllHref}
+          className='ml-auto inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:opacity-80'
+          style={{ color: 'var(--forest)' }}
+        >
+          View all
+          <ArrowUpRight className='size-3.5' strokeWidth={2} />
+        </Link>
       </CardFooter>
     </Card>
   );

@@ -1,82 +1,106 @@
-// components/dashboard/dashboard-summary.tsx
-
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { DashboardStats } from '@/data/dashboard';
 import {
   BadgeCheckIcon,
   CalendarIcon,
   TimerIcon,
   UsersIcon,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface DashboardSummaryProps {
   stats: DashboardStats;
 }
 
-export function DashboardSummary({ stats }: DashboardSummaryProps) {
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  Icon: LucideIcon;
+  footnote: string;
+  delta?: number;
+}
+
+function StatCard({ label, value, Icon, footnote, delta }: Readonly<StatCardProps>) {
+  const hasDelta = typeof delta === 'number';
+  const isUp = (delta ?? 0) > 0;
   return (
-    <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-sm font-medium'>
-            Total Candidates
-          </CardTitle>
-          <UsersIcon className='h-4 w-4 text-muted-foreground' />
-        </CardHeader>
-        <CardContent>
-          <div className='text-2xl font-bold'>{stats.totalCandidates}</div>
-          <p className='text-xs text-muted-foreground'>
-            {stats.candidateChange > 0
-              ? `+${stats.candidateChange}% from last month`
-              : `${stats.candidateChange}% from last month`}
-          </p>
-        </CardContent>
-      </Card>
+    <Card className='rounded-xl border-border bg-card shadow-none transition-shadow hover:shadow-[0_1px_0_rgba(0,0,0,0.02),0_16px_32px_-22px_rgba(14,59,46,0.14)]'>
+      <CardContent className='flex flex-col gap-4 p-5'>
+        <div className='flex items-start justify-between'>
+          <span
+            className='text-[12px] font-medium uppercase tracking-[0.12em]'
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            {label}
+          </span>
+          <span
+            className='inline-flex size-8 items-center justify-center rounded-md border'
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--secondary)' }}
+          >
+            <Icon className='size-4' strokeWidth={1.75} style={{ color: 'var(--forest)' }} />
+          </span>
+        </div>
+        <div className='flex items-end justify-between gap-2'>
+          <div className='text-[28px] font-semibold leading-none tracking-[-0.025em]'>
+            {value}
+          </div>
+          {hasDelta && (
+            <span
+              className='inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-medium'
+              style={{
+                backgroundColor: isUp
+                  ? 'color-mix(in oklch, var(--forest) 10%, transparent)'
+                  : 'color-mix(in oklch, #A86510 10%, transparent)',
+                color: isUp ? 'var(--forest)' : '#A86510',
+              }}
+            >
+              {isUp ? <TrendingUp className='size-3' /> : <TrendingDown className='size-3' />}
+              {isUp ? '+' : ''}
+              {delta}%
+            </span>
+          )}
+        </div>
+        <div className='text-[12.5px]' style={{ color: 'var(--muted-foreground)' }}>
+          {footnote}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-sm font-medium'>
-            Scheduled Interviews
-          </CardTitle>
-          <CalendarIcon className='h-4 w-4 text-muted-foreground' />
-        </CardHeader>
-        <CardContent>
-          <div className='text-2xl font-bold'>{stats.scheduledInterviews}</div>
-          <p className='text-xs text-muted-foreground'>For the next 7 days</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-sm font-medium'>
-            Completed Interviews
-          </CardTitle>
-          <BadgeCheckIcon className='h-4 w-4 text-muted-foreground' />
-        </CardHeader>
-        <CardContent>
-          <div className='text-2xl font-bold'>{stats.completedInterviews}</div>
-          <p className='text-xs text-muted-foreground'>In the last 30 days</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-sm font-medium'>
-            Avg. Time to Hire
-          </CardTitle>
-          <TimerIcon className='h-4 w-4 text-muted-foreground' />
-        </CardHeader>
-        <CardContent>
-          <div className='text-2xl font-bold'>{stats.avgTimeToHire} days</div>
-          <p className='text-xs text-muted-foreground'>
-            {stats.timeToHireChange > 0
-              ? `+${stats.timeToHireChange}% from last quarter`
-              : `${stats.timeToHireChange}% from last quarter`}
-          </p>
-        </CardContent>
-      </Card>
+export function DashboardSummary({ stats }: Readonly<DashboardSummaryProps>) {
+  return (
+    <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+      <StatCard
+        label='Total candidates'
+        value={stats.totalCandidates}
+        Icon={UsersIcon}
+        footnote='Active pipeline'
+        delta={stats.candidateChange}
+      />
+      <StatCard
+        label='Scheduled interviews'
+        value={stats.scheduledInterviews}
+        Icon={CalendarIcon}
+        footnote='Next 7 days'
+      />
+      <StatCard
+        label='Completed interviews'
+        value={stats.completedInterviews}
+        Icon={BadgeCheckIcon}
+        footnote='Last 30 days'
+      />
+      <StatCard
+        label='Avg. time to hire'
+        value={`${stats.avgTimeToHire} days`}
+        Icon={TimerIcon}
+        footnote='Trailing quarter'
+        delta={stats.timeToHireChange}
+      />
     </div>
   );
 }
