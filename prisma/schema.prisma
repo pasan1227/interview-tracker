@@ -130,6 +130,12 @@ model Candidate {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Indexes — see migrations/.../add_query_indexes for rationale.
+  @@index([status])
+  @@index([positionId])
+  @@index([source])
+  @@index([createdAt])
 }
 
 model Position {
@@ -168,6 +174,11 @@ model Interview {
   createdById  String
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([startTime])
+  @@index([status])
+  @@index([candidateId])
+  @@index([positionId])
 }
 
 model Feedback {
@@ -187,6 +198,10 @@ model Feedback {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([interviewerId])
+  @@index([candidateId])
+  @@index([interviewId])
 }
 
 model SkillAssessment {
@@ -196,6 +211,8 @@ model SkillAssessment {
   comment    String?
   feedback   Feedback @relation(fields: [feedbackId], references: [id])
   feedbackId String
+
+  @@index([feedbackId])
 }
 
 model Workflow {
@@ -219,6 +236,8 @@ model Stage {
   interviews  Interview[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([workflowId])
 }
 
 model Tag {
@@ -234,17 +253,19 @@ model Note {
   candidateId String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([candidateId])
 }
 
 model Settings {
-  id                     String    @id @default(cuid())
-  companyName            String    @default("Company Name")
+  id                     String   @id @default(cuid())
+  companyName            String   @default("Company Name")
   companyLogo            String?
-  emailNotifications     Boolean   @default(true)
-  feedbackReminders      Boolean   @default(true)
-  defaultInterviewLength Int       @default(60) // minutes
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  emailNotifications     Boolean  @default(true)
+  feedbackReminders      Boolean  @default(true)
+  defaultInterviewLength Int      @default(60) // minutes
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // Enums

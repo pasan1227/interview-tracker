@@ -17,9 +17,6 @@ import { revalidatePath } from 'next/cache';
  * Workflow stages for the given position, used by the interview form to
  * populate the stage dropdown when the user picks a position. Read-only;
  * any authenticated user may call it.
- *
- * (Originally added in PR #16. Included here so this branch carries the
- * full union — see the PR description for the dependency note.)
  */
 export async function getStagesForPosition(positionId: string) {
   await requireSession();
