@@ -1,9 +1,6 @@
-// components/candidates/candidates-list.tsx
-
+import { PaginatedDataTable } from '@/components/ui/paginated-data-table';
 import { getCandidates } from '@/data/candidate';
-import { DataTable } from '@/components/ui/data-table';
 import { CandidateColumns } from './candidates-columns';
-import { PaginationButton } from '@/components/ui/pagination-button';
 
 interface CandidatesListProps {
   page: number;
@@ -25,37 +22,24 @@ export async function CandidatesList({
     position,
   });
 
+  const isFiltered = Boolean(search || status || position);
+
   return (
-    <div className='space-y-4'>
-      <DataTable
-        data={candidates}
-        columns={CandidateColumns}
-        emptyState={
-          <div className='flex h-[400px] flex-col items-center justify-center space-y-2 p-8 text-center'>
-            <h3 className='text-lg font-semibold'>No candidates found</h3>
-            <p className='text-sm text-muted-foreground'>
-              {search || status || position
-                ? 'Try changing your filters or search term'
-                : 'Create a new candidate to get started'}
-            </p>
-          </div>
-        }
-      />
-
-      {totalPages > 1 && (
-        <div className='flex justify-end'>
-          <PaginationButton
-            currentPage={page}
-            totalPages={totalPages}
-            baseUrl='/dashboard/candidates'
-            searchParams={{ search, status, position }}
-          />
-        </div>
-      )}
-
-      <div className='text-xs text-muted-foreground'>
-        {totalCandidates} candidates found
-      </div>
-    </div>
+    <PaginatedDataTable
+      data={candidates}
+      total={totalCandidates}
+      itemLabel={{ singular: 'candidate', plural: 'candidates' }}
+      columns={CandidateColumns}
+      page={page}
+      totalPages={totalPages}
+      baseUrl='/dashboard/candidates'
+      searchParams={{ search, status, position }}
+      emptyTitle='No candidates found'
+      emptyDescription={
+        isFiltered
+          ? 'Try changing your filters or search term'
+          : 'Create a new candidate to get started'
+      }
+    />
   );
 }
