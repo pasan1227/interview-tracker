@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useFormAction } from '@/hooks/use-form-action';
 import { ResetSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
@@ -21,30 +22,28 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 export function ResetForm() {
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
 
   const form = useForm<z.infer<typeof ResetSchema>>({
     resolver: zodResolver(ResetSchema),
     defaultValues: { email: '' },
   });
 
-  async function onSubmit(values: z.infer<typeof ResetSchema>) {
-    setIsPending(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const result = await reset(values);
-      if (result.error) setError(result.error);
-      if (result.success) {
-        setSuccess(result.success);
+  const { submit, isSubmitting: isPending, error } = useFormAction(
+    async (values: z.infer<typeof ResetSchema>) => reset(values),
+    {
+      errorMessage: 'Something went wrong',
+      onSuccess: (result) => {
+        setSuccess(result.message);
         form.reset();
-      }
-    } finally {
-      setIsPending(false);
+      },
     }
-  }
+  );
+
+  const onSubmit = async (values: z.infer<typeof ResetSchema>) => {
+    setSuccess(null);
+    await submit(values);
+  };
 
   return (
     <CardWrapper

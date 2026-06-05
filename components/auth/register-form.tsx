@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useFormAction } from '@/hooks/use-form-action';
 import { RegisterSchema } from '@/lib/validations/auth';
 import { CardWrapper } from '@/components/auth/card-wrapper';
 import { FormBanner } from '@/components/auth/form-banner';
@@ -23,9 +24,8 @@ import { register } from '@/actions/auth/register';
 
 export function RegisterForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  // success message stays local — useFormAction owns isSubmitting + error.
   const [success, setSuccess] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -36,32 +36,22 @@ export function RegisterForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof RegisterSchema>) {
-    setIsPending(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await register(values);
-
-      if (result?.error) {
-        setError(result.error);
-      }
-
-      if (result?.success) {
-        setSuccess(result.success);
+  const { submit, isSubmitting: isPending, error } = useFormAction(
+    async (values: z.infer<typeof RegisterSchema>) => register(values),
+    {
+      errorMessage: 'Something went wrong',
+      onSuccess: (result) => {
+        setSuccess(result.message);
         form.reset();
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError('Something went wrong');
-    } finally {
-      setIsPending(false);
+        setTimeout(() => router.push('/login'), 2000);
+      },
     }
-  }
+  );
+
+  const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+    setSuccess(null);
+    await submit(values);
+  };
 
   return (
     <CardWrapper

@@ -14,22 +14,27 @@ import * as z from 'zod';
 const GENERIC_SUCCESS =
   'If that email is available, we sent a confirmation link.';
 
+// Throws on invalid input, rate-limit hit, or any unexpected failure.
+// On success returns { message } for the form to display. Matches the
+// throw-on-error contract the non-auth actions use; the register form
+// reads error.message via useFormAction.
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
   const validated = RegisterSchema.safeParse(values);
-  if (!validated.success) return { error: 'Invalid fields!' };
+  if (!validated.success) throw new Error('Invalid fields!');
 
   const { email, name, password } = validated.data;
 
   const ip = await clientIp();
   const ipLimit = await rateLimit(`register:ip:${ip}`, { limit: 10, windowMs: 60_000 });
   if (!ipLimit.ok) {
-    return { error: 'Too many attempts. Please try again in a moment.' };
+    throw new Error('Too many attempts. Please try again in a moment.');
   }
 
   const existingUser = await getUserByEmail(email);
   if (existingUser) {
-    // Return the same success message to avoid email enumeration.
-    return { success: GENERIC_SUCCESS };
+    // Same response as the happy path so the form can't be used as an
+    // email-enumeration oracle.
+    return { message: GENERIC_SUCCESS };
   }
 
   const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
@@ -39,7 +44,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
   const verificationToken = await generateVerificationToken(email);
   await sendVerificationEmail(verificationToken.email, verificationToken.token);
 
-  return { success: GENERIC_SUCCESS };
+  return { message: GENERIC_SUCCESS };
 };
 
 async function clientIp() {

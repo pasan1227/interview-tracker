@@ -12,23 +12,25 @@ export const newPassword = async (
   values: z.infer<typeof NewPasswordSchema>,
   token?: string | null
 ) => {
-  if (!token) return { error: 'Missing token!' };
+  if (!token) throw new Error('Missing token!');
 
   const validated = NewPasswordSchema.safeParse(values);
-  if (!validated.success) return { error: 'Invalid password!' };
+  if (!validated.success) throw new Error('Invalid password!');
 
   const existingToken = await getPasswordResetTokenByToken(token);
-  if (!existingToken) return { error: 'Invalid token!' };
+  if (!existingToken) throw new Error('Invalid token!');
 
   if (new Date(existingToken.expires) < new Date()) {
     await db.passwordResetToken
       .delete({ where: { id: existingToken.id } })
       .catch(() => {});
-    return { error: 'Token has expired!' };
+    throw new Error('Token has expired!');
   }
 
   const existingUser = await getUserByEmail(existingToken.email);
-  if (!existingUser) return { error: 'Invalid token!' };
+  // Same generic message for "user gone" as "bad token" so the form
+  // can't fingerprint state by error text.
+  if (!existingUser) throw new Error('Invalid token!');
 
   const hashedPassword = await bcrypt.hash(validated.data.password, BCRYPT_COST);
 
@@ -40,5 +42,5 @@ export const newPassword = async (
     await tx.passwordResetToken.delete({ where: { id: existingToken.id } });
   });
 
-  return { success: 'Password updated. You can now sign in.' };
+  return { message: 'Password updated. You can now sign in.' };
 };

@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useFormAction } from '@/hooks/use-form-action';
 import { NewPasswordSchema } from '@/lib/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight } from 'lucide-react';
@@ -24,30 +25,29 @@ import { z } from 'zod';
 export function NewPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
 
   const form = useForm<z.infer<typeof NewPasswordSchema>>({
     resolver: zodResolver(NewPasswordSchema),
     defaultValues: { password: '' },
   });
 
-  async function onSubmit(values: z.infer<typeof NewPasswordSchema>) {
-    setIsPending(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const result = await newPassword(values, token);
-      if (result.error) setError(result.error);
-      if (result.success) {
-        setSuccess(result.success);
+  const { submit, isSubmitting: isPending, error } = useFormAction(
+    async (values: z.infer<typeof NewPasswordSchema>) =>
+      newPassword(values, token),
+    {
+      errorMessage: 'Something went wrong',
+      onSuccess: (result) => {
+        setSuccess(result.message);
         form.reset();
-      }
-    } finally {
-      setIsPending(false);
+      },
     }
-  }
+  );
+
+  const onSubmit = async (values: z.infer<typeof NewPasswordSchema>) => {
+    setSuccess(null);
+    await submit(values);
+  };
 
   return (
     <CardWrapper

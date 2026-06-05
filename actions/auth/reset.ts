@@ -13,30 +13,32 @@ const GENERIC_SUCCESS =
 
 export const reset = async (values: z.infer<typeof ResetSchema>) => {
   const validated = ResetSchema.safeParse(values);
-  if (!validated.success) return { error: 'Invalid email!' };
+  if (!validated.success) throw new Error('Invalid email!');
 
   const { email } = validated.data;
 
   const ip = await clientIp();
   const ipLimit = await rateLimit(`reset:ip:${ip}`, { limit: 5, windowMs: 60_000 });
   if (!ipLimit.ok) {
-    return { error: 'Too many attempts. Please try again in a moment.' };
+    throw new Error('Too many attempts. Please try again in a moment.');
   }
   const emailLimit = await rateLimit(`reset:email:${email}`, {
     limit: 3,
     windowMs: 10 * 60_000,
   });
   if (!emailLimit.ok) {
-    return { success: GENERIC_SUCCESS };
+    // Same generic success — don't leak that the per-email cap was hit
+    // (which would also be an enumeration oracle).
+    return { message: GENERIC_SUCCESS };
   }
 
   const user = await getUserByEmail(email);
-  if (!user?.password) return { success: GENERIC_SUCCESS };
+  if (!user?.password) return { message: GENERIC_SUCCESS };
 
   const token = await generatePasswordResetToken(email);
   await sendPasswordResetEmail(token.email, token.token);
 
-  return { success: GENERIC_SUCCESS };
+  return { message: GENERIC_SUCCESS };
 };
 
 async function clientIp() {
