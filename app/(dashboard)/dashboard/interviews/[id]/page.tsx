@@ -2,8 +2,8 @@
 
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/auth';
-import { getInterviewById } from '@/data/interview';
+import { requirePageSession } from '@/lib/authz';
+import { getInterviewByIdForViewer } from '@/data/interview';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InterviewDetail } from '@/components/interviews/interview-detail';
@@ -19,14 +19,13 @@ interface InterviewDetailPageProps {
 export default async function InterviewDetailPage({
   params,
 }: InterviewDetailPageProps) {
-  const session = await auth();
+  const session = await requirePageSession();
   const { id } = await params;
 
-  if (!session?.user) {
-    redirect('/login');
-  }
-
-  const interview = await getInterviewById(id);
+  const interview = await getInterviewByIdForViewer(id, {
+    id: session.id,
+    role: session.role,
+  });
 
   if (!interview) {
     notFound();
@@ -36,12 +35,11 @@ export default async function InterviewDetailPage({
   // listed interviewers can view this page. Everyone else lands on the
   // dashboard. Mirrors authorizeInterviewMutation in actions/interview.ts.
   const isInterviewer = interview.interviewers.some(
-    (interviewer) => interviewer.id === session.user.id
+    (interviewer) => interviewer.id === session.id
   );
-  const isCreator = interview.createdById === session.user.id;
+  const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
-    session.user.role === UserRole.ADMIN ||
-    session.user.role === UserRole.MANAGER;
+    session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
   if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
     redirect('/dashboard');
   }
@@ -52,7 +50,7 @@ export default async function InterviewDetailPage({
 
   // Check if the current user has already submitted feedback
   const hasSubmittedFeedback = interview.feedbacks.some(
-    (feedback) => feedback.interviewer.id === session.user.id
+    (feedback) => feedback.interviewer.id === session.id
   );
 
   return (
@@ -105,7 +103,7 @@ export default async function InterviewDetailPage({
         </div>
       </div>
 
-      <InterviewDetail interview={interview} currentUserId={session.user.id as string} />
+      <InterviewDetail interview={interview} currentUserId={session.id} />
     </div>
   );
 }

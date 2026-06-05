@@ -10,9 +10,11 @@ import { StarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDate } from '@/lib/utils';
 
+// Co-interviewer email may be scrubbed by getInterviewByIdForViewer for
+// non-manager/admin viewers — see data/interview.ts.
 interface InterviewFeedbackProps {
   feedback: Feedback & {
-    interviewer: Pick<User, 'id' | 'name' | 'email' | 'image'>;
+    interviewer: Pick<User, 'id' | 'name' | 'image'> & { email: string | null };
     skillAssessments: {
       id: string;
       skill: string;

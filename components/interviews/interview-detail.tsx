@@ -27,8 +27,13 @@ import {
 import Link from 'next/link';
 import { InterviewFeedback } from './interview-feedback';
 
+// `email` is nullable on co-interviewers' rows because getInterview
+// ByIdForViewer scrubs it for non-manager/admin viewers — see data/
+// interview.ts. The component must guard each render against null.
 type DetailedFeedback = Feedback & {
-  interviewer: Pick<User, 'id' | 'name' | 'email' | 'image'>;
+  interviewer: Pick<User, 'id' | 'name' | 'image'> & {
+    email: string | null;
+  };
   skillAssessments: {
     id: string;
     skill: string;
@@ -40,7 +45,9 @@ type DetailedFeedback = Feedback & {
 type DetailedInterview = Interview & {
   candidate: Candidate;
   position: Position;
-  interviewers: Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>[];
+  interviewers: (Pick<User, 'id' | 'name' | 'image' | 'role'> & {
+    email: string | null;
+  })[];
   stage: Stage | null;
   feedbacks: DetailedFeedback[];
 };
@@ -183,9 +190,11 @@ export function InterviewDetail({
                       </Avatar>
                       <div>
                         <p className='font-medium'>{interviewer.name}</p>
-                        <p className='text-xs text-muted-foreground'>
-                          {interviewer.email}
-                        </p>
+                        {interviewer.email && (
+                          <p className='text-xs text-muted-foreground'>
+                            {interviewer.email}
+                          </p>
+                        )}
                       </div>
                     </div>
 

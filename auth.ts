@@ -89,14 +89,23 @@ export const {
     async jwt({ token, trigger }) {
       if (!token.sub) return token;
 
-      // Reuse cached claims for steady-state requests; refresh only on
-      // sign-in, explicit session update, or first JWT creation.
+      // Always confirm the underlying user still exists. The lookup is
+      // an indexed point query — adds <1ms per request — and is the only
+      // way to revoke a JWT after deleteUser(). Returning an identity-
+      // less token effectively logs the holder out on the next request;
+      // session() below only writes user fields when token.sub is set.
+      const existingUser = await getUserById(token.sub);
+      if (!existingUser) {
+        return {};
+      }
+
+      // Refresh role / name / email / 2FA / OAuth claims only on
+      // sign-in, explicit session update, or first JWT creation —
+      // existence-check above runs every request, the claim refresh
+      // doesn't have to.
       const needsRefresh =
         trigger === 'signIn' || trigger === 'update' || !token.role;
       if (!needsRefresh) return token;
-
-      const existingUser = await getUserById(token.sub);
-      if (!existingUser) return token;
 
       const existingAccount = await getAccountByUserId(existingUser.id);
       token.isOAuth = !!existingAccount;

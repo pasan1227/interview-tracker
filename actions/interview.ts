@@ -90,16 +90,28 @@ export async function createInterview(input: CreateInterviewInput) {
 }
 
 export async function updateInterview(id: string, input: UpdateInterviewInput) {
-  const { interview: current } = await authorizeInterviewMutation(id);
-  const data = UpdateInterviewSchema.parse(input);
+  const { user, interview: current } = await authorizeInterviewMutation(id);
+  const parsed = UpdateInterviewSchema.parse(input);
+
+  // Privilege ceiling: only manager/admin can touch scheduling,
+  // assignment, or candidate/position pointers. A listed interviewer
+  // who could otherwise edit notes was previously able to reassign the
+  // interview to a different candidate, swap interviewer rosters, or
+  // re-trigger mass schedule emails. Restrict their writable surface
+  // to notes + status. (Status-spam via repeated SCHEDULED transitions
+  // is a separate ticket — S8 in the audit.)
+  const data: UpdateInterviewInput = isManagerOrAdmin(user)
+    ? parsed
+    : {
+        ...(parsed.notes !== undefined && { notes: parsed.notes }),
+        ...(parsed.status !== undefined && { status: parsed.status }),
+      };
 
   const { interviewerIds, ...rest } = data;
-  const updateData: Record<string, unknown> = {
-    ...rest,
-    location: rest.location ?? undefined,
-    notes: rest.notes ?? undefined,
-    stageId: rest.stageId ?? undefined,
-  };
+  const updateData: Record<string, unknown> = { ...rest };
+  if ('location' in rest) updateData.location = rest.location ?? undefined;
+  if ('notes' in rest) updateData.notes = rest.notes ?? undefined;
+  if ('stageId' in rest) updateData.stageId = rest.stageId ?? undefined;
   if (interviewerIds) {
     updateData.interviewers = { set: interviewerIds.map((id) => ({ id })) };
   }

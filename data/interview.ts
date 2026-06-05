@@ -1,7 +1,12 @@
 // lib/data/interview.ts
 
 import { db } from '@/lib/db';
-import { InterviewStatus, InterviewType, Prisma } from '@/lib/generated/prisma/browser';
+import {
+  InterviewStatus,
+  InterviewType,
+  Prisma,
+  UserRole,
+} from '@/lib/generated/prisma/browser';
 import { SAFE_USER_SELECT } from './user';
 
 interface GetInterviewsParams {
@@ -117,6 +122,34 @@ export async function getInterviews({
       totalPages: 0,
     };
   }
+}
+
+// View-scoped fetch: same shape as getInterviewById, but strips co-
+// interviewers' email addresses unless the viewer is a manager/admin.
+// The unsanitized variant stays available for server-internal callers
+// (createInterview's email fan-out, handleStatusChangeEmails) that
+// legitimately need every recipient.
+export async function getInterviewByIdForViewer(
+  id: string,
+  viewer: { id: string; role: UserRole }
+) {
+  const interview = await getInterviewById(id);
+  if (!interview) return null;
+  if (viewer.role === UserRole.ADMIN || viewer.role === UserRole.MANAGER) {
+    return interview;
+  }
+  // Non-privileged viewer: keep their own email, blank everyone else's.
+  return {
+    ...interview,
+    interviewers: interview.interviewers.map((i) =>
+      i.id === viewer.id ? i : { ...i, email: null }
+    ),
+    feedbacks: interview.feedbacks.map((f) =>
+      f.interviewer.id === viewer.id
+        ? f
+        : { ...f, interviewer: { ...f.interviewer, email: null } }
+    ),
+  };
 }
 
 export async function getInterviewById(id: string) {
