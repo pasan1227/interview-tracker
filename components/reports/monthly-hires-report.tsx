@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { CHART_POSITIVE } from '@/lib/constants/chart-palette';
 import type { MonthlyHiresReport as MonthlyHiresReportData } from '@/types/reports';
 import {
   Bar,
@@ -55,7 +56,7 @@ export function MonthlyHiresReport({ result }: MonthlyHiresReportProps) {
                   formatter={(value) => [`${value} hires`, 'Hires']}
                   labelFormatter={(label) => `Month: ${label}`}
                 />
-                <Bar dataKey='count' name='Hires' fill='#22c55e' />
+                <Bar dataKey='count' name='Hires' fill={CHART_POSITIVE} />
               </BarChart>
             </ResponsiveContainer>
           </div>

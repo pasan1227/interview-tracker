@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { CHART_INFO } from '@/lib/constants/chart-palette';
 import type { PositionReport } from '@/types/reports';
 import {
   Bar,
@@ -59,7 +60,7 @@ export function PositionsReport({ result }: PositionsReportProps) {
                   formatter={(value) => [`${value} candidates`, 'Count']}
                   labelFormatter={(label) => `Position: ${label}`}
                 />
-                <Bar dataKey='count' fill='#3b82f6'>
+                <Bar dataKey='count' fill={CHART_INFO}>
                   <LabelList dataKey='count' position='right' />
                 </Bar>
               </BarChart>

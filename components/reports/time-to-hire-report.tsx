@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { CHART_INFO } from '@/lib/constants/chart-palette';
 import type { TimeToHireReport as TimeToHireReportData } from '@/types/reports';
 import {
   Bar,
@@ -77,7 +78,7 @@ export function TimeToHireReport({ result }: TimeToHireReportProps) {
                   formatter={(value) => [`${value} days`, 'Avg. Time to Hire']}
                   labelFormatter={(label) => `Position: ${label}`}
                 />
-                <Bar dataKey='avgDays' fill='#3b82f6'>
+                <Bar dataKey='avgDays' fill={CHART_INFO}>
                   <LabelList
                     dataKey='avgDays'
                     position='right'

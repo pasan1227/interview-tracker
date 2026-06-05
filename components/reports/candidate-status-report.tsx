@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { CANDIDATE_STATUS_CHART_COLORS, CHART_NEUTRAL } from '@/lib/constants/chart-palette';
+import type { CandidateStatus } from '@/lib/generated/prisma/browser';
 import type { CandidateStatusReport as CandidateStatusReportData } from '@/types/reports';
 import {
   Cell,
@@ -20,15 +22,6 @@ import {
 interface CandidateStatusReportProps {
   result: CandidateStatusReportData;
 }
-
-const COLORS = [
-  '#3b82f6', // NEW - blue
-  '#f59e0b', // IN_PROCESS - amber
-  '#a855f7', // OFFERED - purple
-  '#22c55e', // HIRED - green
-  '#ef4444', // REJECTED - red
-  '#6b7280', // WITHDRAWN - gray
-];
 
 // Server fetches the result via @/actions/reports.getCandidateStatusReport
 // and passes it in. This component is purely the recharts shell — the
@@ -69,7 +62,14 @@ export function CandidateStatusReport({ result }: CandidateStatusReportProps) {
                   labelLine={false}
                 >
                   {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        CANDIDATE_STATUS_CHART_COLORS[
+                          entry.status as CandidateStatus
+                        ] ?? CHART_NEUTRAL
+                      }
+                    />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value, name) => [`${value} Candidates`, name]} />

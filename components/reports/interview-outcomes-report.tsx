@@ -10,6 +10,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  CHART_NEUTRAL,
+  RECOMMENDATION_CHART_COLORS,
+} from '@/lib/constants/chart-palette';
+import {
   Bar,
   BarChart,
   CartesianGrid,
@@ -27,13 +31,7 @@ interface InterviewOutcomesReportProps {
   result: InterviewOutcomeReport;
 }
 
-const COLORS: Record<Recommendation, string> = {
-  STRONG_HIRE: '#22c55e',
-  HIRE: '#4ade80',
-  NO_DECISION: '#94a3b8',
-  NO_HIRE: '#f87171',
-  STRONG_NO_HIRE: '#ef4444',
-};
+const COLORS = RECOMMENDATION_CHART_COLORS;
 
 export function InterviewOutcomesReport({ result }: InterviewOutcomesReportProps) {
   const data = result.data.map((item) => ({
@@ -101,7 +99,7 @@ export function InterviewOutcomesReport({ result }: InterviewOutcomesReportProps
                     {data.map((entry) => (
                       <Cell
                         key={entry.recommendation}
-                        fill={COLORS[entry.recommendation] ?? '#9ca3af'}
+                        fill={COLORS[entry.recommendation] ?? CHART_NEUTRAL}
                       />
                     ))}
                   </Pie>
@@ -134,7 +132,7 @@ export function InterviewOutcomesReport({ result }: InterviewOutcomesReportProps
                     {data.map((entry) => (
                       <Cell
                         key={entry.recommendation}
-                        fill={COLORS[entry.recommendation] ?? '#9ca3af'}
+                        fill={COLORS[entry.recommendation] ?? CHART_NEUTRAL}
                       />
                     ))}
                   </Bar>
@@ -150,7 +148,7 @@ export function InterviewOutcomesReport({ result }: InterviewOutcomesReportProps
               key={item.recommendation}
               className='flex justify-between rounded-md border p-3'
               style={{
-                borderLeftColor: COLORS[item.recommendation] ?? '#9ca3af',
+                borderLeftColor: COLORS[item.recommendation] ?? CHART_NEUTRAL,
                 borderLeftWidth: 4,
               }}
             >

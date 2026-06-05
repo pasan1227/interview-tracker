@@ -110,6 +110,19 @@
      in the dashboard header. Forest-tinted instead of the round-2 raw
      #22C55E so it inherits dark mode. */
   --status-ok: oklch(0.62 0.16 158);
+
+  /* Semantic chart tokens — drive every recharts surface via CSS vars so
+     the report palette flips in dark mode without per-component code.
+     Status (candidate) and recommendation (feedback) groups overlap on
+     purpose: HIRED and STRONG_HIRE share --chart-positive. */
+  --chart-positive: oklch(0.62 0.16 158);          /* green — HIRED, STRONG_HIRE */
+  --chart-positive-soft: oklch(0.74 0.15 158);      /* lighter green — HIRE */
+  --chart-warning: var(--badge-warning-fg);         /* amber — IN_PROCESS */
+  --chart-info: oklch(0.6 0.13 240);                /* blue — NEW */
+  --chart-violet: oklch(0.6 0.18 295);              /* purple — OFFERED */
+  --chart-negative: var(--destructive);             /* red — REJECTED, STRONG_NO_HIRE */
+  --chart-negative-soft: oklch(0.68 0.18 25);       /* lighter red — NO_HIRE */
+  --chart-neutral: oklch(0.6 0.012 260);            /* gray — WITHDRAWN, NO_DECISION */
 }
 
 .dark {
@@ -162,6 +175,15 @@
   --badge-accent-fg: oklch(0.85 0.1 161);
 
   --status-ok: oklch(0.72 0.18 158);
+
+  --chart-positive: oklch(0.72 0.18 158);
+  --chart-positive-soft: oklch(0.82 0.14 158);
+  --chart-warning: oklch(0.82 0.16 65);
+  --chart-info: oklch(0.7 0.13 240);
+  --chart-violet: oklch(0.72 0.18 295);
+  --chart-negative: oklch(0.78 0.18 22);
+  --chart-negative-soft: oklch(0.82 0.16 25);
+  --chart-neutral: oklch(0.72 0.012 260);
 }
 
 @layer base {

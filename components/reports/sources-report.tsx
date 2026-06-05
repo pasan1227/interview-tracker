@@ -7,17 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { SOURCE_CHART_PALETTE } from '@/lib/constants/chart-palette';
 import type { SourceReport } from '@/types/reports';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface SourcesReportProps {
   result: SourceReport;
 }
-
-const COLORS = [
-  '#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#ef4444',
-  '#0ea5e9', '#10b981', '#f97316', '#8b5cf6', '#6b7280',
-];
 
 export function SourcesReport({ result }: SourcesReportProps) {
   const topSources = result.data.slice(0, 10);
@@ -54,7 +50,10 @@ export function SourcesReport({ result }: SourcesReportProps) {
                   labelLine={false}
                 >
                   {topSources.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={SOURCE_CHART_PALETTE[index % SOURCE_CHART_PALETTE.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value, name) => [`${value} Candidates`, name]} />

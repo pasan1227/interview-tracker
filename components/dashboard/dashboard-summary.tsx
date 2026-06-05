@@ -51,9 +51,9 @@ function StatCard({ label, value, Icon, footnote, delta }: Readonly<StatCardProp
               className='inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11.5px] font-medium'
               style={{
                 backgroundColor: isUp
-                  ? 'color-mix(in oklch, var(--forest) 10%, transparent)'
-                  : 'color-mix(in oklch, #A86510 10%, transparent)',
-                color: isUp ? 'var(--forest)' : '#A86510',
+                  ? 'var(--badge-success-bg)'
+                  : 'var(--badge-warning-bg)',
+                color: isUp ? 'var(--badge-success-fg)' : 'var(--badge-warning-fg)',
               }}
             >
               {isUp ? <TrendingUp className='size-3' /> : <TrendingDown className='size-3' />}
