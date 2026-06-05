@@ -1,9 +1,10 @@
 import { Resend } from 'resend';
+import { env } from './env';
 import { formatDateTime } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(env.RESEND_API_KEY);
 
-const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const domain = env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // ---------- HTML safety ----------
 //
@@ -40,8 +41,17 @@ function html(strings: TemplateStringsArray, ...values: unknown[]): string {
 // extra headers (Bcc:, Cc:, etc.). Collapse any newline runs to a space.
 const headerSafe = (value: string) => value.replace(/[\r\n]+/g, ' ');
 
-const fromAddress = () =>
-  process.env.EMAIL_FROM || 'Acme <onboarding@resend.dev>';
+// In production every email must come from a domain we control. Falling back
+// to the shared `onboarding@resend.dev` lands real production mail in spam
+// and prevents DMARC alignment. In development we still allow the fallback
+// so contributors can run the app without setting up Resend.
+function fromAddress(): string {
+  if (env.EMAIL_FROM) return env.EMAIL_FROM;
+  if (env.NODE_ENV === 'production') {
+    throw new Error('EMAIL_FROM env var is required in production.');
+  }
+  return 'Acme <onboarding@resend.dev>';
+}
 
 // ---------- Senders ----------
 
@@ -105,7 +115,7 @@ export async function sendInterviewScheduleEmail({
 
   const linkUrl =
     actionUrl ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   // notes preserves user line breaks via <br>. Escape first, then convert
   // newlines, then mark the result raw so the html tag doesn't re-escape it.
@@ -168,9 +178,7 @@ export async function sendInterviewScheduleEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
@@ -214,8 +222,8 @@ export async function sendFeedbackReminderEmail({
   );
 
   const feedbackLink = interviewId
-    ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
-    : `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
+    ? `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interviewId}/feedback/new`
+    : `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews`;
 
   const body = html`
     <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
@@ -250,9 +258,7 @@ export async function sendFeedbackReminderEmail({
 
   try {
     const { data, error } = await resend.emails.send({
-      from:
-        process.env.EMAIL_FROM ||
-        'Interview Tracking <no-reply@yourcompany.com>',
+      from: fromAddress(),
       to: [to],
       subject,
       html: body,
@@ -271,49 +277,59 @@ export async function sendFeedbackReminderEmail({
   }
 }
 
+interface InterviewForNotification {
+  id: string;
+  title: string;
+  startTime: Date;
+  location: string | null;
+  notes: string | null;
+  candidate: { name: string; email: string };
+  interviewers: { name: string | null; email: string | null }[];
+}
+
 /**
- * Sends notification emails when a new interview is created
- * @param interview The interview data with related entities
+ * Sends notification emails when a new interview is created.
+ *
+ * The previous implementation read `interviewer.firstName` / `lastName`
+ * and `candidate.firstName` / `lastName` — but the Prisma schema only
+ * carries a single `name` field on User and Candidate. So every
+ * notification this function sent contained the literal string
+ * "undefined undefined" in place of every name. Fixed; sends in
+ * parallel; both emails go out even if one interviewer doesn't have
+ * an address.
  */
-export async function sendNewInterviewNotifications(interview: any) {
+export async function sendNewInterviewNotifications(
+  interview: InterviewForNotification
+) {
   try {
-    const interviewerNames = interview.interviewers.map((interviewer: any) =>
-      `${interviewer.firstName} ${interviewer.lastName}`.trim()
+    const interviewerNames = interview.interviewers
+      .map((i) => i.name?.trim())
+      .filter((n): n is string => Boolean(n));
+    const candidateName = interview.candidate.name;
+    const detailUrl = `${env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
+
+    const sharedArgs = {
+      candidateName,
+      interviewTitle: interview.title,
+      interviewDateTime: interview.startTime,
+      interviewerNames,
+      location: interview.location ?? undefined,
+      notes: interview.notes ?? undefined,
+      actionUrl: detailUrl,
+    };
+
+    const recipients: string[] = [
+      ...interview.interviewers
+        .map((i) => i.email)
+        .filter((email): email is string => Boolean(email)),
+      ...(interview.candidate.email ? [interview.candidate.email] : []),
+    ];
+
+    await Promise.all(
+      recipients.map((to) =>
+        sendInterviewScheduleEmail({ ...sharedArgs, to })
+      )
     );
-
-    const candidateName =
-      `${interview.candidate.firstName} ${interview.candidate.lastName}`.trim();
-    const detailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com'}/dashboard/interviews/${interview.id}`;
-
-    // Send to each interviewer
-    for (const interviewer of interview.interviewers) {
-      if (interviewer.email) {
-        await sendInterviewScheduleEmail({
-          to: interviewer.email,
-          candidateName,
-          interviewTitle: interview.title,
-          interviewDateTime: interview.startTime,
-          interviewerNames,
-          location: interview.location || undefined,
-          notes: interview.notes || undefined,
-          actionUrl: detailUrl,
-        });
-      }
-    }
-
-    // Send to candidate if they have an email
-    if (interview.candidate.email) {
-      await sendInterviewScheduleEmail({
-        to: interview.candidate.email,
-        candidateName,
-        interviewTitle: interview.title,
-        interviewDateTime: interview.startTime,
-        interviewerNames,
-        location: interview.location || undefined,
-        notes: interview.notes || undefined,
-        actionUrl: detailUrl,
-      });
-    }
 
     return true;
   } catch (error) {

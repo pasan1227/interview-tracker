@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
 import { PencilIcon, TrashIcon, CheckCircleIcon } from 'lucide-react';
-import { updateWorkflow } from '@/actions/workflow';
+import { setWorkflowAsDefault } from '@/actions/workflow';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -50,7 +50,7 @@ export function WorkflowHeader({ workflow }: WorkflowHeaderProps) {
     setIsSettingDefault(true);
 
     try {
-      await updateWorkflow(workflow.id, { isDefault: true });
+      await setWorkflowAsDefault(workflow.id);
       router.refresh();
     } catch (error) {
       console.error('Failed to set as default:', error);

@@ -128,6 +128,35 @@ export const PositionInputSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+// ---------- Workflow / Stage ----------
+
+export const WorkflowInputSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(120),
+  description: z.string().trim().max(2_000).optional().nullable(),
+  isDefault: z.boolean().optional(),
+});
+
+export const StageInputSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(120),
+  description: z.string().trim().max(2_000).optional().nullable(),
+});
+
+// ---------- Settings ----------
+
+export const UpdateSettingsSchema = z.object({
+  companyName: z.string().trim().min(1).max(120),
+  companyLogo: z
+    .string()
+    .url()
+    .max(2_048)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  emailNotifications: z.boolean(),
+  feedbackReminders: z.boolean(),
+  defaultInterviewLength: z.coerce.number().int().min(15).max(240),
+});
+
 // ---------- Reports ----------
 export const ReportFiltersSchema = z.object({
   startDate: z.coerce.date().optional(),
@@ -148,3 +177,6 @@ export type CreateFeedbackInput = z.input<typeof CreateFeedbackSchema>;
 export type UpdateFeedbackInput = z.input<typeof UpdateFeedbackSchema>;
 export type ReportFiltersInput = z.input<typeof ReportFiltersSchema>;
 export type PositionInput = z.input<typeof PositionInputSchema>;
+export type WorkflowInput = z.input<typeof WorkflowInputSchema>;
+export type StageInput = z.input<typeof StageInputSchema>;
+export type UpdateSettingsInput = z.input<typeof UpdateSettingsSchema>;

@@ -3,7 +3,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getUserById } from '@/data/user';
+import { getSafeUserById } from '@/data/user';
 import { Button } from '@/components/ui/button';
 import { UserDeleteForm } from '@/components/users/user-delete-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
@@ -27,7 +27,7 @@ export default async function DeleteUserPage({ params }: DeleteUserPageProps) {
     redirect('/dashboard');
   }
 
-  const user = await getUserById(id);
+  const user = await getSafeUserById(id);
 
   if (!user) {
     notFound();

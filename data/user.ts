@@ -21,6 +21,36 @@ export async function getUserById(id: string) {
   }
 }
 
+// Use this anywhere the result might flow to a client component, an admin
+// page that renders the user object, or anywhere else that doesn't need
+// the bcrypt hash. Selecting a column-list excludes `password` at the DB
+// boundary instead of relying on every caller to scrub it.
+const SAFE_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  emailVerified: true,
+  image: true,
+  role: true,
+  isTwoFactorEnabled: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+export type SafeUser = Awaited<ReturnType<typeof getSafeUserById>>;
+
+export async function getSafeUserById(id: string) {
+  try {
+    return await db.user.findUnique({
+      where: { id },
+      select: SAFE_USER_SELECT,
+    });
+  } catch (error) {
+    console.error('Error fetching safe user by ID:', error);
+    return null;
+  }
+}
+
 export async function createUser({
   name,
   email,
