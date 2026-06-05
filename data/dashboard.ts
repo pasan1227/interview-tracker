@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { CandidateStatus, InterviewStatus } from '@/lib/generated/prisma/browser';
 import { addDays, subDays, subMonths } from 'date-fns';
+import { cache } from 'react';
 
 export interface DashboardStats {
   totalCandidates: number;
@@ -44,7 +45,13 @@ const EMPTY_STATS: DashboardStats = {
   monthlyHires: [],
 };
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+// Request-scoped memoization. The dashboard renders SummarySection and
+// (for managers) ChartsSection as separate Suspense'd server components;
+// cache() lets both reuse one query result instead of running it twice
+// in parallel.
+export const getDashboardStats = cache(_getDashboardStats);
+
+async function _getDashboardStats(): Promise<DashboardStats> {
   try {
     const now = new Date();
     const lastMonth = subMonths(now, 1);

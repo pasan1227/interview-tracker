@@ -7,9 +7,14 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+// Mono is used only on the marketing landing (`/`) and on a couple of
+// product-preview eyebrows. preload:false keeps the .woff2 off the
+// critical path for dashboard navigations; the browser still fetches it
+// the moment something on the page reads `var(--font-geist-mono)`.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

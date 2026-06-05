@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -25,7 +24,17 @@ import { useUrlFilters } from '@/hooks/use-url-filters';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, FilterIcon, XIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+
+// react-day-picker only fetched when the popover actually opens.
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then((m) => m.Calendar),
+  {
+    ssr: false,
+    loading: () => <div className='h-72 w-72' aria-hidden />,
+  }
+);
 
 const KEYS = ['startDate', 'endDate', 'positionId', 'source'] as const;
 // Selects use 'All' as a sentinel value (Radix Select can't store '').

@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   FormControl,
   FormField,
@@ -18,7 +17,17 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import type { Control, FieldPath, FieldValues } from 'react-hook-form';
+
+// react-day-picker (~30KB) only loads when the popover opens.
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then((m) => m.Calendar),
+  {
+    ssr: false,
+    loading: () => <div className='h-72 w-72' aria-hidden />,
+  }
+);
 
 interface DateTimeFieldProps<TForm extends FieldValues> {
   control: Control<TForm>;

@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -19,8 +18,18 @@ import { useUrlFilters } from '@/hooks/use-url-filters';
 import { InterviewStatus, InterviewType } from '@/lib/generated/prisma/browser';
 import { format } from 'date-fns';
 import { CalendarIcon, FilterIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { DateRange } from 'react-day-picker';
+
+// react-day-picker is ~30KB. Only fetch it when the popover actually opens.
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then((m) => m.Calendar),
+  {
+    ssr: false,
+    loading: () => <div className='h-72 w-[36rem]' aria-hidden />,
+  }
+);
 
 const KEYS = ['status', 'type', 'date'] as const;
 const RESET = ['page'] as const;

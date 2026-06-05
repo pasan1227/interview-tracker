@@ -1,5 +1,3 @@
-'use client';
-
 import { Card, CardContent } from '@/components/ui/card';
 import { DashboardStats } from '@/data/dashboard';
 import {

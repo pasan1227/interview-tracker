@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { WorkflowHeader } from '@/components/workflows/workflow-header';
-import { WorkflowStages } from '@/components/workflows/workflow-stages';
+import { WorkflowStages } from '@/components/workflows/workflow-stages-lazy';
 import { getWorkflowById } from '@/data/workflow';
 import { UserRole } from '@/lib/generated/prisma/browser';
 

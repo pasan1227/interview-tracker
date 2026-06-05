@@ -2,8 +2,8 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { auth } from '@/auth';
-import { db } from '@/lib/db';
 import { getInterviewById } from '@/data/interview';
+import { getInterviewFormOptions } from '@/data/interview-form';
 import { InterviewForm } from '@/components/interviews/interview-form';
 import { UserRole } from '@/lib/generated/prisma/browser';
 
@@ -21,7 +21,12 @@ export default async function EditInterviewPage({
     redirect('/login');
   }
 
-  const interview = await getInterviewById(id);
+  // Interview lookup + form bootstrap run in parallel. Gate runs after
+  // we have the interview record.
+  const [interview, { candidates, positions, interviewers }] = await Promise.all([
+    getInterviewById(id),
+    getInterviewFormOptions(),
+  ]);
 
   if (!interview) {
     notFound();
@@ -40,47 +45,6 @@ export default async function EditInterviewPage({
   if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
     redirect('/dashboard');
   }
-
-  // Get candidates (filtering out any non-active ones)
-  const candidates = await db.candidate.findMany({
-    where: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      positionId: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  // Get positions (only active ones)
-  const positions = await db.position.findMany({
-    where: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
-  });
-
-  // Get all users who can be interviewers (excluding system users)
-  const interviewers = await db.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
 
   return (
     <div className='space-y-6'>

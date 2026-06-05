@@ -2,8 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { db } from '@/lib/db';
+import { UserRole } from '@/lib/generated/prisma/browser';
 import { InterviewForm } from '@/components/interviews/interview-form';
+import { getInterviewFormOptions } from '@/data/interview-form';
 
 interface NewInterviewPageProps {
   searchParams: Promise<{
@@ -17,50 +18,19 @@ export default async function NewInterviewPage({
   const session = await auth();
   const { candidateId } = await searchParams;
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login');
   }
+  // Matches createInterview's requireManagerOrAdmin gate. Avoids serving
+  // a form that submits to an action that will reject.
+  if (
+    session.user.role !== UserRole.ADMIN &&
+    session.user.role !== UserRole.MANAGER
+  ) {
+    redirect('/dashboard');
+  }
 
-  // Get candidates (filtering out any non-active ones)
-  const candidates = await db.candidate.findMany({
-    where: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      positionId: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  // Get positions (only active ones)
-  const positions = await db.position.findMany({
-    where: {
-      isActive: true,
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
-  });
-
-  // Get all users who can be interviewers (excluding system users)
-  const interviewers = await db.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
+  const { candidates, positions, interviewers } = await getInterviewFormOptions();
 
   return (
     <div className='space-y-6'>
