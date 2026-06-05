@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { CalendarIcon, ClockIcon, MapPinIcon, UsersIcon } from 'lucide-react';
 import { Interview, InterviewStatus, Stage, User } from '@/lib/generated/prisma/browser';
 
@@ -26,19 +27,12 @@ export function CandidateInterviews({ interviews }: CandidateInterviewsProps) {
     );
   }
 
-  const statusConfig = {
-    [InterviewStatus.SCHEDULED]: { color: 'bg-blue-50 text-blue-600' },
-    [InterviewStatus.COMPLETED]: { color: 'bg-green-50 text-green-600' },
-    [InterviewStatus.CANCELED]: { color: 'bg-red-50 text-red-600' },
-    [InterviewStatus.NO_SHOW]: { color: 'bg-yellow-50 text-yellow-600' },
-  };
-
   return (
     <div className='space-y-4'>
       {interviews.map((interview) => {
-        const { color } =
-          statusConfig[interview.status] ||
-          statusConfig[InterviewStatus.SCHEDULED];
+        const color =
+          INTERVIEW_STATUS_BADGE[interview.status] ??
+          INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
 
         return (
           <div

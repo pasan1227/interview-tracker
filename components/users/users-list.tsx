@@ -3,8 +3,9 @@
 'use client';
 
 import Link from 'next/link';
-import { User, UserRole } from '@/lib/generated/prisma/browser';
+import { User } from '@/lib/generated/prisma/browser';
 import { Badge } from '@/components/ui/badge';
+import { USER_ROLE_BADGE } from '@/lib/constants/status-styles';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -33,14 +34,6 @@ export function UsersList({ users }: UsersListProps) {
       </div>
     );
   }
-
-  // Define colors for different user roles
-  const roleColors = {
-    [UserRole.ADMIN]: 'bg-red-50 text-red-600',
-    [UserRole.MANAGER]: 'bg-purple-50 text-purple-600',
-    [UserRole.INTERVIEWER]: 'bg-blue-50 text-blue-600',
-    [UserRole.USER]: 'bg-gray-50 text-gray-600',
-  };
 
   return (
     <div className='rounded-md border'>
@@ -72,7 +65,7 @@ export function UsersList({ users }: UsersListProps) {
               <TableCell>
                 <Badge
                   variant='outline'
-                  className={`${roleColors[user.role]} border-0`}
+                  className={`${USER_ROLE_BADGE[user.role]} border-0`}
                 >
                   {user.role}
                 </Badge>

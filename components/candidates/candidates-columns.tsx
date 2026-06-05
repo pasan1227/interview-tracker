@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { MoreHorizontalIcon, ExternalLinkIcon } from 'lucide-react';
 import { Candidate, CandidateStatus, Position } from '@/lib/generated/prisma/browser';
 
@@ -53,18 +54,8 @@ export const CandidateColumns: ColumnDef<CandidateWithRelations>[] = [
     header: 'Status',
     cell: ({ row }) => {
       const status = row.original.status as CandidateStatus;
-      const statusConfig = {
-        [CandidateStatus.NEW]: { color: 'bg-blue-50 text-blue-600' },
-        [CandidateStatus.IN_PROCESS]: { color: 'bg-yellow-50 text-yellow-600' },
-        [CandidateStatus.OFFERED]: { color: 'bg-purple-50 text-purple-600' },
-        [CandidateStatus.HIRED]: { color: 'bg-green-50 text-green-600' },
-        [CandidateStatus.REJECTED]: { color: 'bg-red-50 text-red-600' },
-        [CandidateStatus.WITHDRAWN]: { color: 'bg-gray-50 text-gray-600' },
-      };
-
-      const { color } =
-        statusConfig[status] || statusConfig[CandidateStatus.NEW];
-
+      const color =
+        CANDIDATE_STATUS_BADGE[status] ?? CANDIDATE_STATUS_BADGE.NEW;
       return (
         <Badge variant='outline' className={`${color} border-0`}>
           {status.replace(/_/g, ' ')}

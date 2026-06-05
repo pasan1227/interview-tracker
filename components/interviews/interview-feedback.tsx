@@ -1,7 +1,11 @@
 // components/interviews/interview-feedback.tsx
 
-import { Feedback, Recommendation, User } from '@/lib/generated/prisma/browser';
+import { Feedback, User } from '@/lib/generated/prisma/browser';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  RECOMMENDATION_LABEL,
+  RECOMMENDATION_TEXT,
+} from '@/lib/constants/status-styles';
 import { StarIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDate } from '@/lib/utils';
@@ -19,24 +23,8 @@ interface InterviewFeedbackProps {
 }
 
 export function InterviewFeedback({ feedback }: InterviewFeedbackProps) {
-  const recommendationConfig = {
-    [Recommendation.STRONG_HIRE]: {
-      label: 'Strong Hire',
-      color: 'text-green-600',
-    },
-    [Recommendation.HIRE]: { label: 'Hire', color: 'text-green-600' },
-    [Recommendation.NO_DECISION]: {
-      label: 'No Decision',
-      color: 'text-gray-600',
-    },
-    [Recommendation.NO_HIRE]: { label: 'No Hire', color: 'text-red-600' },
-    [Recommendation.STRONG_NO_HIRE]: {
-      label: 'Strong No Hire',
-      color: 'text-red-600',
-    },
-  };
-
-  const recommendation = recommendationConfig[feedback.recommendation];
+  const recommendationLabel = RECOMMENDATION_LABEL[feedback.recommendation];
+  const recommendationColor = RECOMMENDATION_TEXT[feedback.recommendation];
 
   return (
     <Card>
@@ -61,8 +49,8 @@ export function InterviewFeedback({ feedback }: InterviewFeedbackProps) {
               </p>
             </div>
           </div>
-          <div className={`font-semibold ${recommendation.color}`}>
-            {recommendation.label}
+          <div className={`font-semibold ${recommendationColor}`}>
+            {recommendationLabel}
           </div>
         </div>
       </CardHeader>

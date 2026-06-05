@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCandidateById } from '@/data/candidate';
+import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { CalendarIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -35,16 +36,8 @@ export default async function CandidateDetailsPage({
     notFound();
   }
 
-  const statusConfig = {
-    NEW: 'bg-blue-50 text-blue-600',
-    IN_PROCESS: 'bg-yellow-50 text-yellow-600',
-    OFFERED: 'bg-purple-50 text-purple-600',
-    HIRED: 'bg-green-50 text-green-600',
-    REJECTED: 'bg-red-50 text-red-600',
-    WITHDRAWN: 'bg-gray-50 text-gray-600',
-  };
-
-  const statusClass = statusConfig[candidate.status] || statusConfig.NEW;
+  const statusClass =
+    CANDIDATE_STATUS_BADGE[candidate.status] ?? CANDIDATE_STATUS_BADGE.NEW;
 
   return (
     <div className='space-y-6'>
