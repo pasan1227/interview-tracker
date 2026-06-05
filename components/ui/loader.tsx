@@ -1,14 +1,22 @@
-import { FC } from 'react';
-import { BeatLoader } from 'react-spinners';
+import { ReloadIcon } from '@radix-ui/react-icons';
+import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
   className?: string;
 }
 
-export const LoadingSpinner: FC<LoadingSpinnerProps> = ({ className: _className }) => {
+export function LoadingSpinner({ className }: LoadingSpinnerProps) {
   return (
-    <div className='flex justify-center items-center h-full min-h-[400px]'>
-      <BeatLoader />
+    <div
+      className={cn(
+        'flex justify-center items-center h-full min-h-100',
+        className
+      )}
+    >
+      <ReloadIcon
+        className='h-8 w-8 animate-spin text-muted-foreground'
+        aria-label='Loading'
+      />
     </div>
   );
-};
+}
