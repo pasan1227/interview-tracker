@@ -6,12 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ReportFilters as ReportFiltersType } from '@/data/reports';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, type ComponentType } from 'react';
 
 // Each report ships its own recharts payload; load them lazily so opening
 // the page only pays for the active tab. ssr:false because recharts is
-// client-only and would otherwise dual-render. (Next requires the options
-// object to be an inline literal — that's why the same shape is duplicated.)
+// client-only. Next requires the options to be inline literals, so the
+// same {ssr,loading} shape is repeated below.
 const CandidateStatusReport = dynamic(
   () =>
     import('@/components/reports/candidate-status-report').then((m) => ({
@@ -55,58 +55,54 @@ const MonthlyHiresReport = dynamic(
   { ssr: false, loading: () => <ReportSkeleton /> }
 );
 
+type ReportComponent = ComponentType<{ filters: ReportFiltersType }>;
+
+interface TabDef {
+  value: string;
+  label: string;
+  Component: ReportComponent;
+}
+
+const TABS: readonly TabDef[] = [
+  { value: 'candidate-status', label: 'Candidate Status', Component: CandidateStatusReport },
+  { value: 'sources', label: 'Sources', Component: SourcesReport },
+  { value: 'positions', label: 'Positions', Component: PositionsReport },
+  { value: 'time-to-hire', label: 'Time to Hire', Component: TimeToHireReport },
+  { value: 'interview-outcomes', label: 'Interview Outcomes', Component: InterviewOutcomesReport },
+  { value: 'monthly-hires', label: 'Monthly Hires', Component: MonthlyHiresReport },
+];
+
+const DEFAULT_TAB = TABS[0].value;
+
 interface ReportsClientProps {
   positions: { id: string; title: string }[];
   sources: string[];
-  searchParams: {
-    startDate?: string;
-    endDate?: string;
-    positionId?: string;
-    source?: string;
-    tab?: string;
-  };
 }
 
-export function ReportsClient({
-  positions,
-  sources,
-  searchParams,
-}: ReportsClientProps) {
+export function ReportsClient({ positions, sources }: ReportsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const urlSearchParams = useSearchParams();
+  const params = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState(
-    searchParams.tab || 'candidate-status'
-  );
+  const activeTab = params.get('tab') || DEFAULT_TAB;
 
-  useEffect(() => {
-    setActiveTab(searchParams.tab || 'candidate-status');
-  }, [searchParams.tab]);
-
-  // Memoize so prop identity is stable when filter values are unchanged.
-  // Each report has `useEffect([filters])` and would otherwise refetch on
-  // every parent render.
+  // Read filter values straight from the reactive search params. Memoize so
+  // each report's `useEffect([filters])` only refetches when contents
+  // actually change.
   const filters = useMemo<ReportFiltersType>(
     () => ({
-      startDate: parseDate(searchParams.startDate),
-      endDate: parseDate(searchParams.endDate),
-      positionId: cleanString(searchParams.positionId),
-      source: cleanString(searchParams.source),
+      startDate: parseDate(params.get('startDate')),
+      endDate: parseDate(params.get('endDate')),
+      positionId: cleanString(params.get('positionId')),
+      source: cleanString(params.get('source')),
     }),
-    [
-      searchParams.startDate,
-      searchParams.endDate,
-      searchParams.positionId,
-      searchParams.source,
-    ]
+    [params]
   );
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    const params = new URLSearchParams(urlSearchParams.toString());
-    params.set('tab', value);
-    router.push(`${pathname}?${params.toString()}`);
+    const next = new URLSearchParams(params.toString());
+    next.set('tab', value);
+    router.push(`${pathname}?${next.toString()}`);
   };
 
   return (
@@ -130,45 +126,29 @@ export function ReportsClient({
         className='space-y-6'
       >
         <TabsList className='w-full grid grid-cols-3 lg:grid-cols-6'>
-          <TabsTrigger value='candidate-status'>Candidate Status</TabsTrigger>
-          <TabsTrigger value='sources'>Sources</TabsTrigger>
-          <TabsTrigger value='positions'>Positions</TabsTrigger>
-          <TabsTrigger value='time-to-hire'>Time to Hire</TabsTrigger>
-          <TabsTrigger value='interview-outcomes'>
-            Interview Outcomes
-          </TabsTrigger>
-          <TabsTrigger value='monthly-hires'>Monthly Hires</TabsTrigger>
+          {TABS.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>
+              {t.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value='candidate-status' className='p-0'>
-          <CandidateStatusReport filters={filters} />
-        </TabsContent>
-        <TabsContent value='sources' className='p-0'>
-          <SourcesReport filters={filters} />
-        </TabsContent>
-        <TabsContent value='positions' className='p-0'>
-          <PositionsReport filters={filters} />
-        </TabsContent>
-        <TabsContent value='time-to-hire' className='p-0'>
-          <TimeToHireReport filters={filters} />
-        </TabsContent>
-        <TabsContent value='interview-outcomes' className='p-0'>
-          <InterviewOutcomesReport filters={filters} />
-        </TabsContent>
-        <TabsContent value='monthly-hires' className='p-0'>
-          <MonthlyHiresReport filters={filters} />
-        </TabsContent>
+        {TABS.map(({ value, Component }) => (
+          <TabsContent key={value} value={value} className='p-0'>
+            <Component filters={filters} />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );
 }
 
-function parseDate(value?: string): Date | undefined {
+function parseDate(value: string | null): Date | undefined {
   if (!value || value === '$undefined') return undefined;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-function cleanString(value?: string): string | undefined {
+function cleanString(value: string | null): string | undefined {
   return value && value !== '$undefined' ? value : undefined;
 }
