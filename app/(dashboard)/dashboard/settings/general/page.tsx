@@ -1,15 +1,18 @@
 // app/(dashboard)/dashboard/settings/general/page.tsx
 
 import { getSettings } from '@/data/settings';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { GeneralSettingsForm } from '@/components/settings/general-settings-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 export default async function GeneralSettingsPage() {
-  await requirePageRole(UserRole.ADMIN);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+  ]);
 
-  const settings = await getSettings();
+  const settings = await getSettings(toOrgContext(user));
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

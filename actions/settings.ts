@@ -1,7 +1,7 @@
 'use server';
 
 import { updateSettings as updateSettingsData } from '@/data/settings';
-import { requireAdmin } from '@/lib/authz';
+import { requireOrgAdmin, toOrgContext } from '@/lib/authz';
 import {
   UpdateSettingsSchema,
   type UpdateSettingsInput,
@@ -9,10 +9,11 @@ import {
 import { revalidateSettings } from '@/lib/revalidate';
 
 export async function updateSettings(input: UpdateSettingsInput) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const data = UpdateSettingsSchema.parse(input);
 
-  const settings = await updateSettingsData({
+  const settings = await updateSettingsData(ctx, {
     companyName: data.companyName,
     companyLogo: emptyToNull(data.companyLogo),
     emailNotifications: data.emailNotifications,
