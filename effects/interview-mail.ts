@@ -89,6 +89,8 @@ async function onStatusChanged(
   const interview = await getInterviewForEmails(interviewId);
   if (!interview) return;
 
+  const orgName = interview.organization?.name;
+
   if (newStatus === InterviewStatus.COMPLETED) {
     const recipients = interview.interviewers
       .filter((i) => i.email)
@@ -100,6 +102,7 @@ async function onStatusChanged(
           interviewTitle: interview.title,
           interviewDateTime: interview.startTime,
           interviewId,
+          orgName,
         })
       );
     await runWithConcurrency(recipients, EMAIL_FANOUT_CONCURRENCY);
@@ -115,6 +118,7 @@ async function onStatusChanged(
       interviewerNames,
       location: interview.location ?? undefined,
       notes: interview.notes ?? undefined,
+      orgName,
     };
     const recipients = [
       ...interview.interviewers.filter((i) => i.email).map((i) => i.email!),

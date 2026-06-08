@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/interviews/page.tsx
 
-import { requirePageSession } from '@/lib/authz';
+import { requirePageOrgSession } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewsFilters } from '@/components/interviews/interviews-filters';
 import { InterviewsList } from '@/components/interviews/interviews-list';
@@ -19,7 +19,7 @@ interface InterviewsPageProps {
 export default async function InterviewsPage({
   searchParams,
 }: InterviewsPageProps) {
-  await requirePageSession();
+  await requirePageOrgSession();
   const awaitedParams = await searchParams;
 
   const { page, search, status, type, date } =

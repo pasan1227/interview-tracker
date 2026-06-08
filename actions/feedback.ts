@@ -1,7 +1,7 @@
 'use server';
 
-import { AuthzError, isAdmin, requireSession } from '@/lib/authz';
-import { db } from '@/lib/db';
+import { AuthzError, isOrgAdmin, requireOrgSession, toOrgContext } from '@/lib/authz';
+import { tenantDb } from '@/lib/tenant-db';
 import { revalidateFeedback } from '@/lib/revalidate';
 import {
   CreateFeedbackSchema,
@@ -17,37 +17,38 @@ import {
 } from '@/data/feedback';
 
 export async function createFeedback(input: CreateFeedbackInput) {
-  const user = await requireSession();
+  const user = await requireOrgSession();
+  const ctx = toOrgContext(user);
   const data = CreateFeedbackSchema.parse(input);
 
-  // Derive candidateId + organizationId from the interview rather than
-  // trusting the client, and verify the current user is an interviewer
-  // for it. organizationId on the row is the tenant of record; the
-  // feedback inherits it.
+  // Derive candidateId from the interview rather than trusting the
+  // client. Lookup is org-scoped through tenantDb — picking an
+  // interview from another org returns null and surfaces as "not
+  // found" rather than leaking existence.
+  const db = tenantDb(ctx);
   const interview = await db.interview.findUnique({
     where: { id: data.interviewId },
     select: {
       id: true,
       candidateId: true,
-      organizationId: true,
       interviewers: { select: { id: true } },
     },
   });
   if (!interview) throw new AuthzError('Interview not found');
 
   const isInterviewer = interview.interviewers.some((i) => i.id === user.id);
-  if (!isInterviewer && !isAdmin(user)) {
+  if (!isInterviewer && !isOrgAdmin(user)) {
     throw new AuthzError('Forbidden');
   }
 
-  const feedback = await createFeedbackData({
+  const feedback = await createFeedbackData(ctx, {
     rating: data.rating,
     recommendation: data.recommendation,
     comment: data.comment ?? null,
     interviewId: interview.id,
     candidateId: interview.candidateId,
-    organizationId: interview.organizationId,
     interviewerId: user.id,
+    organizationId: ctx.organizationId,
     skillAssessments: data.skillAssessments,
   });
 
@@ -59,19 +60,21 @@ export async function createFeedback(input: CreateFeedbackInput) {
 }
 
 export async function updateFeedback(id: string, input: UpdateFeedbackInput) {
-  const user = await requireSession();
+  const user = await requireOrgSession();
+  const ctx = toOrgContext(user);
   const data = UpdateFeedbackSchema.parse(input);
 
+  const db = tenantDb(ctx);
   const existing = await db.feedback.findUnique({
     where: { id },
     select: { id: true, interviewerId: true, interviewId: true, candidateId: true },
   });
   if (!existing) throw new AuthzError('Feedback not found');
-  if (existing.interviewerId !== user.id && !isAdmin(user)) {
+  if (existing.interviewerId !== user.id && !isOrgAdmin(user)) {
     throw new AuthzError('Forbidden');
   }
 
-  const feedback = await updateFeedbackData(id, {
+  const feedback = await updateFeedbackData(ctx, id, {
     rating: data.rating,
     recommendation: data.recommendation,
     comment: data.comment ?? null,
@@ -87,18 +90,20 @@ export async function updateFeedback(id: string, input: UpdateFeedbackInput) {
 }
 
 export async function deleteFeedback(id: string) {
-  const user = await requireSession();
+  const user = await requireOrgSession();
+  const ctx = toOrgContext(user);
 
+  const db = tenantDb(ctx);
   const existing = await db.feedback.findUnique({
     where: { id },
     select: { id: true, interviewerId: true, interviewId: true, candidateId: true },
   });
   if (!existing) throw new AuthzError('Feedback not found');
-  if (existing.interviewerId !== user.id && !isAdmin(user)) {
+  if (existing.interviewerId !== user.id && !isOrgAdmin(user)) {
     throw new AuthzError('Forbidden');
   }
 
-  await deleteFeedbackData(id);
+  await deleteFeedbackData(ctx, id);
 
   revalidateFeedback({
     interviewId: existing.interviewId,

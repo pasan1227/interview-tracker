@@ -1,6 +1,5 @@
 // app/(dashboard)/dashboard/feedback/page.tsx
 
-import { auth } from '@/auth';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,20 +12,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getFeedbacksByInterviewer } from '@/data/feedback';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { RECOMMENDATION_BADGE } from '@/lib/constants/status-styles';
 import { formatDate } from '@/lib/utils';
 import { ExternalLinkIcon, StarIcon } from 'lucide-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Loading from './loading';
 
 export default async function FeedbackPage() {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect('/login');
-  }
+  const user = await requirePageOrgSession();
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
@@ -37,14 +32,20 @@ export default async function FeedbackPage() {
       />
 
       <Suspense fallback={<Loading />}>
-        <FeedbackList userId={session.user.id!} />
+        <FeedbackList ctx={toOrgContext(user)} userId={user.id} />
       </Suspense>
     </div>
   );
 }
 
-async function FeedbackList({ userId }: { userId: string }) {
-  const feedbacks = await getFeedbacksByInterviewer(userId);
+async function FeedbackList({
+  ctx,
+  userId,
+}: {
+  ctx: ReturnType<typeof toOrgContext>;
+  userId: string;
+}) {
+  const feedbacks = await getFeedbacksByInterviewer(ctx, userId);
 
   if (feedbacks.length === 0) {
     return (

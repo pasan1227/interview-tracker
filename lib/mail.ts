@@ -97,6 +97,7 @@ export async function sendInterviewScheduleEmail({
   location,
   notes,
   actionUrl = '',
+  orgName,
 }: {
   to: string;
   candidateName: string;
@@ -106,11 +107,16 @@ export async function sendInterviewScheduleEmail({
   location?: string;
   notes?: string;
   actionUrl?: string;
+  orgName?: string;
 }) {
   const formattedDateTime = formatDateTime(interviewDateTime);
   const interviewers = interviewerNames.join(', ');
+  // Multi-tenant subject prefix so a user who belongs to several orgs
+  // can tell which one a notification came from. Skipped silently when
+  // not provided (call sites that haven't been migrated to PR 8).
+  const prefix = orgName ? `[${orgName}] ` : '';
   const subject = headerSafe(
-    `Interview Scheduled: ${interviewTitle} with ${candidateName}`
+    `${prefix}Interview Scheduled: ${interviewTitle} with ${candidateName}`
   );
 
   const linkUrl =
@@ -208,6 +214,7 @@ export async function sendFeedbackReminderEmail({
   interviewTitle,
   interviewDateTime,
   interviewId = '',
+  orgName,
 }: {
   to: string;
   interviewerName: string;
@@ -215,10 +222,12 @@ export async function sendFeedbackReminderEmail({
   interviewTitle: string;
   interviewDateTime: Date;
   interviewId?: string;
+  orgName?: string;
 }) {
   const formattedDateTime = formatDateTime(interviewDateTime);
+  const prefix = orgName ? `[${orgName}] ` : '';
   const subject = headerSafe(
-    `Feedback Reminder: ${interviewTitle} with ${candidateName}`
+    `${prefix}Feedback Reminder: ${interviewTitle} with ${candidateName}`
   );
 
   const feedbackLink = interviewId
@@ -285,6 +294,10 @@ interface InterviewForNotification {
   notes: string | null;
   candidate: { name: string; email: string };
   interviewers: { name: string | null; email: string | null }[];
+  // Organization fan-out adds the [Acme] subject-line prefix so users
+  // in multiple orgs can tell where a notification came from. Optional
+  // for compatibility with call sites that haven't been migrated yet.
+  organization?: { name: string } | null;
 }
 
 /**
@@ -316,6 +329,7 @@ export async function sendNewInterviewNotifications(
       location: interview.location ?? undefined,
       notes: interview.notes ?? undefined,
       actionUrl: detailUrl,
+      orgName: interview.organization?.name,
     };
 
     const recipients: string[] = [

@@ -1,11 +1,11 @@
 // app/(dashboard)/dashboard/interviews/[id]/delete/page.tsx
 
 import { redirect, notFound } from 'next/navigation';
-import { requirePageSession } from '@/lib/authz';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewById } from '@/data/interview';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { InterviewDeleteForm } from '@/components/interviews/interview-delete-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { format } from 'date-fns';
 
 interface DeleteInterviewPageProps {
@@ -15,10 +15,10 @@ interface DeleteInterviewPageProps {
 export default async function DeleteInterviewPageRoute({
   params,
 }: DeleteInterviewPageProps) {
-  const session = await requirePageSession();
+  const session = await requirePageOrgSession();
   const { id } = await params;
 
-  const interview = await getInterviewById(id);
+  const interview = await getInterviewById(toOrgContext(session), id);
   if (!interview) notFound();
 
   // Delete gate: matches deleteInterview in actions/interview.ts —
@@ -26,7 +26,9 @@ export default async function DeleteInterviewPageRoute({
   // edit notes/status but cannot destroy the record.
   const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
-    session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
+    session.role === OrganizationRole.OWNER ||
+    session.role === OrganizationRole.ADMIN ||
+    session.role === OrganizationRole.MANAGER;
   if (!isManagerOrAdmin && !isCreator) {
     redirect('/dashboard');
   }

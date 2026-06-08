@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db as baseDb } from '@/lib/db';
 import {
   InterviewStatus,
   InterviewType,
@@ -11,6 +11,7 @@ import {
   type PaginatedQuery,
   type PaginatedResult,
 } from '@/lib/pagination';
+import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 import { SAFE_USER_SELECT } from './user';
 
 interface GetInterviewsParams extends PaginatedQuery {
@@ -38,17 +39,21 @@ type InterviewListItem = Prisma.InterviewGetPayload<{
   };
 }>;
 
-export async function getInterviews({
-  page = 1,
-  limit = 10,
-  search = '',
-  status = '',
-  type = '',
-  dateFrom,
-  dateTo,
-  userId,
-}: GetInterviewsParams): Promise<PaginatedResult<InterviewListItem>> {
+export async function getInterviews(
+  ctx: OrgContext,
+  {
+    page = 1,
+    limit = 10,
+    search = '',
+    status = '',
+    type = '',
+    dateFrom,
+    dateTo,
+    userId,
+  }: GetInterviewsParams
+): Promise<PaginatedResult<InterviewListItem>> {
   try {
+    const db = tenantDb(ctx);
     const { skip, take, limit: actualLimit } = paginate({ page, limit });
 
     const where: Prisma.InterviewWhereInput = {};
@@ -115,10 +120,11 @@ export async function getInterviews({
 // (createInterview's email fan-out, handleStatusChangeEmails) that
 // legitimately need every recipient.
 export async function getInterviewByIdForViewer(
+  ctx: OrgContext,
   id: string,
   viewer: { id: string; role: UserRole }
 ) {
-  const interview = await getInterviewById(id);
+  const interview = await getInterviewById(ctx, id);
   if (!interview) return null;
   if (viewer.role === UserRole.ADMIN || viewer.role === UserRole.MANAGER) {
     return interview;
@@ -140,8 +146,9 @@ export async function getInterviewByIdForViewer(
 // Edit form's needs: scalar fields + candidate/position labels +
 // current interviewer roster. Skips feedbacks + skill assessments
 // which the form doesn't render.
-export async function getInterviewForForm(id: string) {
+export async function getInterviewForForm(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     return await db.interview.findUnique({
       where: { id },
       include: {
@@ -158,14 +165,16 @@ export async function getInterviewForForm(id: string) {
 }
 
 // Email side-effects only need recipients + subject-line fields, not
-// the full feedback tree.
+// the full feedback tree. Email fan-out runs inside `after()` and
+// needs the org name for the subject-line prefix.
 export async function getInterviewForEmails(id: string) {
   try {
-    return await db.interview.findUnique({
+    return await baseDb.interview.findUnique({
       where: { id },
       include: {
         candidate: { select: { id: true, name: true, email: true } },
         interviewers: { select: SAFE_USER_SELECT },
+        organization: { select: { name: true } },
       },
     });
   } catch (error) {
@@ -174,8 +183,9 @@ export async function getInterviewForEmails(id: string) {
   }
 }
 
-export async function getInterviewById(id: string) {
+export async function getInterviewById(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     const interview = await db.interview.findUnique({
       where: { id },
       include: {
@@ -215,9 +225,11 @@ export async function getInterviewById(id: string) {
 }
 
 export async function createInterview(
+  ctx: OrgContext,
   data: Prisma.InterviewUncheckedCreateInput
 ) {
   try {
+    const db = tenantDb(ctx);
     const interview = await db.interview.create({
       data: {
         ...data,
@@ -239,10 +251,12 @@ export async function createInterview(
 }
 
 export async function updateInterview(
+  ctx: OrgContext,
   id: string,
   data: Prisma.InterviewUncheckedUpdateInput
 ) {
   try {
+    const db = tenantDb(ctx);
     const interview = await db.interview.update({
       where: { id },
       data,
@@ -261,8 +275,9 @@ export async function updateInterview(
   }
 }
 
-export async function deleteInterview(id: string) {
+export async function deleteInterview(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     await db.interview.delete({
       where: { id },
     });
@@ -274,8 +289,13 @@ export async function deleteInterview(id: string) {
   }
 }
 
-export async function getUpcomingInterviewsForUser(userId: string, days = 7) {
+export async function getUpcomingInterviewsForUser(
+  ctx: OrgContext,
+  userId: string,
+  days = 7
+) {
   try {
+    const db = tenantDb(ctx);
     const now = new Date();
     const endDate = new Date();
     endDate.setDate(now.getDate() + days);

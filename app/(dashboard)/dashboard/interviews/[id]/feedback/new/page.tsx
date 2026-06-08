@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/interviews/[id]/feedback/new/page.tsx
 
 import { redirect, notFound } from 'next/navigation';
-import { auth } from '@/auth';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewById } from '@/data/interview';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { FeedbackForm } from '@/components/feedback/feedback-form-lazy';
@@ -14,14 +14,10 @@ interface NewFeedbackPageProps {
 export default async function NewFeedbackPage({
   params,
 }: NewFeedbackPageProps) {
-  const session = await auth();
+  const session = await requirePageOrgSession();
   const { id } = await params;
 
-  if (!session || !session.user) {
-    redirect('/login');
-  }
-
-  const interview = await getInterviewById(id);
+  const interview = await getInterviewById(toOrgContext(session), id);
 
   if (!interview) {
     notFound();
@@ -34,7 +30,7 @@ export default async function NewFeedbackPage({
 
   // Check if the current user is an interviewer for this interview
   const isInterviewer = interview.interviewers.some(
-    (interviewer) => interviewer.id === session.user.id
+    (interviewer) => interviewer.id === session.id
   );
 
   if (!isInterviewer) {
@@ -43,7 +39,7 @@ export default async function NewFeedbackPage({
 
   // Check if the user has already submitted feedback
   const hasSubmittedFeedback = interview.feedbacks.some(
-    (feedback) => feedback.interviewer.id === session.user.id
+    (feedback) => feedback.interviewer.id === session.id
   );
 
   if (hasSubmittedFeedback) {

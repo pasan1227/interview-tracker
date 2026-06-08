@@ -2,7 +2,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { requirePageSession } from '@/lib/authz';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewByIdForViewer } from '@/data/interview';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,11 @@ import { InterviewDetail } from '@/components/interviews/interview-detail';
 import { InterviewStatusAction } from '@/components/interviews/interview-status-action';
 import { INTERVIEW_STATUS_BADGE } from '@/lib/constants/status-styles';
 import { PencilIcon, TrashIcon, ClipboardIcon } from 'lucide-react';
-import { InterviewStatus, UserRole } from '@/lib/generated/prisma/browser';
+import {
+  InterviewStatus,
+  OrganizationRole,
+  UserRole,
+} from '@/lib/generated/prisma/browser';
 
 interface InterviewDetailPageProps {
   params: Promise<{ id: string }>;
@@ -20,12 +24,26 @@ interface InterviewDetailPageProps {
 export default async function InterviewDetailPage({
   params,
 }: InterviewDetailPageProps) {
-  const session = await requirePageSession();
+  const session = await requirePageOrgSession();
+  const ctx = toOrgContext(session);
   const { id } = await params;
 
-  const interview = await getInterviewByIdForViewer(id, {
+  // Translate the org role into the legacy UserRole the viewer-scoped
+  // fetcher uses for email-stripping decisions. PR 13 will fold this
+  // helper into the data layer directly.
+  const legacyRole: UserRole =
+    session.role === OrganizationRole.OWNER ||
+    session.role === OrganizationRole.ADMIN
+      ? UserRole.ADMIN
+      : session.role === OrganizationRole.MANAGER
+        ? UserRole.MANAGER
+        : session.role === OrganizationRole.INTERVIEWER
+          ? UserRole.INTERVIEWER
+          : UserRole.USER;
+
+  const interview = await getInterviewByIdForViewer(ctx, id, {
     id: session.id,
-    role: session.role,
+    role: legacyRole,
   });
 
   if (!interview) {
@@ -43,7 +61,9 @@ export default async function InterviewDetailPage({
   );
   const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
-    session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
+    session.role === OrganizationRole.OWNER ||
+    session.role === OrganizationRole.ADMIN ||
+    session.role === OrganizationRole.MANAGER;
   const hasSubmittedFeedback = interview.feedbacks.some(
     (feedback) => feedback.interviewer.id === session.id
   );

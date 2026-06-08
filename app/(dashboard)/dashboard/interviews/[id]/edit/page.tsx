@@ -1,10 +1,10 @@
 import { redirect, notFound } from 'next/navigation';
-import { requirePageSession } from '@/lib/authz';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewForForm } from '@/data/interview';
 import { getInterviewFormOptions } from '@/data/interview-form';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole, UserRole } from '@/lib/generated/prisma/browser';
 
 interface EditInterviewPageProps {
   params: Promise<{ id: string }>;
@@ -13,15 +13,26 @@ interface EditInterviewPageProps {
 export default async function EditInterviewPage({
   params,
 }: EditInterviewPageProps) {
-  const session = await requirePageSession();
+  const session = await requirePageOrgSession();
+  const ctx = toOrgContext(session);
   const { id } = await params;
+
+  const legacyRole: UserRole =
+    session.role === OrganizationRole.OWNER ||
+    session.role === OrganizationRole.ADMIN
+      ? UserRole.ADMIN
+      : session.role === OrganizationRole.MANAGER
+        ? UserRole.MANAGER
+        : session.role === OrganizationRole.INTERVIEWER
+          ? UserRole.INTERVIEWER
+          : UserRole.USER;
 
   // Interview lookup + form bootstrap run in parallel. Gate runs after
   // we have the interview record.
   const [interview, { candidates, positions, interviewers, stagesByPosition }] =
     await Promise.all([
-      getInterviewForForm(id),
-      getInterviewFormOptions({ viewerRole: session.role }),
+      getInterviewForForm(ctx, id),
+      getInterviewFormOptions(ctx, { viewerRole: legacyRole }),
     ]);
 
   if (!interview) {
@@ -36,7 +47,9 @@ export default async function EditInterviewPage({
   );
   const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
-    session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
+    session.role === OrganizationRole.OWNER ||
+    session.role === OrganizationRole.ADMIN ||
+    session.role === OrganizationRole.MANAGER;
   if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
     redirect('/dashboard');
   }

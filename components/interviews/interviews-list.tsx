@@ -1,5 +1,6 @@
 import { PaginatedDataTable } from '@/components/ui/paginated-data-table';
 import { getInterviews } from '@/data/interview';
+import { requireOrgSession, toOrgContext } from '@/lib/authz';
 import { parseDateFilter } from '@/lib/parse-date-filter';
 import { InterviewColumns } from './interviews-columns';
 
@@ -19,8 +20,9 @@ export async function InterviewsList({
   date,
 }: InterviewsListProps) {
   const { dateFrom, dateTo } = parseDateFilter(date);
+  const user = await requireOrgSession();
 
-  const { items, total, totalPages } = await getInterviews({
+  const { items, total, totalPages } = await getInterviews(toOrgContext(user), {
     page,
     search,
     status,

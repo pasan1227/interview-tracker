@@ -1,5 +1,5 @@
-import { db } from '@/lib/db';
 import { UserRole } from '@/lib/generated/prisma/browser';
+import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 
 export interface InterviewFormStage {
   id: string;
@@ -21,16 +21,17 @@ interface GetInterviewFormOptionsArgs {
 // stages), so we just precompute the map. TODO: switch the candidate
 // and user dropdowns to typed-search autocomplete once the rosters
 // outgrow a single dropdown.
-export async function getInterviewFormOptions({
-  viewerRole,
-}: GetInterviewFormOptionsArgs) {
+//
+// PR 8: scoped to the active org. The interviewer roster now means
+// "users with a Membership in this org", not "all users in the
+// platform" — fetched via the Membership table rather than User.
+export async function getInterviewFormOptions(
+  ctx: OrgContext,
+  { viewerRole }: GetInterviewFormOptionsArgs
+) {
   try {
-    // Only manager/admin sees the interviewer roster + emails. INTERVIEWER
-    // and USER roles reach this fetch when they're listed on an existing
-    // interview's edit page, but their writable surface is restricted to
-    // notes/status (see actions/interview.ts updateInterview) — so they
-    // don't need to mutate the roster and shouldn't see every employee's
-    // email address.
+    const db = tenantDb(ctx);
+
     const canSeeRoster =
       viewerRole === UserRole.ADMIN || viewerRole === UserRole.MANAGER;
 
@@ -57,12 +58,22 @@ export async function getInterviewFormOptions({
         },
         orderBy: { title: 'asc' },
       }),
+      // Roster is org-scoped: members of THIS organization, not the
+      // global User table. Membership is tenanted, so tenantDb adds
+      // the org filter automatically.
       canSeeRoster
-        ? db.user.findMany({
-            select: { id: true, name: true, email: true },
-            orderBy: { name: 'asc' },
-          })
-        : Promise.resolve([] as { id: string; name: string | null; email: string }[]),
+        ? db.membership
+            .findMany({
+              where: { status: 'ACTIVE' },
+              select: {
+                user: { select: { id: true, name: true, email: true } },
+              },
+              orderBy: { user: { name: 'asc' } },
+            })
+            .then((rows) => rows.map((r) => r.user))
+        : Promise.resolve(
+            [] as { id: string; name: string | null; email: string }[]
+          ),
     ]);
 
     // If a position has no workflow we fall back to a default-flagged
