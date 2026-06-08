@@ -1,23 +1,33 @@
 import { db } from '@/lib/db';
 import { Prisma } from '@/lib/generated/prisma/browser';
 
+// Bridge implementation. Until PR 10 makes Settings genuinely per-org,
+// the data layer continues to act on the single existing Settings
+// row. The backfill (PR 2) guarantees one row exists, tied to the
+// default org; new orgs created in PR 11+ provision their own row at
+// signup time.
+async function findOrCreateDefaultSettings() {
+  const existing = await db.settings.findFirst();
+  if (existing) return existing;
+
+  const defaultOrg = await db.organization.findUniqueOrThrow({
+    where: { slug: 'default' },
+    select: { id: true },
+  });
+  return db.settings.create({
+    data: {
+      companyName: 'Interview Tracker',
+      emailNotifications: true,
+      feedbackReminders: true,
+      defaultInterviewLength: 60,
+      organizationId: defaultOrg.id,
+    },
+  });
+}
+
 export async function getSettings() {
   try {
-    // Get the first settings record or create one if it doesn't exist
-    let settings = await db.settings.findFirst();
-
-    if (!settings) {
-      settings = await db.settings.create({
-        data: {
-          companyName: 'Interview Tracker',
-          emailNotifications: true,
-          feedbackReminders: true,
-          defaultInterviewLength: 60,
-        },
-      });
-    }
-
-    return settings;
+    return await findOrCreateDefaultSettings();
   } catch (error) {
     console.error('Failed to fetch settings:', error);
 
@@ -31,30 +41,20 @@ export async function getSettings() {
       defaultInterviewLength: 60,
       createdAt: new Date(),
       updatedAt: new Date(),
-      organizationId: null,
+      organizationId: '',
     };
   }
 }
 
-export async function updateSettings(
-  data: Prisma.SettingsUpdateInput & Prisma.SettingsCreateInput
-) {
+export async function updateSettings(data: Prisma.SettingsUpdateInput) {
   try {
-    // Get the first settings record
-    const settings = await db.settings.findFirst();
-
-    if (settings) {
-      // Update existing settings
-      return await db.settings.update({
-        where: { id: settings.id },
-        data,
-      });
-    } else {
-      // Create new settings if they don't exist
-      return await db.settings.create({
-        data,
-      });
-    }
+    // findOrCreateDefaultSettings guarantees a row exists, so update
+    // is enough — no need to accept SettingsCreateInput here.
+    const settings = await findOrCreateDefaultSettings();
+    return await db.settings.update({
+      where: { id: settings.id },
+      data,
+    });
   } catch (error) {
     console.error('Failed to update settings:', error);
     throw error;

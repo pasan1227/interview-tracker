@@ -58,6 +58,14 @@ export async function createInterview(input: CreateInterviewInput) {
   const user = await requireManagerOrAdmin();
   const data = CreateInterviewSchema.parse(input);
 
+  // Derive the tenant from the chosen candidate. Bridge until PR 8
+  // hands createInterview an OrgContext from the session.
+  const candidate = await db.candidate.findUnique({
+    where: { id: data.candidateId },
+    select: { organizationId: true },
+  });
+  if (!candidate) throw new AuthzError('Candidate not found');
+
   const interview = await createInterviewData({
     title: data.title,
     startTime: data.startTime,
@@ -69,6 +77,7 @@ export async function createInterview(input: CreateInterviewInput) {
     candidateId: data.candidateId,
     positionId: data.positionId,
     stageId: data.stageId ?? null,
+    organizationId: candidate.organizationId,
     createdById: user.id,
     interviewers: {
       connect: data.interviewerIds.map((id) => ({ id })),

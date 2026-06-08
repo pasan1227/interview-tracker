@@ -11,6 +11,7 @@ import {
 } from '@/data/workflow';
 import { requireAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
+import { getDefaultOrganizationId } from '@/lib/default-org';
 import {
   StageInputSchema,
   WorkflowInputSchema,
@@ -29,11 +30,14 @@ const ReorderSchema = z.array(z.string().cuid()).max(200);
 export async function createWorkflow(input: WorkflowInput) {
   await requireAdmin();
   const data = WorkflowInputSchema.parse(input);
+  // Bridge until PR 7 threads OrgContext through this action.
+  const organizationId = await getDefaultOrganizationId();
 
   const workflow = await createWorkflowData({
     name: data.name,
     description: data.description ?? null,
     isDefault: data.isDefault ?? false,
+    organization: { connect: { id: organizationId } },
   });
 
   revalidateWorkflow();
@@ -85,10 +89,19 @@ export async function createStage(workflowId: string, input: StageInput) {
   const data = StageInputSchema.parse(input);
   const wfId = z.string().cuid().parse(workflowId);
 
+  // Derive the tenant from the parent workflow. Bridge until PR 7
+  // threads OrgContext through this action.
+  const workflow = await db.workflow.findUnique({
+    where: { id: wfId },
+    select: { organizationId: true },
+  });
+  if (!workflow) throw new Error('Workflow not found');
+
   const stage = await createStageData({
     name: data.name,
     description: data.description ?? null,
     workflow: { connect: { id: wfId } },
+    organization: { connect: { id: workflow.organizationId } },
   });
 
   revalidateWorkflow(wfId);

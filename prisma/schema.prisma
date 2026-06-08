@@ -213,8 +213,8 @@ model Candidate {
   isArchived Boolean         @default(false)
 
   // Tenant (nullable in PR 1; backfilled in PR 2; NOT NULL in PR 3).
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   // Relations
   interviews Interview[]
@@ -261,8 +261,8 @@ model Position {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([isActive])
   @@index([organizationId])
@@ -295,8 +295,8 @@ model Interview {
   // Denormalized tenant FK. Could be derived from candidate, but a
   // direct column makes "all interviews in org" queries one index hit
   // instead of a join.
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([startTime])
   @@index([status])
@@ -322,8 +322,8 @@ model Feedback {
   interviewerId    String
   skillAssessments SkillAssessment[]
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -343,8 +343,8 @@ model SkillAssessment {
   feedback   Feedback @relation(fields: [feedbackId], references: [id])
   feedbackId String
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([feedbackId])
   @@index([organizationId])
@@ -360,8 +360,8 @@ model Workflow {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([organizationId])
 }
@@ -377,8 +377,8 @@ model Stage {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([workflowId])
   @@index([workflowId, order])
@@ -387,14 +387,15 @@ model Stage {
 
 model Tag {
   id         String      @id @default(cuid())
-  // Tag.name is currently globally unique. PR 3 will replace this with
-  // @@unique([organizationId, name]) so "React" can exist in every org.
-  name       String      @unique
+  // Per-org uniqueness — "React" can exist in every org. The global
+  // unique on `name` was dropped in PR 3.
+  name       String
   candidates Candidate[]
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
+  @@unique([organizationId, name])
   @@index([organizationId])
 }
 
@@ -406,8 +407,8 @@ model Note {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
   @@index([candidateId])
   @@index([organizationId])
@@ -423,12 +424,11 @@ model Settings {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  // Settings becomes per-org. PR 3 will add @@unique([organizationId])
-  // to enforce singleton-per-org.
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
+  // One Settings row per org (enforced in PR 3).
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
 
-  @@index([organizationId])
+  @@unique([organizationId])
 }
 
 // Enums

@@ -20,13 +20,16 @@ export async function createFeedback(input: CreateFeedbackInput) {
   const user = await requireSession();
   const data = CreateFeedbackSchema.parse(input);
 
-  // Derive candidateId from the interview rather than trusting the client,
-  // and verify the current user is an interviewer for it.
+  // Derive candidateId + organizationId from the interview rather than
+  // trusting the client, and verify the current user is an interviewer
+  // for it. organizationId on the row is the tenant of record; the
+  // feedback inherits it.
   const interview = await db.interview.findUnique({
     where: { id: data.interviewId },
     select: {
       id: true,
       candidateId: true,
+      organizationId: true,
       interviewers: { select: { id: true } },
     },
   });
@@ -43,6 +46,7 @@ export async function createFeedback(input: CreateFeedbackInput) {
     comment: data.comment ?? null,
     interviewId: interview.id,
     candidateId: interview.candidateId,
+    organizationId: interview.organizationId,
     interviewerId: user.id,
     skillAssessments: data.skillAssessments,
   });

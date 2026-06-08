@@ -6,6 +6,7 @@ import {
   updatePosition as updatePositionData,
 } from '@/data/position';
 import { requireManagerOrAdmin } from '@/lib/authz';
+import { getDefaultOrganizationId } from '@/lib/default-org';
 import { revalidatePosition } from '@/lib/revalidate';
 import {
   PositionInputSchema,
@@ -15,6 +16,8 @@ import {
 export async function createPosition(input: PositionInput) {
   await requireManagerOrAdmin();
   const data = PositionInputSchema.parse(input);
+  // Bridge until PR 7 threads OrgContext through this action.
+  const organizationId = await getDefaultOrganizationId();
 
   const position = await createPositionData({
     title: data.title,
@@ -23,6 +26,7 @@ export async function createPosition(input: PositionInput) {
       ? { connect: { id: data.workflowId } }
       : undefined,
     isActive: data.isActive ?? true,
+    organization: { connect: { id: organizationId } },
   });
 
   revalidatePosition();

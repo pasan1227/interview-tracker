@@ -7,6 +7,7 @@ import {
 } from '@/data/candidate';
 import { requireManagerOrAdmin } from '@/lib/authz';
 import { db } from '@/lib/db';
+import { getDefaultOrganizationId } from '@/lib/default-org';
 import { revalidateCandidate } from '@/lib/revalidate';
 import {
   CreateCandidateSchema,
@@ -21,15 +22,20 @@ export async function createCandidate(input: CreateCandidateInput) {
   const user = await requireManagerOrAdmin();
   const data = CreateCandidateSchema.parse(input);
   const { notes, ...candidateFields } = data;
+  // Bridge until PR 6 threads OrgContext through this action.
+  const organizationId = await getDefaultOrganizationId();
 
   const candidate = await createCandidateData({
     ...candidateFields,
     resumeUrl: emptyToNull(candidateFields.resumeUrl),
     createdById: user.id,
+    organizationId,
   });
 
   if (notes) {
-    await db.note.create({ data: { content: notes, candidateId: candidate.id } });
+    await db.note.create({
+      data: { content: notes, candidateId: candidate.id, organizationId },
+    });
   }
 
   revalidateCandidate();
@@ -50,7 +56,15 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
   });
 
   if (notes) {
-    await db.note.create({ data: { content: notes, candidateId: id } });
+    // Reuse the candidate's tenant — the note inherits it. Bridge
+    // until PR 6 threads OrgContext through this action.
+    await db.note.create({
+      data: {
+        content: notes,
+        candidateId: id,
+        organizationId: candidate.organizationId,
+      },
+    });
   }
 
   revalidateCandidate(id);
@@ -77,7 +91,7 @@ export async function addCandidateNote(candidateId: string, content: string) {
   if (!cuidParse.success) throw new Error('Invalid candidate ID');
   const exists = await db.candidate.findUnique({
     where: { id: candidateId },
-    select: { id: true },
+    select: { id: true, organizationId: true },
   });
   if (!exists) throw new Error('Candidate not found');
 
@@ -86,7 +100,11 @@ export async function addCandidateNote(candidateId: string, content: string) {
   if (trimmed.length > 10_000) throw new Error('Note is too long');
 
   const note = await db.note.create({
-    data: { content: trimmed, candidateId },
+    data: {
+      content: trimmed,
+      candidateId,
+      organizationId: exists.organizationId,
+    },
   });
 
   revalidateCandidate(candidateId);

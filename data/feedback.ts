@@ -51,14 +51,18 @@ export async function getFeedbackById(id: string) {
 
 export async function createFeedback(data: CreateFeedbackInput) {
   try {
-    // Create the feedback with skill assessments
+    // Create the feedback with skill assessments. Skill rows are in
+    // the same tenant as their parent feedback — propagate the org id
+    // so the nested create satisfies the NOT NULL constraint added in
+    // the PR 3 schema migration.
     const { skillAssessments, ...feedbackData } = data;
+    const orgId = feedbackData.organizationId;
 
     const feedback = await db.feedback.create({
       data: {
         ...feedbackData,
         skillAssessments: {
-          create: skillAssessments || [],
+          create: (skillAssessments ?? []).map((s) => ({ ...s, organizationId: orgId })),
         },
       },
       include: {
@@ -86,13 +90,24 @@ export async function updateFeedback(id: string, data: UpdateFeedbackInput) {
       where: { feedbackId: id },
     });
 
+    // Look up the parent feedback's tenant so the rewritten skill
+    // assessments carry the right organizationId. PR 8 will hoist the
+    // tenant into the function signature; this is a bridge.
+    const parent = await db.feedback.findUniqueOrThrow({
+      where: { id },
+      select: { organizationId: true },
+    });
+
     // Create new skill assessments
     const feedback = await db.feedback.update({
       where: { id },
       data: {
         ...feedbackData,
         skillAssessments: {
-          create: skillAssessments || [],
+          create: (skillAssessments ?? []).map((s) => ({
+            ...s,
+            organizationId: parent.organizationId,
+          })),
         },
       },
       include: {
