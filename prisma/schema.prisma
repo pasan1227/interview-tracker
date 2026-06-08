@@ -14,6 +14,93 @@ datasource db {
   provider = "postgresql"
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Multi-tenant primitives
+// ──────────────────────────────────────────────────────────────────────
+// PR 1 of the multi-tenant migration. Organization / Membership /
+// Invitation are introduced, and every domain model gains a nullable
+// `organizationId` FK. The column stays nullable across PR 1 + PR 2 so
+// the existing app keeps running while the backfill script attaches
+// every legacy row to the seeded "default" org. PR 3 will flip the
+// columns to NOT NULL, drop User.role, and rewrite domain-table
+// uniques/indexes as composites.
+// ──────────────────────────────────────────────────────────────────────
+
+model Organization {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  name         String
+  billingEmail String
+  plan         Plan      @default(FREE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  // Soft-delete sentinel for billing wind-down. Active code treats
+  // non-null deletedAt as inaccessible; row stays for FK integrity
+  // until an ops cleanup job hard-deletes via cascade.
+  deletedAt    DateTime?
+
+  memberships Membership[]
+  invitations Invitation[]
+
+  // Back-refs to every tenanted domain model. Cascade so closing an
+  // account wipes the entire domain tree in one operation.
+  candidates       Candidate[]
+  positions        Position[]
+  interviews       Interview[]
+  feedbacks        Feedback[]
+  skillAssessments SkillAssessment[]
+  workflows        Workflow[]
+  stages           Stage[]
+  tags             Tag[]
+  notes            Note[]
+  settings         Settings[]
+
+  @@index([deletedAt])
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  status         MembershipStatus @default(ACTIVE)
+  invitedById    String?
+  invitedAt      DateTime?
+  acceptedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user         User         @relation("memberships", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("invitedMemberships", fields: [invitedById], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, role])
+  @@index([userId, status])
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  email          String
+  role           OrganizationRole @default(MEMBER)
+  // Hashed token (sha256). The raw value is only ever in the email
+  // body; the row stores the digest so a DB leak doesn't expose
+  // valid invite links. Mirrors data/tokens.ts handling.
+  token          String           @unique
+  expires        DateTime
+  acceptedAt     DateTime?
+  invitedById    String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("sentInvitations", fields: [invitedById], references: [id])
+
+  // One open invite per email per org. Re-inviting overwrites the row
+  // via upsert (see actions/org/invite-member.ts in a later PR).
+  @@unique([organizationId, email])
+  @@index([email])
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -22,6 +109,10 @@ model User {
   emailVerified DateTime?
   image         String?
   role          UserRole  @default(USER)
+  // Platform-staff flag for *your* internal team (support
+  // impersonation, ops dashboards). Deliberately distinct from
+  // OrganizationRole so it can never appear in a per-org gate.
+  isPlatformAdmin Boolean @default(false)
   accounts      Account[]
   sessions      Session[]
   createdAt     DateTime  @default(now())
@@ -29,6 +120,11 @@ model User {
 
   isTwoFactorEnabled    Boolean                @default(false)
   twoFactorConfirmation TwoFactorConfirmation?
+
+  // Multi-tenant relations
+  memberships         Membership[] @relation("memberships")
+  invitedMemberships  Membership[] @relation("invitedMemberships")
+  sentInvitations     Invitation[] @relation("sentInvitations")
 
   // Relations
   managedCandidates   Candidate[] @relation("managedBy")
@@ -116,6 +212,10 @@ model Candidate {
   isActive   Boolean         @default(true)
   isArchived Boolean         @default(false)
 
+  // Tenant (nullable in PR 1; backfilled in PR 2; NOT NULL in PR 3).
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   // Relations
   interviews Interview[]
   feedbacks  Feedback[]
@@ -144,6 +244,9 @@ model Candidate {
   // WHERE positionId=… ORDER BY createdAt DESC on the list page.
   @@index([status, createdAt(sort: Desc)])
   @@index([positionId, createdAt(sort: Desc)])
+  // Tenant lookup (PR 3 will replace standalone indexes above with
+  // composites prefixed by organizationId; PR 1 just adds a basic one).
+  @@index([organizationId])
 }
 
 model Position {
@@ -158,7 +261,11 @@ model Position {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   @@index([isActive])
+  @@index([organizationId])
 }
 
 model Interview {
@@ -185,12 +292,19 @@ model Interview {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  // Denormalized tenant FK. Could be derived from candidate, but a
+  // direct column makes "all interviews in org" queries one index hit
+  // instead of a join.
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   @@index([startTime])
   @@index([status])
   @@index([candidateId])
   @@index([positionId])
   // Covers the list page's WHERE status=… ORDER BY startTime ASC.
   @@index([status, startTime])
+  @@index([organizationId])
 }
 
 model Feedback {
@@ -208,6 +322,9 @@ model Feedback {
   interviewerId    String
   skillAssessments SkillAssessment[]
 
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -215,6 +332,7 @@ model Feedback {
   @@index([candidateId])
   @@index([interviewId])
   @@index([interviewerId, createdAt])
+  @@index([organizationId])
 }
 
 model SkillAssessment {
@@ -225,7 +343,11 @@ model SkillAssessment {
   feedback   Feedback @relation(fields: [feedbackId], references: [id])
   feedbackId String
 
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   @@index([feedbackId])
+  @@index([organizationId])
 }
 
 model Workflow {
@@ -237,6 +359,11 @@ model Workflow {
   stages      Stage[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
+  @@index([organizationId])
 }
 
 model Stage {
@@ -250,14 +377,25 @@ model Stage {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   @@index([workflowId])
   @@index([workflowId, order])
+  @@index([organizationId])
 }
 
 model Tag {
   id         String      @id @default(cuid())
+  // Tag.name is currently globally unique. PR 3 will replace this with
+  // @@unique([organizationId, name]) so "React" can exist in every org.
   name       String      @unique
   candidates Candidate[]
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
+  @@index([organizationId])
 }
 
 model Note {
@@ -268,7 +406,11 @@ model Note {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
   @@index([candidateId])
+  @@index([organizationId])
 }
 
 model Settings {
@@ -280,6 +422,13 @@ model Settings {
   defaultInterviewLength Int      @default(60) // minutes
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+
+  // Settings becomes per-org. PR 3 will add @@unique([organizationId])
+  // to enforce singleton-per-org.
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+
+  @@index([organizationId])
 }
 
 // Enums
@@ -288,6 +437,31 @@ enum UserRole {
   MANAGER
   INTERVIEWER
   USER
+}
+
+// Per-org role on Membership. OWNER is the billing/transfer-of-control
+// role (at most one per org, enforced in actions/org/*.ts). The other
+// values mirror the legacy UserRole roughly: MEMBER replaces USER as
+// the no-special-permissions default.
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MANAGER
+  INTERVIEWER
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// Billing tier placeholder. Stripe wiring lands in a later PR; today
+// every org defaults to FREE and nothing reads the column.
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
 }
 
 enum CandidateStatus {

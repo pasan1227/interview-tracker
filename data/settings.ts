@@ -31,6 +31,7 @@ export async function getSettings() {
       defaultInterviewLength: 60,
       createdAt: new Date(),
       updatedAt: new Date(),
+      organizationId: null,
     };
   }
 }
