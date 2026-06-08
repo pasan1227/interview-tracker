@@ -2,20 +2,25 @@
 
 import { notFound } from 'next/navigation';
 import { getCandidateForDelete } from '@/data/candidate';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { CandidateDeleteForm } from '@/components/candidates/candidate-delete-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function DeleteCandidatePageRoute({ params }: PageProps) {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+    OrganizationRole.MANAGER,
+  ]);
+  const ctx = toOrgContext(user);
   const { id } = await params;
 
-  const candidate = await getCandidateForDelete(id);
+  const candidate = await getCandidateForDelete(ctx, id);
 
   if (!candidate) {
     notFound();

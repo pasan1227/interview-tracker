@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/candidates/page.tsx
 
-import { requirePageSession } from '@/lib/authz';
+import { requirePageOrgSession } from '@/lib/authz';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { ResourceSearch } from '@/components/ui/resource-search';
@@ -20,7 +20,7 @@ interface CandidatesPageProps {
 export default async function CandidatesPage({
   searchParams,
 }: CandidatesPageProps) {
-  await requirePageSession();
+  await requirePageOrgSession();
 
   const [awaitedParams, positions] = await Promise.all([
     searchParams,

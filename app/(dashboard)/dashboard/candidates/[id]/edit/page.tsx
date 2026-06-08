@@ -4,8 +4,8 @@ import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { getCandidateForForm } from '@/data/candidate';
 import { getPositions } from '@/data/position';
-import { requirePageRole } from '@/lib/authz';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { notFound } from 'next/navigation';
 
 interface EditCandidatePageProps {
@@ -15,11 +15,16 @@ interface EditCandidatePageProps {
 export default async function EditCandidatePage({
   params,
 }: EditCandidatePageProps) {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+    OrganizationRole.MANAGER,
+  ]);
+  const ctx = toOrgContext(user);
   const { id } = await params;
 
   const [candidate, positions] = await Promise.all([
-    getCandidateForForm(id),
+    getCandidateForForm(ctx, id),
     getPositions({ activeOnly: true }),
   ]);
   if (!candidate) notFound();

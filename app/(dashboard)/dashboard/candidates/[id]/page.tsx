@@ -1,4 +1,4 @@
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { CandidateFeedback } from '@/components/candidates/candidate-feedback';
 import { CandidateInfo } from '@/components/candidates/candidate-info';
 import { CandidateInterviews } from '@/components/candidates/candidate-interviews';
@@ -15,7 +15,7 @@ import {
   getCandidateNotesTab,
 } from '@/data/candidate';
 import { CANDIDATE_STATUS_BADGE } from '@/lib/constants/status-styles';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { CalendarIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -37,11 +37,16 @@ export default async function CandidateDetailsPage({
   params,
 }: CandidateDetailsPageProps) {
   // PII gate: candidate detail (name, email, notes, feedback) is
-  // manager/admin only.
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  // manager+ only (org-scoped).
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+    OrganizationRole.MANAGER,
+  ]);
+  const ctx = toOrgContext(user);
   const { id } = await params;
 
-  const candidate = await getCandidateHeader(id);
+  const candidate = await getCandidateHeader(ctx, id);
   if (!candidate) notFound();
 
   const statusClass =
@@ -106,19 +111,19 @@ export default async function CandidateDetailsPage({
           className='rounded-md border bg-card p-4'
         >
           <Suspense fallback={<TabSkeleton />}>
-            <InterviewsSection candidateId={id} />
+            <InterviewsSection ctx={ctx} candidateId={id} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value='feedback' className='rounded-md border bg-card p-4'>
           <Suspense fallback={<TabSkeleton />}>
-            <FeedbackSection candidateId={id} />
+            <FeedbackSection ctx={ctx} candidateId={id} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value='notes' className='rounded-md border bg-card p-4'>
           <Suspense fallback={<TabSkeleton />}>
-            <NotesSection candidateId={id} />
+            <NotesSection ctx={ctx} candidateId={id} />
           </Suspense>
         </TabsContent>
       </Tabs>
@@ -126,18 +131,36 @@ export default async function CandidateDetailsPage({
   );
 }
 
-async function InterviewsSection({ candidateId }: { candidateId: string }) {
-  const interviews = await getCandidateInterviewsTab(candidateId);
+async function InterviewsSection({
+  ctx,
+  candidateId,
+}: {
+  ctx: ReturnType<typeof toOrgContext>;
+  candidateId: string;
+}) {
+  const interviews = await getCandidateInterviewsTab(ctx, candidateId);
   return <CandidateInterviews interviews={interviews} />;
 }
 
-async function FeedbackSection({ candidateId }: { candidateId: string }) {
-  const feedbacks = await getCandidateFeedbackTab(candidateId);
+async function FeedbackSection({
+  ctx,
+  candidateId,
+}: {
+  ctx: ReturnType<typeof toOrgContext>;
+  candidateId: string;
+}) {
+  const feedbacks = await getCandidateFeedbackTab(ctx, candidateId);
   return <CandidateFeedback feedbacks={feedbacks} />;
 }
 
-async function NotesSection({ candidateId }: { candidateId: string }) {
-  const notes = await getCandidateNotesTab(candidateId);
+async function NotesSection({
+  ctx,
+  candidateId,
+}: {
+  ctx: ReturnType<typeof toOrgContext>;
+  candidateId: string;
+}) {
+  const notes = await getCandidateNotesTab(ctx, candidateId);
   return <CandidateNotes notes={notes} candidateId={candidateId} />;
 }
 

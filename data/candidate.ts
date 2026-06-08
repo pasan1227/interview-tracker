@@ -1,4 +1,3 @@
-import { db } from '@/lib/db';
 import { CandidateStatus, Prisma } from '@/lib/generated/prisma/browser';
 import {
   buildPaginatedResult,
@@ -6,7 +5,14 @@ import {
   type PaginatedQuery,
   type PaginatedResult,
 } from '@/lib/pagination';
+import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 import { SAFE_USER_SELECT } from './user';
+
+// PR 6: every reader/writer now takes an OrgContext as its first
+// argument. The tenantDb() client auto-injects organizationId on
+// reads, writes, and where filters — see lib/tenant-db.ts. Action
+// callers get the context from requireOrgManagerOrAdmin (etc.);
+// page callers from requirePageOrgSession.
 
 interface GetCandidatesParams extends PaginatedQuery {
   status?: string;
@@ -17,14 +23,18 @@ type CandidateListItem = Prisma.CandidateGetPayload<{
   include: { position: true };
 }>;
 
-export async function getCandidates({
-  page = 1,
-  limit = 10,
-  search = '',
-  status = '',
-  position = '',
-}: GetCandidatesParams): Promise<PaginatedResult<CandidateListItem>> {
+export async function getCandidates(
+  ctx: OrgContext,
+  {
+    page = 1,
+    limit = 10,
+    search = '',
+    status = '',
+    position = '',
+  }: GetCandidatesParams
+): Promise<PaginatedResult<CandidateListItem>> {
   try {
+    const db = tenantDb(ctx);
     const { skip, take, limit: actualLimit } = paginate({ page, limit });
 
     const where: Prisma.CandidateWhereInput = {};
@@ -64,8 +74,9 @@ export async function getCandidates({
   }
 }
 
-export async function getCandidateById(id: string) {
+export async function getCandidateById(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     const candidate = await db.candidate.findUnique({
       where: { id },
       include: {
@@ -114,8 +125,9 @@ export async function getCandidateById(id: string) {
 // then streams each tab body via getCandidate<Tab> below. Tags ride
 // along because the Info tab renders them inline — they're a tiny
 // relation and splitting the query for one chip row isn't worth it.
-export async function getCandidateHeader(id: string) {
+export async function getCandidateHeader(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     return await db.candidate.findUnique({
       where: { id },
       include: {
@@ -132,8 +144,12 @@ export async function getCandidateHeader(id: string) {
   }
 }
 
-export async function getCandidateInterviewsTab(candidateId: string) {
+export async function getCandidateInterviewsTab(
+  ctx: OrgContext,
+  candidateId: string
+) {
   try {
+    const db = tenantDb(ctx);
     return await db.interview.findMany({
       where: { candidateId },
       include: {
@@ -148,8 +164,12 @@ export async function getCandidateInterviewsTab(candidateId: string) {
   }
 }
 
-export async function getCandidateFeedbackTab(candidateId: string) {
+export async function getCandidateFeedbackTab(
+  ctx: OrgContext,
+  candidateId: string
+) {
   try {
+    const db = tenantDb(ctx);
     return await db.feedback.findMany({
       where: { candidateId },
       include: {
@@ -164,8 +184,12 @@ export async function getCandidateFeedbackTab(candidateId: string) {
   }
 }
 
-export async function getCandidateNotesTab(candidateId: string) {
+export async function getCandidateNotesTab(
+  ctx: OrgContext,
+  candidateId: string
+) {
   try {
+    const db = tenantDb(ctx);
     return await db.note.findMany({
       where: { candidateId },
       orderBy: { createdAt: 'desc' },
@@ -178,8 +202,9 @@ export async function getCandidateNotesTab(candidateId: string) {
 
 // Edit form only needs scalar fields + position; the include the
 // detail page uses is wasted here.
-export async function getCandidateForForm(id: string) {
+export async function getCandidateForForm(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     return await db.candidate.findUnique({
       where: { id },
       include: { position: true },
@@ -191,8 +216,9 @@ export async function getCandidateForForm(id: string) {
 }
 
 // Delete page only needs scalars + the impact counts.
-export async function getCandidateForDelete(id: string) {
+export async function getCandidateForDelete(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     return await db.candidate.findUnique({
       where: { id },
       include: {
@@ -209,13 +235,15 @@ export async function getCandidateForDelete(id: string) {
 }
 
 export async function createCandidate(
-  data: Prisma.CandidateUncheckedCreateInput
+  ctx: OrgContext,
+  data: Omit<Prisma.CandidateUncheckedCreateInput, 'organizationId'>
 ) {
   try {
+    const db = tenantDb(ctx);
+    // tenantDb injects organizationId — caller doesn't pass it.
     const candidate = await db.candidate.create({
-      data,
+      data: data as Prisma.CandidateUncheckedCreateInput,
     });
-
     return candidate;
   } catch (error) {
     console.error('Failed to create candidate:', error);
@@ -224,15 +252,16 @@ export async function createCandidate(
 }
 
 export async function updateCandidate(
+  ctx: OrgContext,
   id: string,
   data: Prisma.CandidateUncheckedUpdateInput
 ) {
   try {
+    const db = tenantDb(ctx);
     const candidate = await db.candidate.update({
       where: { id },
       data,
     });
-
     return candidate;
   } catch (error) {
     console.error('Failed to update candidate:', error);
@@ -240,12 +269,12 @@ export async function updateCandidate(
   }
 }
 
-export async function deleteCandidate(id: string) {
+export async function deleteCandidate(ctx: OrgContext, id: string) {
   try {
+    const db = tenantDb(ctx);
     await db.candidate.delete({
       where: { id },
     });
-
     return true;
   } catch (error) {
     console.error('Failed to delete candidate:', error);

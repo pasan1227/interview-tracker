@@ -5,9 +5,8 @@ import {
   deleteCandidate as deleteCandidateData,
   updateCandidate as updateCandidateData,
 } from '@/data/candidate';
-import { requireManagerOrAdmin } from '@/lib/authz';
-import { db } from '@/lib/db';
-import { getDefaultOrganizationId } from '@/lib/default-org';
+import { requireOrgManagerOrAdmin, toOrgContext } from '@/lib/authz';
+import { tenantDb } from '@/lib/tenant-db';
 import { revalidateCandidate } from '@/lib/revalidate';
 import {
   CreateCandidateSchema,
@@ -19,22 +18,28 @@ import {
 import * as z from 'zod';
 
 export async function createCandidate(input: CreateCandidateInput) {
-  const user = await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
   const data = CreateCandidateSchema.parse(input);
   const { notes, ...candidateFields } = data;
-  // Bridge until PR 6 threads OrgContext through this action.
-  const organizationId = await getDefaultOrganizationId();
 
-  const candidate = await createCandidateData({
+  const candidate = await createCandidateData(ctx, {
     ...candidateFields,
     resumeUrl: emptyToNull(candidateFields.resumeUrl),
     createdById: user.id,
-    organizationId,
   });
 
   if (notes) {
-    await db.note.create({
-      data: { content: notes, candidateId: candidate.id, organizationId },
+    // organizationId is auto-injected at runtime by tenantDb, but
+    // Prisma's static types still demand it — pass it explicitly so
+    // the call compiles. (The extension's injectOrgIntoCreateData
+    // skips when the field is already present.)
+    await tenantDb(ctx).note.create({
+      data: {
+        content: notes,
+        candidateId: candidate.id,
+        organizationId: ctx.organizationId,
+      },
     });
   }
 
@@ -43,11 +48,12 @@ export async function createCandidate(input: CreateCandidateInput) {
 }
 
 export async function updateCandidate(id: string, input: UpdateCandidateInput) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
   const data = UpdateCandidateSchema.parse(input);
   const { notes, ...candidateFields } = data;
 
-  const candidate = await updateCandidateData(id, {
+  const candidate = await updateCandidateData(ctx, id, {
     ...candidateFields,
     resumeUrl:
       candidateFields.resumeUrl === undefined
@@ -56,13 +62,11 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
   });
 
   if (notes) {
-    // Reuse the candidate's tenant — the note inherits it. Bridge
-    // until PR 6 threads OrgContext through this action.
-    await db.note.create({
+    await tenantDb(ctx).note.create({
       data: {
         content: notes,
         candidateId: id,
-        organizationId: candidate.organizationId,
+        organizationId: ctx.organizationId,
       },
     });
   }
@@ -72,26 +76,29 @@ export async function updateCandidate(id: string, input: UpdateCandidateInput) {
 }
 
 export async function deleteCandidate(id: string) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
 
-  await deleteCandidateData(id);
+  await deleteCandidateData(ctx, id);
 
   revalidateCandidate();
   return true;
 }
 
 export async function addCandidateNote(candidateId: string, content: string) {
-  await requireManagerOrAdmin();
-  // Validate candidateId shape before letting it reach Prisma, then
-  // confirm the candidate actually exists. Without these, the action
-  // accepted any arbitrary string and silently failed via the FK
-  // constraint, which is fine in practice but means a typo'd
-  // candidateId from the client produces an opaque DB error.
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
+
+  // Validate candidateId shape before letting it reach Prisma. The
+  // tenant-scoped findUnique below returns null if the candidate
+  // exists but belongs to another org — never leaking its existence.
   const cuidParse = z.string().cuid().safeParse(candidateId);
   if (!cuidParse.success) throw new Error('Invalid candidate ID');
+
+  const db = tenantDb(ctx);
   const exists = await db.candidate.findUnique({
     where: { id: candidateId },
-    select: { id: true, organizationId: true },
+    select: { id: true },
   });
   if (!exists) throw new Error('Candidate not found');
 
@@ -103,7 +110,7 @@ export async function addCandidateNote(candidateId: string, content: string) {
     data: {
       content: trimmed,
       candidateId,
-      organizationId: exists.organizationId,
+      organizationId: ctx.organizationId,
     },
   });
 
@@ -112,10 +119,11 @@ export async function addCandidateNote(candidateId: string, content: string) {
 }
 
 export async function updateCandidateStatus(id: string, status: string) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
   const { status: parsed } = UpdateCandidateStatusSchema.parse({ status });
 
-  const candidate = await updateCandidateData(id, { status: parsed });
+  const candidate = await updateCandidateData(ctx, id, { status: parsed });
 
   revalidateCandidate(id);
   return candidate;

@@ -1,5 +1,6 @@
 import { PaginatedDataTable } from '@/components/ui/paginated-data-table';
 import { getCandidates } from '@/data/candidate';
+import { requireOrgSession, toOrgContext } from '@/lib/authz';
 import { CandidateColumns } from './candidates-columns';
 
 interface CandidatesListProps {
@@ -15,7 +16,9 @@ export async function CandidatesList({
   status,
   position,
 }: CandidatesListProps) {
-  const { items, total, totalPages } = await getCandidates({
+  const user = await requireOrgSession();
+  const ctx = toOrgContext(user);
+  const { items, total, totalPages } = await getCandidates(ctx, {
     page,
     search,
     status,
