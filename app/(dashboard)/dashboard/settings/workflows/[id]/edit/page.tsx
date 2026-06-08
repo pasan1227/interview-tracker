@@ -1,11 +1,11 @@
 // app/(dashboard)/dashboard/settings/workflows/[id]/edit/page.tsx
 
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { getWorkflowById } from '@/data/workflow';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface EditWorkflowPageProps {
   params: Promise<{ id: string }>;
@@ -14,10 +14,13 @@ interface EditWorkflowPageProps {
 export default async function EditWorkflowPage({
   params,
 }: EditWorkflowPageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+  ]);
   const { id: workflowId } = await params;
 
-  const workflow = await getWorkflowById(workflowId);
+  const workflow = await getWorkflowById(toOrgContext(user), workflowId);
 
   if (!workflow) {
     notFound();

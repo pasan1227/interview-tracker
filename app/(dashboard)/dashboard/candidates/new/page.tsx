@@ -1,16 +1,13 @@
 // app/(dashboard)/dashboard/candidates/new/page.tsx
 
-import { auth } from '@/auth';
 import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { getPositions } from '@/data/position';
-import { redirect } from 'next/navigation';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 
 export default async function NewCandidatePage() {
-  const session = await auth();
-  if (!session?.user) redirect('/login');
-
-  const positions = await getPositions({ activeOnly: true });
+  const user = await requirePageOrgSession();
+  const positions = await getPositions(toOrgContext(user), { activeOnly: true });
   const positionOptions = positions.map((p) => ({ id: p.id, title: p.title }));
 
   return (

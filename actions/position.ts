@@ -5,8 +5,7 @@ import {
   deletePosition as deletePositionData,
   updatePosition as updatePositionData,
 } from '@/data/position';
-import { requireManagerOrAdmin } from '@/lib/authz';
-import { getDefaultOrganizationId } from '@/lib/default-org';
+import { requireOrgManagerOrAdmin, toOrgContext } from '@/lib/authz';
 import { revalidatePosition } from '@/lib/revalidate';
 import {
   PositionInputSchema,
@@ -14,19 +13,21 @@ import {
 } from '@/lib/validations/dashboard';
 
 export async function createPosition(input: PositionInput) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
   const data = PositionInputSchema.parse(input);
-  // Bridge until PR 7 threads OrgContext through this action.
-  const organizationId = await getDefaultOrganizationId();
 
-  const position = await createPositionData({
+  // organizationId injected by tenantDb. Workflow connect is scoped
+  // by tenantDb's where-merge — picking a workflow id from another
+  // org silently fails (returns no row).
+  const position = await createPositionData(ctx, {
     title: data.title,
     department: data.department ?? null,
     workflow: data.workflowId
       ? { connect: { id: data.workflowId } }
       : undefined,
     isActive: data.isActive ?? true,
-    organization: { connect: { id: organizationId } },
+    organization: { connect: { id: ctx.organizationId } },
   });
 
   revalidatePosition();
@@ -34,10 +35,11 @@ export async function createPosition(input: PositionInput) {
 }
 
 export async function updatePosition(id: string, input: PositionInput) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
   const data = PositionInputSchema.parse(input);
 
-  const position = await updatePositionData(id, {
+  const position = await updatePositionData(ctx, id, {
     title: data.title,
     department: data.department ?? null,
     workflow: data.workflowId
@@ -51,8 +53,9 @@ export async function updatePosition(id: string, input: PositionInput) {
 }
 
 export async function deletePosition(id: string) {
-  await requireManagerOrAdmin();
-  await deletePositionData(id);
+  const user = await requireOrgManagerOrAdmin();
+  const ctx = toOrgContext(user);
+  await deletePositionData(ctx, id);
   revalidatePosition();
   return true;
 }

@@ -9,9 +9,7 @@ import {
   updateStage as updateStageData,
   updateWorkflow as updateWorkflowData,
 } from '@/data/workflow';
-import { requireAdmin } from '@/lib/authz';
-import { db } from '@/lib/db';
-import { getDefaultOrganizationId } from '@/lib/default-org';
+import { requireOrgAdmin, toOrgContext } from '@/lib/authz';
 import {
   StageInputSchema,
   WorkflowInputSchema,
@@ -19,6 +17,7 @@ import {
   type WorkflowInput,
 } from '@/lib/validations/dashboard';
 import { revalidateWorkflow } from '@/lib/revalidate';
+import { tenantDb } from '@/lib/tenant-db';
 import { z } from 'zod';
 
 // Bulk-reorder accepts an ordered list of stage IDs; cap it to keep
@@ -28,16 +27,15 @@ const ReorderSchema = z.array(z.string().cuid()).max(200);
 // ---------- Workflows ----------
 
 export async function createWorkflow(input: WorkflowInput) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const data = WorkflowInputSchema.parse(input);
-  // Bridge until PR 7 threads OrgContext through this action.
-  const organizationId = await getDefaultOrganizationId();
 
-  const workflow = await createWorkflowData({
+  const workflow = await createWorkflowData(ctx, {
     name: data.name,
     description: data.description ?? null,
     isDefault: data.isDefault ?? false,
-    organization: { connect: { id: organizationId } },
+    organization: { connect: { id: ctx.organizationId } },
   });
 
   revalidateWorkflow();
@@ -45,10 +43,11 @@ export async function createWorkflow(input: WorkflowInput) {
 }
 
 export async function updateWorkflow(id: string, input: WorkflowInput) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const data = WorkflowInputSchema.parse(input);
 
-  const workflow = await updateWorkflowData(id, {
+  const workflow = await updateWorkflowData(ctx, id, {
     name: data.name,
     description: data.description ?? null,
     isDefault: data.isDefault ?? false,
@@ -59,8 +58,9 @@ export async function updateWorkflow(id: string, input: WorkflowInput) {
 }
 
 export async function deleteWorkflow(id: string) {
-  await requireAdmin();
-  await deleteWorkflowData(id);
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
+  await deleteWorkflowData(ctx, id);
   revalidateWorkflow();
   return true;
 }
@@ -71,9 +71,10 @@ export async function deleteWorkflow(id: string) {
  * need to round-trip the name and description.
  */
 export async function setWorkflowAsDefault(id: string) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const wfId = z.string().cuid().parse(id);
-  await updateWorkflowData(wfId, { isDefault: true });
+  await updateWorkflowData(ctx, wfId, { isDefault: true });
   revalidateWorkflow(wfId);
   return true;
 }
@@ -85,23 +86,24 @@ export async function setWorkflowAsDefault(id: string) {
 // different workflow via the data payload (mass assignment).
 
 export async function createStage(workflowId: string, input: StageInput) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const data = StageInputSchema.parse(input);
   const wfId = z.string().cuid().parse(workflowId);
 
-  // Derive the tenant from the parent workflow. Bridge until PR 7
-  // threads OrgContext through this action.
-  const workflow = await db.workflow.findUnique({
+  // Verify the workflow is in our org before letting createStage
+  // connect to it. tenantDb's findUnique returns null cross-org.
+  const workflow = await tenantDb(ctx).workflow.findUnique({
     where: { id: wfId },
-    select: { organizationId: true },
+    select: { id: true },
   });
   if (!workflow) throw new Error('Workflow not found');
 
-  const stage = await createStageData({
+  const stage = await createStageData(ctx, {
     name: data.name,
     description: data.description ?? null,
     workflow: { connect: { id: wfId } },
-    organization: { connect: { id: workflow.organizationId } },
+    organization: { connect: { id: ctx.organizationId } },
   });
 
   revalidateWorkflow(wfId);
@@ -109,16 +111,17 @@ export async function createStage(workflowId: string, input: StageInput) {
 }
 
 export async function updateStage(id: string, input: StageInput) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const data = StageInputSchema.parse(input);
 
-  const stage = await updateStageData(id, {
+  const stage = await updateStageData(ctx, id, {
     name: data.name,
     description: data.description ?? null,
   });
 
   // Look up the workflowId so we know which detail page to revalidate.
-  const updated = await db.stage.findUnique({
+  const updated = await tenantDb(ctx).stage.findUnique({
     where: { id },
     select: { workflowId: true },
   });
@@ -130,18 +133,20 @@ export async function updateStage(id: string, input: StageInput) {
 }
 
 export async function deleteStage(id: string, workflowId: string) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const wfId = z.string().cuid().parse(workflowId);
-  await deleteStageData(id);
+  await deleteStageData(ctx, id);
   revalidateWorkflow(wfId);
   return true;
 }
 
 export async function reorderStages(workflowId: string, stageIds: string[]) {
-  await requireAdmin();
+  const user = await requireOrgAdmin();
+  const ctx = toOrgContext(user);
   const wfId = z.string().cuid().parse(workflowId);
   const ids = ReorderSchema.parse(stageIds);
-  await reorderStagesData(wfId, ids);
+  await reorderStagesData(ctx, wfId, ids);
   revalidateWorkflow(wfId);
   return true;
 }

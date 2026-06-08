@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
@@ -7,17 +7,20 @@ import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { WorkflowHeader } from '@/components/workflows/workflow-header';
 import { WorkflowStages } from '@/components/workflows/workflow-stages-lazy';
 import { getWorkflowById } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface WorkflowPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function WorkflowPage({ params }: WorkflowPageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+  ]);
   const { id: workflowId } = await params;
 
-  const workflow = await getWorkflowById(workflowId);
+  const workflow = await getWorkflowById(toOrgContext(user), workflowId);
 
   if (!workflow) {
     notFound();

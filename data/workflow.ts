@@ -1,9 +1,10 @@
-import { db } from '@/lib/db';
+import { db as baseDb } from '@/lib/db';
 import { Prisma } from '@/lib/generated/prisma/browser';
 // Prisma.sql + Prisma.join are runtime helpers only exported from the
 // full client variant. Type-side `Prisma.*Input` types are still the
 // /browser namespace above.
 import { Prisma as PrismaRuntime } from '@/lib/generated/prisma/client';
+import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 
 interface WorkflowWithStages
   extends Prisma.WorkflowGetPayload<{
@@ -12,19 +13,16 @@ interface WorkflowWithStages
   stages: Array<Prisma.StageGetPayload<object>>;
 }
 
-export async function getWorkflows() {
+export async function getWorkflows(ctx: OrgContext) {
   try {
+    const db = tenantDb(ctx);
     const workflows = await db.workflow.findMany({
       include: {
         stages: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
         },
       },
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy: { name: 'asc' },
     });
 
     return workflows;
@@ -35,16 +33,16 @@ export async function getWorkflows() {
 }
 
 export async function getWorkflowById(
+  ctx: OrgContext,
   id: string
 ): Promise<WorkflowWithStages | null> {
   try {
+    const db = tenantDb(ctx);
     const workflow = await db.workflow.findUnique({
       where: { id },
       include: {
         stages: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
         },
       },
     });
@@ -56,15 +54,16 @@ export async function getWorkflowById(
   }
 }
 
-export async function getDefaultWorkflow(): Promise<WorkflowWithStages | null> {
+export async function getDefaultWorkflow(
+  ctx: OrgContext
+): Promise<WorkflowWithStages | null> {
   try {
+    const db = tenantDb(ctx);
     const workflow = await db.workflow.findFirst({
       where: { isDefault: true },
       include: {
         stages: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
         },
       },
     });
@@ -76,9 +75,14 @@ export async function getDefaultWorkflow(): Promise<WorkflowWithStages | null> {
   }
 }
 
-export async function createWorkflow(data: Prisma.WorkflowCreateInput) {
+export async function createWorkflow(
+  ctx: OrgContext,
+  data: Prisma.WorkflowCreateInput
+) {
   try {
-    // If this is set as default, update any existing default workflows
+    const db = tenantDb(ctx);
+    // If this is set as default, clear any other default in this org.
+    // The org scope falls out of tenantDb's updateMany rewrite.
     if (data.isDefault) {
       await db.workflow.updateMany({
         where: { isDefault: true },
@@ -101,11 +105,13 @@ export async function createWorkflow(data: Prisma.WorkflowCreateInput) {
 }
 
 export async function updateWorkflow(
+  ctx: OrgContext,
   id: string,
   data: Prisma.WorkflowUpdateInput
 ) {
   try {
-    // If this is set as default, update any existing default workflows
+    const db = tenantDb(ctx);
+    // If this is set as default, clear any other default in this org.
     if (data.isDefault === true) {
       await db.workflow.updateMany({
         where: {
@@ -121,9 +127,7 @@ export async function updateWorkflow(
       data,
       include: {
         stages: {
-          orderBy: {
-            order: 'asc',
-          },
+          orderBy: { order: 'asc' },
         },
       },
     });
@@ -135,9 +139,10 @@ export async function updateWorkflow(
   }
 }
 
-export async function deleteWorkflow(id: string) {
+export async function deleteWorkflow(ctx: OrgContext, id: string) {
   try {
-    // Check if this is the default workflow
+    const db = tenantDb(ctx);
+    // Check if this is the default workflow (in this org).
     const workflow = await db.workflow.findUnique({
       where: { id },
       select: { isDefault: true },
@@ -147,7 +152,7 @@ export async function deleteWorkflow(id: string) {
       throw new Error('Cannot delete the default workflow');
     }
 
-    // Delete the workflow and all its stages (cascade delete)
+    // Delete the workflow and all its stages (cascade delete).
     await db.workflow.delete({
       where: { id },
     });
@@ -160,8 +165,12 @@ export async function deleteWorkflow(id: string) {
 }
 
 // Order is server-computed, so callers don't pass it.
-export async function createStage(data: Omit<Prisma.StageCreateInput, 'order'>) {
+export async function createStage(
+  ctx: OrgContext,
+  data: Omit<Prisma.StageCreateInput, 'order'>
+) {
   try {
+    const db = tenantDb(ctx);
     const highestOrderStage = await db.stage.findFirst({
       where: { workflowId: data.workflow.connect!.id },
       orderBy: { order: 'desc' },
@@ -181,8 +190,13 @@ export async function createStage(data: Omit<Prisma.StageCreateInput, 'order'>) 
   }
 }
 
-export async function updateStage(id: string, data: Prisma.StageUpdateInput) {
+export async function updateStage(
+  ctx: OrgContext,
+  id: string,
+  data: Prisma.StageUpdateInput
+) {
   try {
+    const db = tenantDb(ctx);
     const stage = await db.stage.update({
       where: { id },
       data,
@@ -195,9 +209,10 @@ export async function updateStage(id: string, data: Prisma.StageUpdateInput) {
   }
 }
 
-export async function deleteStage(id: string) {
+export async function deleteStage(ctx: OrgContext, id: string) {
   try {
-    // Get the stage to be deleted
+    const db = tenantDb(ctx);
+    // Get the stage to be deleted (org-scoped).
     const stage = await db.stage.findUnique({
       where: { id },
       select: { workflowId: true, order: true },
@@ -207,16 +222,18 @@ export async function deleteStage(id: string) {
       throw new Error('Stage not found');
     }
 
-    // Delete the stage
+    // Delete the stage (org-scoped via tenantDb).
     await db.stage.delete({
       where: { id },
     });
 
-    // Reorder remaining stages
-    await db.$executeRaw`
+    // Reorder remaining stages. Raw SQL bypasses tenantDb, so we
+    // include the org scope explicitly in the WHERE clause.
+    await baseDb.$executeRaw`
       UPDATE "Stage"
       SET "order" = "order" - 1
       WHERE "workflowId" = ${stage.workflowId}
+      AND "organizationId" = ${ctx.organizationId}
       AND "order" > ${stage.order}
     `;
 
@@ -227,25 +244,27 @@ export async function deleteStage(id: string) {
   }
 }
 
-export async function reorderStages(workflowId: string, stageIds: string[]) {
+export async function reorderStages(
+  ctx: OrgContext,
+  workflowId: string,
+  stageIds: string[]
+) {
   if (stageIds.length === 0) return true;
   try {
-    // Single-statement reorder. Previously this fired N sequential
-    // updates inside a $transaction — one round-trip per stage. The
-    // VALUES clause builds an inline tuple list (id, order) and the
-    // UPDATE joins against it, so the planner does the whole thing
-    // in one pass. The workflowId filter keeps the update scoped —
-    // even if a stale stageId from another workflow was passed in,
-    // it won't reorder cross-workflow.
+    // Single-statement reorder. Raw SQL bypasses tenantDb, so the
+    // org scope is added to the WHERE clause explicitly — even if a
+    // stale stageId from another org's workflow is passed in, the
+    // composite filter rejects it.
     const tuples = stageIds.map(
       (id, idx) => PrismaRuntime.sql`(${id}::text, ${idx}::int)`
     );
-    await db.$executeRaw`
+    await baseDb.$executeRaw`
       UPDATE "Stage" AS s
       SET "order" = c.new_order
       FROM (VALUES ${PrismaRuntime.join(tuples)}) AS c(id, new_order)
       WHERE s."id" = c.id
         AND s."workflowId" = ${workflowId}
+        AND s."organizationId" = ${ctx.organizationId}
     `;
     return true;
   } catch (error) {

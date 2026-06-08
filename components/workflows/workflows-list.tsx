@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getWorkflows } from '@/data/workflow';
+import { requireOrgSession, toOrgContext } from '@/lib/authz';
 import {
   WORKFLOW_DEFAULT_BADGE,
   WORKFLOW_INACTIVE_BADGE,
@@ -19,7 +20,8 @@ import { ExternalLinkIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export async function WorkflowsList() {
-  const workflows = await getWorkflows();
+  const user = await requireOrgSession();
+  const workflows = await getWorkflows(toOrgContext(user));
 
   if (workflows.length === 0) {
     return (

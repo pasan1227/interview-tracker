@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getPositions } from '@/data/position';
+import { requireOrgSession, toOrgContext } from '@/lib/authz';
 import {
   POSITION_ACTIVE_BADGE,
   POSITION_INACTIVE_BADGE,
@@ -19,7 +20,8 @@ import { PencilIcon, TrashIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export async function PositionsList() {
-  const positions = await getPositions({
+  const user = await requireOrgSession();
+  const positions = await getPositions(toOrgContext(user), {
     activeOnly: false,
     includeWorkflow: true,
   });

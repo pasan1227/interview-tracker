@@ -1,9 +1,9 @@
 import { redirect, notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { getWorkflowById } from '@/data/workflow';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { WorkflowDeleteForm } from '@/components/workflows/workflow-delete-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteWorkflowPageProps {
   params: Promise<{ id: string }>;
@@ -12,10 +12,13 @@ interface DeleteWorkflowPageProps {
 export default async function DeleteWorkflowPageRoute({
   params,
 }: DeleteWorkflowPageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+  ]);
   const { id: workflowId } = await params;
 
-  const workflow = await getWorkflowById(workflowId);
+  const workflow = await getWorkflowById(toOrgContext(user), workflowId);
   if (!workflow) notFound();
 
   // Default workflow can't be deleted.

@@ -1,20 +1,23 @@
 // app/(dashboard)/dashboard/settings/workflows/[id]/stages/new/page.tsx
 
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { StageForm } from '@/components/workflows/stage-form';
 import { getWorkflowById } from '@/data/workflow';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { notFound } from 'next/navigation';
 interface NewStagePageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function NewStagePage({ params }: NewStagePageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+  ]);
   const { id: workflowId } = await params;
 
-  const workflow = await getWorkflowById(workflowId);
+  const workflow = await getWorkflowById(toOrgContext(user), workflowId);
 
   if (!workflow) {
     notFound();

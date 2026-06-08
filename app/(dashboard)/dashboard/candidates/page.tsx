@@ -1,6 +1,6 @@
 // app/(dashboard)/dashboard/candidates/page.tsx
 
-import { requirePageOrgSession } from '@/lib/authz';
+import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { ResourceSearch } from '@/components/ui/resource-search';
@@ -20,11 +20,12 @@ interface CandidatesPageProps {
 export default async function CandidatesPage({
   searchParams,
 }: CandidatesPageProps) {
-  await requirePageOrgSession();
+  const user = await requirePageOrgSession();
+  const ctx = toOrgContext(user);
 
   const [awaitedParams, positions] = await Promise.all([
     searchParams,
-    getPositions({ activeOnly: true }),
+    getPositions(ctx, { activeOnly: true }),
   ]);
 
   const { page, search, status, position } =

@@ -25,7 +25,7 @@ export default async function EditCandidatePage({
 
   const [candidate, positions] = await Promise.all([
     getCandidateForForm(ctx, id),
-    getPositions({ activeOnly: true }),
+    getPositions(ctx, { activeOnly: true }),
   ]);
   if (!candidate) notFound();
 
