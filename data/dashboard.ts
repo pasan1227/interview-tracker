@@ -1,5 +1,6 @@
-import { db } from '@/lib/db';
+import { db as baseDb } from '@/lib/db';
 import { CandidateStatus, InterviewStatus } from '@/lib/generated/prisma/browser';
+import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 import { addDays, subDays, subMonths } from 'date-fns';
 import { cache } from 'react';
 
@@ -48,16 +49,23 @@ const EMPTY_STATS: DashboardStats = {
 // Request-scoped memoization. The dashboard renders SummarySection and
 // (for managers) ChartsSection as separate Suspense'd server components;
 // cache() lets both reuse one query result instead of running it twice
-// in parallel.
+// in parallel. Keyed implicitly by argument equality — same ctx → same
+// cached result.
 export const getDashboardStats = cache(_getDashboardStats);
 
-async function _getDashboardStats(): Promise<DashboardStats> {
+async function _getDashboardStats(ctx: OrgContext): Promise<DashboardStats> {
   try {
+    const db = tenantDb(ctx);
     const now = new Date();
     const lastMonth = subMonths(now, 1);
     const thirtyDaysAgo = subDays(now, 30);
     const nextWeek = addDays(now, 7);
     const sixMonthsAgo = subMonths(now, 6);
+
+    // Raw queries bypass tenantDb — embed organizationId in the WHERE
+    // clause explicitly. Prisma's typed groupBy / count calls below are
+    // scoped automatically.
+    const orgId = ctx.organizationId;
 
     // Fire every independent query in one round trip. The dependent
     // position-title join below is the only sequential step.
@@ -86,14 +94,12 @@ async function _getDashboardStats(): Promise<DashboardStats> {
           status: InterviewStatus.COMPLETED,
         },
       }),
-      // Postgres-side average of (updatedAt - createdAt) in days for HIRED
-      // candidates. Replaces a findMany + reduce so payload + per-row work
-      // stays at the DB.
-      db.$queryRaw<[{ avg_days: number | null }]>`
+      baseDb.$queryRaw<[{ avg_days: number | null }]>`
         SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) / 86400)
           AS avg_days
         FROM "Candidate"
         WHERE "status" = 'HIRED'
+          AND "organizationId" = ${orgId}
       `,
       db.candidate.groupBy({
         by: ['source'],
@@ -102,15 +108,13 @@ async function _getDashboardStats(): Promise<DashboardStats> {
       }),
       db.interview.groupBy({ by: ['positionId'], _count: { id: true } }),
       db.candidate.groupBy({ by: ['status'], _count: { id: true } }),
-      // Monthly hires bucketed in Postgres via date_trunc — mirrors the
-      // pattern in actions/reports.ts:getMonthlyHiresReport. Replaces
-      // a findMany of every HIRED candidate's updatedAt + JS bucketing.
-      db.$queryRaw<Array<{ month: Date; count: bigint }>>`
+      baseDb.$queryRaw<Array<{ month: Date; count: bigint }>>`
         SELECT
           date_trunc('month', "updatedAt") AS month,
           COUNT(*)::bigint AS count
         FROM "Candidate"
         WHERE "status" = 'HIRED'
+          AND "organizationId" = ${orgId}
           AND "updatedAt" >= ${sixMonthsAgo}::timestamp
         GROUP BY 1
         ORDER BY 1
@@ -218,8 +222,9 @@ async function _getDashboardStats(): Promise<DashboardStats> {
 // won't issue a duplicate query.
 export const getUpcomingInterviews = cache(_getUpcomingInterviews);
 
-async function _getUpcomingInterviews(limit = 5) {
+async function _getUpcomingInterviews(ctx: OrgContext, limit = 5) {
   try {
+    const db = tenantDb(ctx);
     const now = new Date();
     const nextWeek = addDays(now, 7);
 
@@ -244,8 +249,9 @@ async function _getUpcomingInterviews(limit = 5) {
 
 export const getRecentCandidates = cache(_getRecentCandidates);
 
-async function _getRecentCandidates(limit = 5) {
+async function _getRecentCandidates(ctx: OrgContext, limit = 5) {
   try {
+    const db = tenantDb(ctx);
     return await db.candidate.findMany({
       include: { position: true },
       orderBy: { createdAt: 'desc' },

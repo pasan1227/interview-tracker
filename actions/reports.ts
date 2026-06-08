@@ -1,13 +1,14 @@
 'use server';
 
-import { requireManagerOrAdmin } from '@/lib/authz';
-import { db } from '@/lib/db';
+import { requireOrgManagerOrAdmin, toOrgContext } from '@/lib/authz';
+import { db as baseDb } from '@/lib/db';
 import {
   CandidateStatus,
   InterviewStatus,
   Prisma,
   Recommendation,
 } from '@/lib/generated/prisma/browser';
+import { tenantDb } from '@/lib/tenant-db';
 import {
   ReportFiltersSchema,
   type ReportFiltersInput,
@@ -49,22 +50,19 @@ function buildCandidateReportWhere(
 }
 
 export async function getCandidateStatusReport(rawFilters: ReportFilters = {}) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const db = tenantDb(toOrgContext(user));
   const filters = sanitizeFilters(rawFilters);
 
   try {
     const where = buildCandidateReportWhere(filters);
 
-    // Get candidates grouped by status
     const candidatesByStatus = await db.candidate.groupBy({
       by: ['status'],
-      _count: {
-        id: true,
-      },
+      _count: { id: true },
       where,
     });
 
-    // Transform into a format suitable for charts
     const statusData = Object.values(CandidateStatus).map((status) => {
       const found = candidatesByStatus.find((item) => item.status === status);
       return {
@@ -73,48 +71,36 @@ export async function getCandidateStatusReport(rawFilters: ReportFilters = {}) {
       };
     });
 
-    // Calculate total
     const totalCandidates = statusData.reduce(
       (sum, item) => sum + item.count,
       0
     );
 
-    return {
-      data: statusData,
-      totalCandidates,
-    };
+    return { data: statusData, totalCandidates };
   } catch (error) {
     console.error('Failed to fetch candidate status report:', error);
-    return {
-      data: [],
-      totalCandidates: 0,
-    };
+    return { data: [], totalCandidates: 0 };
   }
 }
 
 export async function getSourceReport(rawFilters: ReportFilters = {}) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const db = tenantDb(toOrgContext(user));
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Exclude the source filter — this report explicitly drops nulls and
-    // groups by source, so a same-source filter would be redundant.
     const { source: _source, ...rest } = filters;
     const where: Prisma.CandidateWhereInput = {
       ...buildCandidateReportWhere(rest),
       source: { not: null },
     };
 
-    // Get candidates grouped by source
     const candidatesBySource = await db.candidate.groupBy({
       by: ['source'],
-      _count: {
-        id: true,
-      },
+      _count: { id: true },
       where,
     });
 
-    // Sort by count
     const sortedData = candidatesBySource
       .map((item) => ({
         source: item.source || 'Unknown',
@@ -122,61 +108,43 @@ export async function getSourceReport(rawFilters: ReportFilters = {}) {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Calculate total
     const totalCandidates = sortedData.reduce(
       (sum, item) => sum + item.count,
       0
     );
 
-    return {
-      data: sortedData,
-      totalCandidates,
-    };
+    return { data: sortedData, totalCandidates };
   } catch (error) {
     console.error('Failed to fetch source report:', error);
-    return {
-      data: [],
-      totalCandidates: 0,
-    };
+    return { data: [], totalCandidates: 0 };
   }
 }
 
 export async function getPositionReport(rawFilters: ReportFilters = {}) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const db = tenantDb(toOrgContext(user));
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // groupBy positionId, so drop the positionId equality filter and
-    // exclude rows without a position instead.
     const { positionId: _pid, ...rest } = filters;
     const where: Prisma.CandidateWhereInput = {
       ...buildCandidateReportWhere(rest),
       positionId: { not: null },
     };
 
-    // Get candidates grouped by position
     const candidatesByPosition = await db.candidate.groupBy({
       by: ['positionId'],
-      _count: {
-        id: true,
-      },
+      _count: { id: true },
       where,
     });
 
-    // Get position details
     const positions = await db.position.findMany({
       where: {
-        id: {
-          in: candidatesByPosition.map((item) => item.positionId || ''),
-        },
+        id: { in: candidatesByPosition.map((item) => item.positionId || '') },
       },
-      select: {
-        id: true,
-        title: true,
-      },
+      select: { id: true, title: true },
     });
 
-    // Transform into a format suitable for charts
     const positionData = candidatesByPosition
       .map((item) => {
         const position = positions.find((p) => p.id === item.positionId);
@@ -187,40 +155,32 @@ export async function getPositionReport(rawFilters: ReportFilters = {}) {
       })
       .sort((a, b) => b.count - a.count);
 
-    // Calculate total
     const totalCandidates = positionData.reduce(
       (sum, item) => sum + item.count,
       0
     );
 
-    return {
-      data: positionData,
-      totalCandidates,
-    };
+    return { data: positionData, totalCandidates };
   } catch (error) {
     console.error('Failed to fetch position report:', error);
-    return {
-      data: [],
-      totalCandidates: 0,
-    };
+    return { data: [], totalCandidates: 0 };
   }
 }
 
 export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const orgId = toOrgContext(user).organizationId;
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Build filter fragments once; Prisma.sql interpolates safely. Null
-    // sentinels keep the WHERE clause shape constant — the planner can
-    // short-circuit each predicate.
+    // Raw queries bypass tenantDb — every WHERE clause carries an
+    // explicit organizationId filter.
     const startDate = filters.startDate ?? null;
     const endDate = filters.endDate ?? null;
     const positionId = filters.positionId ?? null;
     const source = filters.source ?? null;
 
-    // Per-position averages. EXTRACT(EPOCH FROM diff)/86400 → days as float.
-    const perPosition = await db.$queryRaw<
+    const perPosition = await baseDb.$queryRaw<
       Array<{ position: string; avg_days: number; count: bigint }>
     >`
       SELECT
@@ -230,6 +190,7 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
       FROM "Candidate" c
       LEFT JOIN "Position" p ON p."id" = c."positionId"
       WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND c."organizationId" = ${orgId}
         AND (${startDate}::timestamp IS NULL OR c."updatedAt" >= ${startDate}::timestamp)
         AND (${endDate}::timestamp   IS NULL OR c."updatedAt" <= ${endDate}::timestamp)
         AND (${positionId}::text     IS NULL OR c."positionId" = ${positionId})
@@ -238,9 +199,7 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
       ORDER BY avg_days ASC
     `;
 
-    // Overall average across all hires (not the avg of per-position avgs,
-    // which would weight small positions equally).
-    const [overall] = await db.$queryRaw<
+    const [overall] = await baseDb.$queryRaw<
       Array<{ avg_days: number | null; total: bigint }>
     >`
       SELECT
@@ -248,6 +207,7 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
         COUNT(*)::bigint AS total
       FROM "Candidate" c
       WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND c."organizationId" = ${orgId}
         AND (${startDate}::timestamp IS NULL OR c."updatedAt" >= ${startDate}::timestamp)
         AND (${endDate}::timestamp   IS NULL OR c."updatedAt" <= ${endDate}::timestamp)
         AND (${positionId}::text     IS NULL OR c."positionId" = ${positionId})
@@ -265,25 +225,18 @@ export async function getTimeToHireReport(rawFilters: ReportFilters = {}) {
     };
   } catch (error) {
     console.error('Failed to fetch time to hire report:', error);
-    return {
-      avgTimeToHire: 0,
-      positionAverages: [],
-      totalHires: 0,
-    };
+    return { avgTimeToHire: 0, positionAverages: [], totalHires: 0 };
   }
 }
 
 export async function getInterviewOutcomeReport(
   rawFilters: ReportFilters = {}
 ) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const db = tenantDb(toOrgContext(user));
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Shared interview-side filter used by both the recommendation
-    // groupBy and the two totals counts. Built once with Prisma's typed
-    // builder so dropping or renaming a column is a compile error, not a
-    // silent semantic shift.
     const interviewWhere: Prisma.InterviewWhereInput = {
       status: InterviewStatus.COMPLETED,
       ...(filters.startDate || filters.endDate
@@ -311,8 +264,6 @@ export async function getInterviewOutcomeReport(
       }),
     ]);
 
-    // Fill in zero buckets for missing recommendations so the chart axis
-    // is stable across filter changes.
     const byRecommendation = new Map<Recommendation, number>(
       counts.map((c) => [c.recommendation, c._count._all])
     );
@@ -341,18 +292,17 @@ export async function getInterviewOutcomeReport(
 }
 
 export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
-  await requireManagerOrAdmin();
+  const user = await requireOrgManagerOrAdmin();
+  const orgId = toOrgContext(user).organizationId;
   const filters = sanitizeFilters(rawFilters);
 
   try {
-    // Default to a rolling 12-month window so the chart always has
-    // something to show.
     const endDate = filters.endDate || new Date();
     const startDate = filters.startDate || subMonths(endDate, 11);
     const positionId = filters.positionId ?? null;
     const source = filters.source ?? null;
 
-    const rows = await db.$queryRaw<
+    const rows = await baseDb.$queryRaw<
       Array<{ month: Date; count: bigint }>
     >`
       SELECT
@@ -360,6 +310,7 @@ export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
         COUNT(*)::bigint AS count
       FROM "Candidate" c
       WHERE c."status" = ${CandidateStatus.HIRED}::"CandidateStatus"
+        AND c."organizationId" = ${orgId}
         AND c."updatedAt" >= ${startDate}::timestamp
         AND c."updatedAt" <= ${endDate}::timestamp
         AND (${positionId}::text IS NULL OR c."positionId" = ${positionId})
@@ -368,7 +319,6 @@ export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
       ORDER BY 1
     `;
 
-    // Fill missing months with zero so the chart x-axis is continuous.
     const byKey = new Map(
       rows.map((r) => [format(r.month, 'yyyy-MM'), Number(r.count)])
     );
@@ -387,9 +337,6 @@ export async function getMonthlyHiresReport(rawFilters: ReportFilters = {}) {
     return { data, totalHires };
   } catch (error) {
     console.error('Failed to fetch monthly hires report:', error);
-    return {
-      data: [],
-      totalHires: 0,
-    };
+    return { data: [], totalHires: 0 };
   }
 }

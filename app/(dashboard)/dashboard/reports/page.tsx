@@ -16,9 +16,9 @@ import { MonthlyHiresReport } from '@/components/reports/monthly-hires-report';
 import { PositionsReport } from '@/components/reports/positions-report';
 import { SourcesReport } from '@/components/reports/sources-report';
 import { TimeToHireReport } from '@/components/reports/time-to-hire-report';
-import { requirePageRole } from '@/lib/authz';
-import { db } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
+import { tenantDb } from '@/lib/tenant-db';
 import { Suspense } from 'react';
 
 // URL-driven page state: ?tab + filter params.
@@ -57,7 +57,12 @@ interface ReportsPageProps {
 }
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  const user = await requirePageOrgRole([
+    OrganizationRole.OWNER,
+    OrganizationRole.ADMIN,
+    OrganizationRole.MANAGER,
+  ]);
+  const db = tenantDb(toOrgContext(user));
 
   const sp = await searchParams;
   const activeTab: TabValue = TAB_VALUES.includes(sp.tab as TabValue)
