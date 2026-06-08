@@ -1,0 +1,799 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Multi-tenant primitives
+// ──────────────────────────────────────────────────────────────────────
+// PR 1 of the multi-tenant migration. Organization / Membership /
+// Invitation are introduced, and every domain model gains a nullable
+// `organizationId` FK. The column stays nullable across PR 1 + PR 2 so
+// the existing app keeps running while the backfill script attaches
+// every legacy row to the seeded "default" org. PR 3 will flip the
+// columns to NOT NULL, drop User.role, and rewrite domain-table
+// uniques/indexes as composites.
+// ──────────────────────────────────────────────────────────────────────
+
+model Organization {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  name         String
+  billingEmail String
+  plan         Plan      @default(FREE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  // Soft-delete sentinel for billing wind-down. Active code treats
+  // non-null deletedAt as inaccessible; row stays for FK integrity
+  // until an ops cleanup job hard-deletes via cascade.
+  deletedAt    DateTime?
+
+  memberships Membership[]
+  invitations Invitation[]
+
+  // Back-refs to every tenanted domain model. Cascade so closing an
+  // account wipes the entire domain tree in one operation.
+  candidates       Candidate[]
+  positions        Position[]
+  interviews       Interview[]
+  feedbacks        Feedback[]
+  skillAssessments SkillAssessment[]
+  workflows        Workflow[]
+  stages           Stage[]
+  tags             Tag[]
+  notes            Note[]
+  settings         Settings[]
+
+  // Phase 1 — infrastructure primitives. Every new domain we add
+  // (audit, billing, API tokens, attachments, background jobs,
+  // webhooks) is tenanted from day one.
+  auditLogs        AuditLog[]
+  apiTokens        ApiToken[]
+  attachments      Attachment[]
+  subscription     Subscription?
+  usageRecords     UsageRecord[]
+  backgroundJobs   BackgroundJob[]
+  webhookEndpoints WebhookEndpoint[]
+
+  // Stripe customer id. Populated lazily by packages/billing's
+  // ensureCustomer() — null on free orgs that haven't entered checkout.
+  stripeCustomerId String?  @unique
+
+  @@index([deletedAt])
+  @@index([stripeCustomerId])
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  status         MembershipStatus @default(ACTIVE)
+  invitedById    String?
+  invitedAt      DateTime?
+  acceptedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user         User         @relation("memberships", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("invitedMemberships", fields: [invitedById], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, role])
+  @@index([userId, status])
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  email          String
+  role           OrganizationRole @default(MEMBER)
+  // Hashed token (sha256). The raw value is only ever in the email
+  // body; the row stores the digest so a DB leak doesn't expose
+  // valid invite links. Mirrors data/tokens.ts handling.
+  token          String           @unique
+  expires        DateTime
+  acceptedAt     DateTime?
+  invitedById    String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("sentInvitations", fields: [invitedById], references: [id])
+
+  // One open invite per email per org. Re-inviting overwrites the row
+  // via upsert (see actions/org/invite-member.ts in a later PR).
+  @@unique([organizationId, email])
+  @@index([email])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String? // Hashed password
+  emailVerified DateTime?
+  image         String?
+  // Platform-staff flag for *your* internal team (support
+  // impersonation, ops dashboards). Deliberately distinct from
+  // OrganizationRole so it can never appear in a per-org gate.
+  isPlatformAdmin Boolean @default(false)
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  isTwoFactorEnabled    Boolean                @default(false)
+  twoFactorConfirmation TwoFactorConfirmation?
+
+  // Multi-tenant relations
+  memberships         Membership[] @relation("memberships")
+  invitedMemberships  Membership[] @relation("invitedMemberships")
+  sentInvitations     Invitation[] @relation("sentInvitations")
+
+  // Relations
+  managedCandidates   Candidate[] @relation("managedBy")
+  reviewedCandidates  Candidate[] @relation("reviewedBy")
+  createdCandidates   Candidate[] @relation("createdBy")
+  conductedInterviews Interview[] @relation("interviewer")
+  providedFeedbacks   Feedback[]
+  createdInterviews   Interview[] @relation("createdByUser")
+
+  // Phase 1 back-refs
+  auditActor          AuditLog[]   @relation("auditActor")
+  createdApiTokens    ApiToken[]   @relation("apiTokenCreator")
+  uploadedAttachments Attachment[] @relation("attachmentUploader")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model Candidate {
+  id         String          @id @default(cuid())
+  name       String
+  email      String
+  phone      String?
+  resumeUrl  String?
+  status     CandidateStatus @default(NEW)
+  source     String?
+  position   Position?       @relation(fields: [positionId], references: [id])
+  positionId String?
+  isActive   Boolean         @default(true)
+  isArchived Boolean         @default(false)
+
+  // Tenant (nullable in PR 1; backfilled in PR 2; NOT NULL in PR 3).
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  // Relations
+  interviews Interview[]
+  feedbacks  Feedback[]
+  tags       Tag[]
+  notes      Note[]
+
+  // User relations
+  createdBy    User    @relation("createdBy", fields: [createdById], references: [id])
+  createdById  String
+  managedBy    User?   @relation("managedBy", fields: [managedById], references: [id])
+  managedById  String?
+  reviewedBy   User?   @relation("reviewedBy", fields: [reviewedById], references: [id])
+  reviewedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes — see migrations/.../add_query_indexes for rationale.
+  @@index([status])
+  @@index([positionId])
+  @@index([source])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([isActive])
+  // Composites cover WHERE status=… ORDER BY createdAt DESC and
+  // WHERE positionId=… ORDER BY createdAt DESC on the list page.
+  @@index([status, createdAt(sort: Desc)])
+  @@index([positionId, createdAt(sort: Desc)])
+  // Tenant lookup (PR 3 will replace standalone indexes above with
+  // composites prefixed by organizationId; PR 1 just adds a basic one).
+  @@index([organizationId])
+}
+
+model Position {
+  id         String      @id @default(cuid())
+  title      String
+  department String?
+  isActive   Boolean     @default(true)
+  workflow   Workflow?   @relation(fields: [workflowId], references: [id])
+  workflowId String?
+  candidates Candidate[]
+  interviews Interview[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([isActive])
+  @@index([organizationId])
+}
+
+model Interview {
+  id        String          @id @default(cuid())
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  location  String? // Can be URL for virtual interviews
+  type      InterviewType   @default(TECHNICAL)
+  status    InterviewStatus @default(SCHEDULED)
+  notes     String?         @db.Text
+
+  // Relations
+  candidate    Candidate  @relation(fields: [candidateId], references: [id])
+  candidateId  String
+  position     Position   @relation(fields: [positionId], references: [id])
+  positionId   String
+  interviewers User[]     @relation("interviewer")
+  feedbacks    Feedback[]
+  stage        Stage?     @relation(fields: [stageId], references: [id])
+  stageId      String?
+  createdBy    User       @relation("createdByUser", fields: [createdById], references: [id])
+  createdById  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Denormalized tenant FK. Could be derived from candidate, but a
+  // direct column makes "all interviews in org" queries one index hit
+  // instead of a join.
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([startTime])
+  @@index([status])
+  @@index([candidateId])
+  @@index([positionId])
+  // Covers the list page's WHERE status=… ORDER BY startTime ASC.
+  @@index([status, startTime])
+  @@index([organizationId])
+}
+
+model Feedback {
+  id             String         @id @default(cuid())
+  rating         Int // 1-5 or custom scale
+  recommendation Recommendation @default(NO_DECISION)
+  comment        String?        @db.Text
+
+  // Relations
+  interview        Interview         @relation(fields: [interviewId], references: [id])
+  interviewId      String
+  candidate        Candidate         @relation(fields: [candidateId], references: [id])
+  candidateId      String
+  interviewer      User              @relation(fields: [interviewerId], references: [id])
+  interviewerId    String
+  skillAssessments SkillAssessment[]
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([interviewerId])
+  @@index([candidateId])
+  @@index([interviewId])
+  @@index([interviewerId, createdAt])
+  @@index([organizationId])
+}
+
+model SkillAssessment {
+  id         String   @id @default(cuid())
+  skill      String
+  rating     Int // 1-5 or custom scale
+  comment    String?
+  feedback   Feedback @relation(fields: [feedbackId], references: [id])
+  feedbackId String
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([feedbackId])
+  @@index([organizationId])
+}
+
+model Workflow {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean    @default(false)
+  positions   Position[]
+  stages      Stage[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([organizationId])
+}
+
+model Stage {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  order       Int
+  workflow    Workflow    @relation(fields: [workflowId], references: [id])
+  workflowId  String
+  interviews  Interview[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([workflowId])
+  @@index([workflowId, order])
+  @@index([organizationId])
+}
+
+model Tag {
+  id         String      @id @default(cuid())
+  // Per-org uniqueness — "React" can exist in every org. The global
+  // unique on `name` was dropped in PR 3.
+  name       String
+  candidates Candidate[]
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  content     String    @db.Text
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([candidateId])
+  @@index([organizationId])
+}
+
+model Settings {
+  id                     String   @id @default(cuid())
+  companyName            String   @default("Company Name")
+  companyLogo            String?
+  emailNotifications     Boolean  @default(true)
+  feedbackReminders      Boolean  @default(true)
+  defaultInterviewLength Int      @default(60) // minutes
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // One Settings row per org (enforced in PR 3).
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@unique([organizationId])
+}
+
+// Per-org role on Membership. OWNER is the billing/transfer-of-control
+// role (at most one per org, enforced in actions/org/*.ts). The other
+// values mirror the legacy UserRole roughly: MEMBER replaces USER as
+// the no-special-permissions default.
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MANAGER
+  INTERVIEWER
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// Billing tier placeholder. Stripe wiring lands in a later PR; today
+// every org defaults to FREE and nothing reads the column.
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum CandidateStatus {
+  NEW
+  IN_PROCESS
+  OFFERED
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+enum InterviewType {
+  SCREENING
+  TECHNICAL
+  BEHAVIORAL
+  MANAGER
+  FINAL
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum Recommendation {
+  STRONG_HIRE
+  HIRE
+  NO_DECISION
+  NO_HIRE
+  STRONG_NO_HIRE
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Phase 1 — Infrastructure primitives
+// ──────────────────────────────────────────────────────────────────────
+// All Phase 1 tables are tenanted from inception (organizationId NOT
+// NULL, present in TENANTED_MODELS, RLS policy installed by the
+// `phase1_rls` migration). The audit table is append-only — UPDATE and
+// DELETE are blocked at the Postgres trigger level. See
+// 20260609000001_phase1_rls/migration.sql.
+
+// ── Audit log ─────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  // Null = platform-level event (e.g. /v1/orgs.create from a super
+  // admin). All other rows MUST carry an org for RLS.
+  organizationId String?
+  // Actor is exactly one of (actorUserId, actorTokenId). The other is
+  // null. Platform events may have neither (a cron job).
+  actorUserId    String?
+  actorTokenId   String?
+  // Dotted action key, e.g. 'application.move', 'offer.approve',
+  // 'apitoken.created'. Keep names in packages/audit/src/actions.ts so
+  // a CI grep ensures the set never collides.
+  action         String
+  targetType     String
+  targetId       String
+  // Before / after for the audited columns. Whole records are
+  // tempting but explode; record only the deltas we care about.
+  diff           Json?
+  ip             String?
+  userAgent      String?
+  occurredAt     DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser    User?         @relation("auditActor", fields: [actorUserId], references: [id])
+  actorToken   ApiToken?     @relation(fields: [actorTokenId], references: [id])
+
+  @@index([organizationId, occurredAt(sort: Desc)])
+  @@index([organizationId, targetType, targetId])
+  @@index([organizationId, actorUserId])
+  @@index([action])
+}
+
+// ── Personal Access Tokens (public API auth) ──────────────────────────
+
+model ApiToken {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  // First 8 chars of the raw token, kept for display in the UI
+  // ("htop_abcd…"). Never reconstructs the secret.
+  prefix         String
+  // SHA-256 digest of the full raw token. The raw value exists only in
+  // the issuing response and the customer's secret store.
+  tokenHash      String    @unique
+  scopes         String[]
+  createdById    String
+  lastUsedAt     DateTime?
+  lastUsedIp     String?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("apiTokenCreator", fields: [createdById], references: [id])
+  auditLogs    AuditLog[]
+
+  @@index([organizationId, revokedAt])
+  @@index([organizationId, createdById])
+}
+
+// ── Attachments (S3-backed) ───────────────────────────────────────────
+
+enum AttachmentOwnerType {
+  CANDIDATE
+  APPLICATION
+  INTERVIEW
+  OFFER
+  ORGANIZATION // e.g. company logo
+}
+
+enum AttachmentStatus {
+  PENDING_UPLOAD
+  UPLOADED
+  SCANNING
+  CLEAN
+  INFECTED
+  FAILED
+}
+
+model Attachment {
+  id             String              @id @default(cuid())
+  organizationId String
+  // Polymorphic owner — checked in the action layer because Prisma
+  // can't model conditional FKs. RLS still applies because every row
+  // carries organizationId.
+  ownerType      AttachmentOwnerType
+  ownerId        String
+  filename       String
+  mimeType       String
+  sizeBytes      Int
+  // S3 key. Always prefixed with org/{organizationId}/ so a leaked
+  // signed URL can't be replayed against another tenant's prefix.
+  storageKey     String              @unique
+  // Phase 1 ships UPLOADED-then-marked-CLEAN. Phase 8 wires
+  // background virus scan; the SCANNING / INFECTED states are already
+  // here so we don't need a schema migration to enable it.
+  status         AttachmentStatus    @default(PENDING_UPLOAD)
+  scannedAt      DateTime?
+  uploadedById   String?
+  uploadedAt     DateTime            @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploadedBy   User?        @relation("attachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([organizationId, ownerType, ownerId])
+  @@index([organizationId, status])
+}
+
+// ── Billing ───────────────────────────────────────────────────────────
+
+enum BillingPlanKey {
+  STARTER
+  GROWTH
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  PAUSED
+  INCOMPLETE
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+model BillingPlan {
+  id                 String         @id @default(cuid())
+  key                BillingPlanKey @unique
+  name               String
+  stripePriceMonthly String?
+  stripePriceAnnual  String?
+  // {seats, jobs, aiCredits, resumeScans, interviewMinutes, sso, ...}
+  features           Json
+  active             Boolean        @default(true)
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String             @unique
+  planId               String
+  stripeSubscriptionId String?            @unique
+  status               SubscriptionStatus @default(TRIALING)
+  cycle                BillingCycle       @default(MONTHLY)
+  trialEndsAt          DateTime?
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  seatCount            Int                @default(1)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         BillingPlan   @relation(fields: [planId], references: [id])
+  entitlements Entitlement[]
+  usageRecords UsageRecord[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Entitlement {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  // 'ai_credits' | 'jobs_open' | 'resume_scans' | 'interview_minutes' | 'seats'
+  key             String
+  included        Int
+  // Null = hard cap (no overage). Non-null = overage billing per unit.
+  overageUnitCost Decimal? @db.Decimal(10, 4)
+  resetAt         DateTime
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, key])
+}
+
+model UsageRecord {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  subscriptionId     String?
+  key                String
+  quantity           Decimal   @db.Decimal(14, 4)
+  // Free-form metadata: tokens, model, sub-key, anything.
+  // {model: 'claude-opus-4-7', promptTokens, completionTokens}
+  unitMeta           Json?
+  occurredAt         DateTime  @default(now())
+  reportedToStripeAt DateTime?
+  // Caller-supplied dedupe key. Required — every recordUsage() call
+  // must provide one so retries don't double-bill.
+  idempotencyKey     String    @unique
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, key, occurredAt])
+  @@index([reportedToStripeAt])
+}
+
+// ── Background jobs (BullMQ audit + retry book-keeping) ───────────────
+
+enum BackgroundJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD
+}
+
+model BackgroundJob {
+  id             String              @id @default(cuid())
+  organizationId String?
+  queue          String
+  name           String
+  // BullMQ jobId so we can correlate this row with Redis state.
+  externalId     String?
+  payload        Json
+  attempts       Int                 @default(0)
+  status         BackgroundJobStatus @default(QUEUED)
+  scheduledFor   DateTime            @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  error          String?
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, queue, status])
+  @@index([status, scheduledFor])
+}
+
+// ── Webhooks (outbound to customers) ──────────────────────────────────
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCEEDED
+  FAILED_RETRYING
+  FAILED_DEAD
+}
+
+model WebhookEndpoint {
+  id             String   @id @default(cuid())
+  organizationId String
+  url            String
+  // HMAC signing secret — sent in X-Hiring-OS-Signature header.
+  secret         String
+  events         String[]
+  active         Boolean  @default(true)
+  failureCount   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([organizationId, active])
+}
+
+model WebhookDelivery {
+  id               String                @id @default(cuid())
+  organizationId   String
+  endpointId       String
+  event            String
+  payload          Json
+  attempts         Int                   @default(0)
+  status           WebhookDeliveryStatus @default(PENDING)
+  nextAttemptAt    DateTime?
+  lastResponseCode Int?
+  lastResponseBody String?
+  createdAt        DateTime              @default(now())
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, endpointId, status])
+  @@index([status, nextAttemptAt])
+}

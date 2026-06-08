@@ -1,0 +1,37 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/lib/generated/prisma": ["../../packages/db/src/generated/prisma"],
+      "@/lib/generated/prisma/*": ["../../packages/db/src/generated/prisma/*"],
+      "@/*": ["./*"],
+      "@hiring-os/db": ["../../packages/db/src"],
+      "@hiring-os/db/*": ["../../packages/db/src/*"],
+      "@hiring-os/audit": ["../../packages/audit/src"],
+      "@hiring-os/audit/*": ["../../packages/audit/src/*"],
+      "@hiring-os/queue": ["../../packages/queue/src"],
+      "@hiring-os/queue/*": ["../../packages/queue/src/*"],
+      "@hiring-os/storage": ["../../packages/storage/src"],
+      "@hiring-os/storage/*": ["../../packages/storage/src/*"],
+      "@hiring-os/observability": ["../../packages/observability/src"],
+      "@hiring-os/observability/*": ["../../packages/observability/src/*"],
+      "@hiring-os/billing": ["../../packages/billing/src"],
+      "@hiring-os/billing/*": ["../../packages/billing/src/*"],
+      "@hiring-os/auth": ["../../packages/auth/src"],
+      "@hiring-os/auth/*": ["../../packages/auth/src/*"],
+      "@hiring-os/api-auth": ["../../packages/api-auth/src"],
+      "@hiring-os/email": ["../../packages/email/src"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "verbatimModuleSyntax": false,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": false,
+    "paths": {
+      "@hiring-os/db": ["./packages/db/src"],
+      "@hiring-os/db/*": ["./packages/db/src/*"],
+      "@hiring-os/audit": ["./packages/audit/src"],
+      "@hiring-os/audit/*": ["./packages/audit/src/*"],
+      "@hiring-os/queue": ["./packages/queue/src"],
+      "@hiring-os/queue/*": ["./packages/queue/src/*"],
+      "@hiring-os/storage": ["./packages/storage/src"],
+      "@hiring-os/storage/*": ["./packages/storage/src/*"],
+      "@hiring-os/observability": ["./packages/observability/src"],
+      "@hiring-os/observability/*": ["./packages/observability/src/*"],
+      "@hiring-os/billing": ["./packages/billing/src"],
+      "@hiring-os/billing/*": ["./packages/billing/src/*"],
+      "@hiring-os/auth": ["./packages/auth/src"],
+      "@hiring-os/auth/*": ["./packages/auth/src/*"],
+      "@hiring-os/api-auth": ["./packages/api-auth/src"],
+      "@hiring-os/api-auth/*": ["./packages/api-auth/src/*"],
+      "@hiring-os/email": ["./packages/email/src"],
+      "@hiring-os/email/*": ["./packages/email/src/*"],
+      "@hiring-os/core": ["./packages/core/src"],
+      "@hiring-os/core/*": ["./packages/core/src/*"]
+    }
+  }
+}

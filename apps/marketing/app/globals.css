@@ -1,0 +1,13 @@
+/* Marketing globals — intentionally lean. The landing page brings its
+ * own design tokens inline (BG / INK / FOREST etc), so we only need
+ * Tailwind v4 utilities here. If the marketing site grows shadcn
+ * components later, lift the design-system block from
+ * apps/web/app/globals.css. */
+@import "tailwindcss";
+
+/* Geist fonts wired via next/font/google in app/layout.tsx expose:
+ *   --font-geist-sans
+ *   --font-geist-mono
+ * The landing page references those variables directly. */
+html { font-feature-settings: "ss01", "cv11"; }
+body { background: #FAFAF7; color: #0A0A0A; }

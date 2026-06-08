@@ -1,8 +1,8 @@
 name: CI
 
-# Runs on every PR plus pushes to long-lived branches so that a broken main
-# is loud. Concurrency cancels superseded runs so back-to-back force pushes
-# don't queue up wasted minutes.
+# Runs on every PR plus pushes to long-lived branches so a broken main
+# is loud. Concurrency cancels superseded runs so back-to-back force
+# pushes don't queue up wasted minutes.
 on:
   pull_request:
   push:
@@ -16,35 +16,36 @@ jobs:
   ci:
     name: lint • type-check • test • build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
-    # Placeholders that satisfy lib/env.ts at boot. Real values aren't
-    # needed because this job doesn't connect to a DB or send email — it
-    # only lints, type-checks, and runs `next build` to collect page data.
-    #
-    # DATABASE_URL must parse as a URL.
-    # AUTH_SECRET must be ≥ 32 chars.
-    # Anything else is optional and is left unset so the OAuth-pair check
-    # in lib/env.ts doesn't trip.
+    # Placeholders that satisfy env validation at boot. Real values
+    # aren't needed — this job doesn't connect to a DB, send email, or
+    # call Stripe. It lints, type-checks, runs unit tests, and builds.
     env:
       DATABASE_URL: 'postgres://ci:ci@localhost:5432/ci'
       AUTH_SECRET: 'ci-secret-not-used-at-runtime-padding-1234'
+      NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
+      # Phase 1 packages tolerate missing values at compile time —
+      # they only throw at first use.
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
 
-      # `yarn install` runs `postinstall: prisma generate`, so the Prisma
-      # client at lib/generated/prisma is on disk before lint/type-check
-      # see it.
       - name: Install
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
+
+      - name: Generate Prisma client
+        run: yarn db:generate
 
       - name: Lint
         run: yarn lint

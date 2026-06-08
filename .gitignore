@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,15 +11,21 @@
 !.yarn/releases
 !.yarn/versions
 
+# turbo
+.turbo/
+**/.turbo/
+
 # testing
-/coverage
+**/coverage/
+.nyc_output/
 
 # next.js
-/.next/
-/out/
+**/.next/
+**/out/
 
 # production
-/build
+**/build/
+**/dist/
 
 # misc
 .DS_Store
@@ -35,10 +42,12 @@ yarn-error.log*
 !.env.example
 
 # vercel
-.vercel
+**/.vercel
 
 # typescript
-*.tsbuildinfo
-next-env.d.ts
+**/*.tsbuildinfo
+**/next-env.d.ts
 
-lib/generated
+# prisma generated
+packages/db/src/generated/
+**/lib/generated/
