@@ -1,10 +1,7 @@
 // app/(dashboard)/dashboard/interviews/new/page.tsx
 
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
-import {
-  OrganizationRole,
-  UserRole,
-} from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { getInterviewFormOptions } from '@/data/interview-form';
@@ -28,9 +25,8 @@ export default async function NewInterviewPage({
   const ctx = toOrgContext(session);
   const { candidateId } = await searchParams;
 
-  // OWNER/ADMIN/MANAGER are all "canSeeRoster" in the legacy data layer.
   const { candidates, positions, interviewers, stagesByPosition } =
-    await getInterviewFormOptions(ctx, { viewerRole: UserRole.ADMIN });
+    await getInterviewFormOptions(ctx, { canSeeRoster: true });
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

@@ -1,4 +1,3 @@
-import { UserRole } from '@/lib/generated/prisma/browser';
 import { tenantDb, type OrgContext } from '@/lib/tenant-db';
 
 export interface InterviewFormStage {
@@ -8,7 +7,9 @@ export interface InterviewFormStage {
 }
 
 interface GetInterviewFormOptionsArgs {
-  viewerRole: UserRole;
+  // True when the viewer is allowed to see the full interviewer roster
+  // (manager+ inside the org). False suppresses the user list.
+  canSeeRoster: boolean;
 }
 
 // Shared bootstrap fetch for /interviews/new and /interviews/[id]/edit.
@@ -27,13 +28,10 @@ interface GetInterviewFormOptionsArgs {
 // platform" — fetched via the Membership table rather than User.
 export async function getInterviewFormOptions(
   ctx: OrgContext,
-  { viewerRole }: GetInterviewFormOptionsArgs
+  { canSeeRoster }: GetInterviewFormOptionsArgs
 ) {
   try {
     const db = tenantDb(ctx);
-
-    const canSeeRoster =
-      viewerRole === UserRole.ADMIN || viewerRole === UserRole.MANAGER;
 
     const [candidates, positions, interviewers] = await Promise.all([
       db.candidate.findMany({

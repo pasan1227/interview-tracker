@@ -2,13 +2,13 @@
 
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { WorkflowsList } from '@/components/workflows/workflows-list';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 export default async function WorkflowsPage() {
-  await requirePageRole(UserRole.ADMIN);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN]);
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

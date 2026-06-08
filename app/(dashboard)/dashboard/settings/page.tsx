@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/settings/page.tsx
 
 import Link from 'next/link';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import {
   ArrowUpRight,
@@ -11,7 +11,7 @@ import {
   UsersIcon,
   type LucideIcon,
 } from 'lucide-react';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface SettingsCardProps {
   href: string;
@@ -70,7 +70,7 @@ function SettingsCard({
 }
 
 export default async function SettingsPage() {
-  await requirePageRole(UserRole.ADMIN);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN]);
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

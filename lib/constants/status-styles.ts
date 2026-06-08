@@ -2,8 +2,8 @@ import type { CSSProperties } from 'react';
 import {
   CandidateStatus,
   InterviewStatus,
+  OrganizationRole,
   Recommendation,
-  UserRole,
 } from '@/lib/generated/prisma/browser';
 
 // One source of truth for dashboard status pills. Each *_BADGE map
@@ -74,11 +74,14 @@ export const RECOMMENDATION_LABEL: Record<Recommendation, string> = {
   STRONG_NO_HIRE: 'Strong no hire',
 };
 
-export const USER_ROLE_BADGE: Record<UserRole, BadgeStyle> = {
+// PR 13: User.role is gone; authorization lives on Membership now.
+// USER_ROLE_BADGE is replaced by ORG_ROLE_BADGE for the members page.
+export const ORG_ROLE_BADGE: Record<OrganizationRole, BadgeStyle> = {
+  OWNER: ACCENT,
   ADMIN: DANGER,
-  MANAGER: ACCENT,
+  MANAGER: WARNING,
   INTERVIEWER: INFO,
-  USER: NEUTRAL,
+  MEMBER: NEUTRAL,
 };
 
 // Workflow + position state — newly added (audit T2 surfaced inline

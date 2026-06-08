@@ -14,7 +14,6 @@ import { PencilIcon, TrashIcon, ClipboardIcon } from 'lucide-react';
 import {
   InterviewStatus,
   OrganizationRole,
-  UserRole,
 } from '@/lib/generated/prisma/browser';
 
 interface InterviewDetailPageProps {
@@ -28,22 +27,14 @@ export default async function InterviewDetailPage({
   const ctx = toOrgContext(session);
   const { id } = await params;
 
-  // Translate the org role into the legacy UserRole the viewer-scoped
-  // fetcher uses for email-stripping decisions. PR 13 will fold this
-  // helper into the data layer directly.
-  const legacyRole: UserRole =
+  const canSeeAllEmails =
     session.role === OrganizationRole.OWNER ||
-    session.role === OrganizationRole.ADMIN
-      ? UserRole.ADMIN
-      : session.role === OrganizationRole.MANAGER
-        ? UserRole.MANAGER
-        : session.role === OrganizationRole.INTERVIEWER
-          ? UserRole.INTERVIEWER
-          : UserRole.USER;
+    session.role === OrganizationRole.ADMIN ||
+    session.role === OrganizationRole.MANAGER;
 
   const interview = await getInterviewByIdForViewer(ctx, id, {
     id: session.id,
-    role: legacyRole,
+    canSeeAllEmails,
   });
 
   if (!interview) {

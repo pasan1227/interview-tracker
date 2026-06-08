@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { StageDeleteForm } from '@/components/workflows/stage-delete-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface DeleteStagePageProps {
   params: Promise<{ id: string; stageId: string }>;
@@ -12,7 +12,7 @@ interface DeleteStagePageProps {
 export default async function DeleteStagePageRoute({
   params,
 }: DeleteStagePageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN]);
   const { id: workflowId, stageId } = await params;
 
   const stage = await db.stage.findUnique({

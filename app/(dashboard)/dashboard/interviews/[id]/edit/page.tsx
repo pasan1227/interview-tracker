@@ -4,7 +4,7 @@ import { getInterviewForForm } from '@/data/interview';
 import { getInterviewFormOptions } from '@/data/interview-form';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
-import { OrganizationRole, UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface EditInterviewPageProps {
   params: Promise<{ id: string }>;
@@ -17,22 +17,17 @@ export default async function EditInterviewPage({
   const ctx = toOrgContext(session);
   const { id } = await params;
 
-  const legacyRole: UserRole =
+  const canSeeRoster =
     session.role === OrganizationRole.OWNER ||
-    session.role === OrganizationRole.ADMIN
-      ? UserRole.ADMIN
-      : session.role === OrganizationRole.MANAGER
-        ? UserRole.MANAGER
-        : session.role === OrganizationRole.INTERVIEWER
-          ? UserRole.INTERVIEWER
-          : UserRole.USER;
+    session.role === OrganizationRole.ADMIN ||
+    session.role === OrganizationRole.MANAGER;
 
   // Interview lookup + form bootstrap run in parallel. Gate runs after
   // we have the interview record.
   const [interview, { candidates, positions, interviewers, stagesByPosition }] =
     await Promise.all([
       getInterviewForForm(ctx, id),
-      getInterviewFormOptions(ctx, { viewerRole: legacyRole }),
+      getInterviewFormOptions(ctx, { canSeeRoster }),
     ]);
 
   if (!interview) {

@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { PositionDeleteForm } from '@/components/positions/position-delete-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface DeletePositionPageProps {
   params: Promise<{ id: string }>;
@@ -12,7 +12,7 @@ interface DeletePositionPageProps {
 export default async function DeletePositionPageRoute({
   params,
 }: DeletePositionPageProps) {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.MANAGER]);
   const { id: positionId } = await params;
 
   const [position, candidateCount, interviewCount] = await Promise.all([

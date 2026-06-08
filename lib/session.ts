@@ -8,7 +8,6 @@ export const getCurrentUser = async () => {
   return session?.user;
 };
 
-export const currentRole = async () => {
-  const session = await getSession();
-  return session?.user.role;
-};
+// PR 13: User.role is gone. Authorization lives on Membership now;
+// callers that used currentRole() should use session.user.activeOrgRole
+// (or requireOrgRole / requirePageOrgRole in lib/authz).

@@ -23,7 +23,7 @@ export default async function DashboardLayout({
         orgs={user.orgs ?? []}
       />
       <div className='flex flex-1'>
-        <DashboardNav role={user.role} />
+        <DashboardNav role={user.activeOrgRole} />
         <main id='main' className='flex-1 px-6 py-8 lg:px-10 lg:py-10'>
           {children}
         </main>

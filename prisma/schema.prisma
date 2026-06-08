@@ -108,7 +108,6 @@ model User {
   password      String? // Hashed password
   emailVerified DateTime?
   image         String?
-  role          UserRole  @default(USER)
   // Platform-staff flag for *your* internal team (support
   // impersonation, ops dashboards). Deliberately distinct from
   // OrganizationRole so it can never appear in a per-org gate.
@@ -133,8 +132,6 @@ model User {
   conductedInterviews Interview[] @relation("interviewer")
   providedFeedbacks   Feedback[]
   createdInterviews   Interview[] @relation("createdByUser")
-
-  @@index([role])
 }
 
 model Account {
@@ -429,14 +426,6 @@ model Settings {
   organizationId String
 
   @@unique([organizationId])
-}
-
-// Enums
-enum UserRole {
-  ADMIN
-  MANAGER
-  INTERVIEWER
-  USER
 }
 
 // Per-org role on Membership. OWNER is the billing/transfer-of-control

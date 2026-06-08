@@ -10,10 +10,10 @@ import {
   NavList,
 } from '@/components/dashboard/dashboard-nav';
 import { Button } from '@/components/ui/button';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface DashboardMobileNavProps {
-  role?: UserRole;
+  role?: OrganizationRole | null;
 }
 
 export function DashboardMobileNav({ role }: Readonly<DashboardMobileNavProps>) {

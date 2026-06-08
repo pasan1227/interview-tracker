@@ -47,7 +47,16 @@ async function main() {
 
   // 1. Find or create the default org. Pick billingEmail = the first
   //    existing ADMIN's email if one exists, else the fallback.
-  const firstAdmin = await db.user.findFirst({
+  // PR 13 dropped User.role. This script ran before that, when the
+  // column still existed; the raw cast keeps it building post-cleanup
+  // for posterity (it's a one-shot, already applied to the live DB).
+  const firstAdmin = await (
+    db.user.findFirst as unknown as (args: unknown) => Promise<{
+      id: string;
+      email: string;
+      name: string | null;
+    } | null>
+  )({
     where: { role: 'ADMIN' },
     orderBy: { createdAt: 'asc' },
     select: { id: true, email: true, name: true },

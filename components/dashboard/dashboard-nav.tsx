@@ -12,20 +12,29 @@ import {
   BarChart,
   Send,
 } from 'lucide-react';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { DASHBOARD_ROUTES } from '@/routes';
 
 interface DashboardNavProps {
-  role?: UserRole;
+  role?: OrganizationRole | null;
 }
 
-const ALL_ROLES = [
-  UserRole.ADMIN,
-  UserRole.MANAGER,
-  UserRole.INTERVIEWER,
-  UserRole.USER,
+const ALL_ROLES: OrganizationRole[] = [
+  OrganizationRole.OWNER,
+  OrganizationRole.ADMIN,
+  OrganizationRole.MANAGER,
+  OrganizationRole.INTERVIEWER,
+  OrganizationRole.MEMBER,
 ];
-const MANAGER_ROLES = [UserRole.ADMIN, UserRole.MANAGER];
+const MANAGER_ROLES: OrganizationRole[] = [
+  OrganizationRole.OWNER,
+  OrganizationRole.ADMIN,
+  OrganizationRole.MANAGER,
+];
+const ADMIN_ROLES: OrganizationRole[] = [
+  OrganizationRole.OWNER,
+  OrganizationRole.ADMIN,
+];
 
 // Explicit type widening so DASHBOARD_ROUTES' `as const` literal href
 // strings don't narrow the array tuple and break `roles.includes(role)`
@@ -34,7 +43,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: typeof LayoutDashboard;
-  roles: UserRole[];
+  roles: OrganizationRole[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -44,11 +53,12 @@ export const NAV_ITEMS: NavItem[] = [
   { title: 'Feedback', href: DASHBOARD_ROUTES.feedback, icon: ClipboardList, roles: ALL_ROLES },
   { title: 'Reports', href: DASHBOARD_ROUTES.reports, icon: BarChart, roles: MANAGER_ROLES },
   { title: 'Positions', href: DASHBOARD_ROUTES.positions.list, icon: Send, roles: MANAGER_ROLES },
-  { title: 'Settings', href: DASHBOARD_ROUTES.settings.root, icon: Settings, roles: [UserRole.ADMIN] },
+  { title: 'Settings', href: DASHBOARD_ROUTES.settings.root, icon: Settings, roles: ADMIN_ROLES },
 ];
 
-export function filterNavItems(role?: UserRole): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role as UserRole));
+export function filterNavItems(role?: OrganizationRole | null): NavItem[] {
+  if (!role) return [];
+  return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }
 
 interface NavListProps {

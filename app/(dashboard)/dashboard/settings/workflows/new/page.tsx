@@ -2,11 +2,11 @@
 
 import { PageHeader } from '@/components/dashboard/page-header';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
-import { requirePageRole } from '@/lib/authz';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { requirePageOrgRole } from '@/lib/authz';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 export default async function NewWorkflowPage() {
-  await requirePageRole(UserRole.ADMIN);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN]);
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>

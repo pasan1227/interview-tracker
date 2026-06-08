@@ -8,7 +8,6 @@ import { getAccountByUserId } from './data/account';
 import { getActiveMembershipsForUser, getMembership } from './data/membership';
 import { getTwoFactorConfirmationByUserId } from './data/two-factor-confirmation';
 import { getUserById, getUserByEmail } from './data/user';
-import { UserRole } from './lib/generated/prisma/client';
 import { MembershipStatus, OrganizationRole } from './lib/generated/prisma/enums';
 import { LoginSchema } from './lib/validations/auth';
 import type { ExtendedUser } from './next-auth.d';
@@ -99,7 +98,6 @@ export const {
     async session({ token, session }) {
       if (session.user) {
         if (token.sub) session.user.id = token.sub;
-        if (token.role) session.user.role = token.role as UserRole;
         session.user.isTwoFactorEnabled = Boolean(token.isTwoFactorEnabled);
         session.user.isOAuth = Boolean(token.isOAuth);
         session.user.isPlatformAdmin = Boolean(token.isPlatformAdmin);
@@ -157,19 +155,20 @@ export const {
         // Fall through to refresh below regardless of accept/reject.
       }
 
-      // Refresh role / name / email / 2FA / OAuth + org slice claims
-      // on sign-in, explicit session update, or first JWT creation.
+      // Refresh name / email / 2FA / OAuth + org slice claims on
+      // sign-in, explicit session update, or first JWT creation.
       // The existence-check above runs every request — the heavier
       // refresh only when something has actually changed.
       const needsRefresh =
-        trigger === 'signIn' || trigger === 'update' || !token.role;
+        trigger === 'signIn' ||
+        trigger === 'update' ||
+        token.isPlatformAdmin === undefined;
       if (!needsRefresh) return token;
 
       const existingAccount = await getAccountByUserId(existingUser.id);
       token.isOAuth = !!existingAccount;
       token.name = existingUser.name;
       token.email = existingUser.email;
-      token.role = existingUser.role;
       token.isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
       token.isPlatformAdmin = existingUser.isPlatformAdmin;
 

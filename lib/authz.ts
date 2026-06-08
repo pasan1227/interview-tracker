@@ -1,21 +1,28 @@
-import { UserRole } from '@/lib/generated/prisma/browser';
 import { OrganizationRole, MembershipStatus } from '@/lib/generated/prisma/enums';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import type { OrgContext } from '@/lib/tenant-db-helpers';
 import { redirect } from 'next/navigation';
 
-export type SessionUser = {
+// PR 13: legacy SessionUser / requireRole / requirePageRole /
+// requireAdmin / requireManagerOrAdmin / isAdmin / isManagerOrAdmin
+// helpers are gone. Authorization is now per-org via requireOrgRole
+// (action) and requirePageOrgRole (page). The pre-org primitives —
+// requireSession + requirePageSession — stay because /no-access,
+// /select-org, /invitations/accept, and the profile page all run
+// before an active org exists.
+
+// Pre-org session shape — used by callers that don't yet know which
+// org the user is in (signup, invite accept, profile, org chooser).
+export type PreOrgUser = {
   id: string;
-  role: UserRole;
   email: string;
   name?: string | null;
 };
 
 // Authenticated user + active organization context. Returned by
 // requireOrgSession / requireOrgRole. The role here is the user's
-// role WITHIN the active org (from Membership), not the legacy
-// User.role field — that field is going away in PR 13.
+// role WITHIN the active org (from Membership).
 export type ActiveOrgUser = {
   id: string;
   organizationId: string;
@@ -33,73 +40,31 @@ export class AuthzError extends Error {
   }
 }
 
-// ---------- Action helpers (throw) ----------
-// Use inside server actions / API routes where the call site decides
-// how to surface the error (form alert, JSON 401, etc.).
+// ---------- Pre-org helpers ----------
+// Use these for routes that can't yet require an active org (signup,
+// org chooser, invitation accept, profile).
 
-export async function requireSession(): Promise<SessionUser> {
-  // Route through getSession() so the per-request React.cache dedupes
-  // the auth() call (which now hits getUserById on every invocation
-  // post-S4). Without this, the dashboard layout + page each issued
-  // their own jwt() → getUserById roundtrip.
+export async function requireSession(): Promise<PreOrgUser> {
   const session = await getSession();
   if (!session?.user?.id) throw new AuthzError('Unauthorized');
   return {
     id: session.user.id,
-    role: session.user.role,
     email: session.user.email!,
     name: session.user.name,
   };
 }
 
-export async function requireRole(
-  roles: readonly UserRole[]
-): Promise<SessionUser> {
-  const user = await requireSession();
-  if (!roles.includes(user.role)) throw new AuthzError('Forbidden');
-  return user;
-}
-
-export const requireAdmin = () => requireRole([UserRole.ADMIN]);
-export const requireManagerOrAdmin = () =>
-  requireRole([UserRole.ADMIN, UserRole.MANAGER]);
-
-// ---------- Page helpers (redirect) ----------
-// Use inside Server Component page.tsx / layout.tsx where we want
-// Next's redirect() rather than a thrown error. Matches the existing
-// inline pattern used in 30+ pages.
-
-export async function requirePageSession(): Promise<SessionUser> {
+export async function requirePageSession(): Promise<PreOrgUser> {
   const session = await getSession();
   if (!session?.user?.id) redirect('/login');
   return {
     id: session.user.id,
-    role: session.user.role,
     email: session.user.email!,
     name: session.user.name,
   };
 }
 
-export async function requirePageRole(
-  roles: UserRole | readonly UserRole[]
-): Promise<SessionUser> {
-  const user = await requirePageSession();
-  const allow = Array.isArray(roles) ? roles : [roles];
-  if (!allow.includes(user.role)) redirect('/dashboard');
-  return user;
-}
-
-// ---------- Predicates ----------
-
-export const isAdmin = (user: SessionUser) => user.role === UserRole.ADMIN;
-export const isManagerOrAdmin = (user: SessionUser) =>
-  user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
-
-// ---------- Org-scoped helpers (PR 4) ----------
-//
-// Sit alongside the existing legacy helpers. PR 5 wires activeOrgId
-// into the JWT/session so these can read it; PRs 6–10 migrate every
-// caller from requireSession → requireOrgSession.
+// ---------- Org-scoped helpers ----------
 
 export async function requireOrgSession(): Promise<ActiveOrgUser> {
   const session = await getSession();

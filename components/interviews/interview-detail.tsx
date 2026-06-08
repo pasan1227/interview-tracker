@@ -49,7 +49,7 @@ type DetailedFeedback = Feedback & {
 type DetailedInterview = Interview & {
   candidate: Candidate;
   position: Position;
-  interviewers: (Pick<User, 'id' | 'name' | 'image' | 'role'> & {
+  interviewers: (Pick<User, 'id' | 'name' | 'image'> & {
     email: string | null;
   })[];
   stage: Stage | null;

@@ -3,7 +3,6 @@ import {
   InterviewStatus,
   InterviewType,
   Prisma,
-  UserRole,
 } from '@/lib/generated/prisma/browser';
 import {
   buildPaginatedResult,
@@ -122,11 +121,11 @@ export async function getInterviews(
 export async function getInterviewByIdForViewer(
   ctx: OrgContext,
   id: string,
-  viewer: { id: string; role: UserRole }
+  viewer: { id: string; canSeeAllEmails: boolean }
 ) {
   const interview = await getInterviewById(ctx, id);
   if (!interview) return null;
-  if (viewer.role === UserRole.ADMIN || viewer.role === UserRole.MANAGER) {
+  if (viewer.canSeeAllEmails) {
     return interview;
   }
   // Non-privileged viewer: keep their own email, blank everyone else's.
@@ -197,7 +196,6 @@ export async function getInterviewById(ctx: OrgContext, id: string) {
             name: true,
             email: true,
             image: true,
-            role: true,
           },
         },
         stage: true,

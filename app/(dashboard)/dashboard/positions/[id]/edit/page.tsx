@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { PositionForm } from '@/components/positions/position-form-lazy';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface EditPositionPageProps {
   params: Promise<{ id: string }>;
@@ -12,7 +12,7 @@ interface EditPositionPageProps {
 export default async function EditPositionPage({
   params,
 }: EditPositionPageProps) {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.MANAGER]);
   const { id: positionId } = await params;
 
   const position = await db.position.findUnique({

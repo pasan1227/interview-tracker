@@ -1,16 +1,16 @@
 import { notFound } from 'next/navigation';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { StageForm } from '@/components/workflows/stage-form';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 interface EditStagePageProps {
   params: Promise<{ id: string; stageId: string }>;
 }
 
 export default async function EditStagePage({ params }: EditStagePageProps) {
-  await requirePageRole(UserRole.ADMIN);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN]);
   const { id: workflowId, stageId } = await params;
 
   const stage = await db.stage.findUnique({

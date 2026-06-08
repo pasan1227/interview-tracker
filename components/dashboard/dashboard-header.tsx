@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { OrganizationRole, UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 type HeaderOrg = {
   id: string;
@@ -31,7 +31,6 @@ interface DashboardHeaderProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
-    role?: UserRole;
   };
   activeOrgId?: string | null;
   orgs?: HeaderOrg[];
@@ -79,7 +78,7 @@ export function DashboardHeader({
     >
       <div className='mx-auto flex h-16 items-center justify-between px-6 lg:px-10'>
         <div className='flex items-center gap-2'>
-          <DashboardMobileNav role={user?.role} />
+          <DashboardMobileNav role={activeOrg?.role ?? null} />
           <Link href='/dashboard' className='flex items-center gap-2.5'>
             <Logomark />
             <span className='text-[16px] font-semibold tracking-[-0.01em]'>

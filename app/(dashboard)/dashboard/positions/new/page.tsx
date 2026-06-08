@@ -2,12 +2,12 @@
 
 import { PageHeader } from '@/components/dashboard/page-header';
 import { PositionForm } from '@/components/positions/position-form-lazy';
-import { requirePageRole } from '@/lib/authz';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { requirePageOrgRole } from '@/lib/authz';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { db } from '@/lib/db';
 
 export default async function NewPositionPage() {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.MANAGER]);
 
   const workflows = await db.workflow.findMany({
     orderBy: {

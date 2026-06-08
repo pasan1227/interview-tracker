@@ -52,7 +52,7 @@ type InterviewFormValues = CreateInterviewInput;
 interface InterviewFormProps {
   interview?:
     | (Interview & {
-        interviewers: Pick<User, 'id' | 'name' | 'email' | 'image' | 'role'>[];
+        interviewers: Pick<User, 'id' | 'name' | 'email' | 'image'>[];
       })
     | null;
   defaultCandidateId?: string;

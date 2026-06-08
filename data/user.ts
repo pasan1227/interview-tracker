@@ -1,7 +1,11 @@
 import { BCRYPT_COST } from '@/lib/auth-constants';
 import { db } from '@/lib/db';
-import { UserRole } from '@/lib/generated/prisma/browser';
 import bcrypt from 'bcryptjs';
+
+// PR 13: User.role + UserRole enum are gone. Authorization lives on
+// the Membership table (per-org OrganizationRole). createUser and
+// deleteUser were callers of the legacy admin-edits-any-user flow,
+// which the invite/revoke flow in actions/org/* replaces.
 
 export async function getUserByEmail(email: string) {
   try {
@@ -31,8 +35,8 @@ export const SAFE_USER_SELECT = {
   email: true,
   emailVerified: true,
   image: true,
-  role: true,
   isTwoFactorEnabled: true,
+  isPlatformAdmin: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -66,43 +70,14 @@ export async function getUserPasswordHash(id: string) {
   }
 }
 
-export async function createUser({
-  name,
-  email,
-  password,
-  role = UserRole.USER,
-}: {
-  name: string;
-  email: string;
-  password: string;
-  role?: UserRole;
-}) {
-  const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
-
-  return db.user.create({
-    data: { name, email, password: hashedPassword, role },
-    select: SAFE_USER_SELECT,
-  });
-}
-
-// Fields a regular user may update on their own profile.
-// Privileged fields (role, emailVerified, isTwoFactorEnabled) require adminUpdateUser.
+// Fields a user may update on their own profile.
 const USER_SELF_FIELDS = ['name', 'image', 'password'] as const;
-const ADMIN_FIELDS = [
-  ...USER_SELF_FIELDS,
-  'email',
-  'role',
-  'emailVerified',
-] as const;
 
 export type UpdateUserInput = Partial<{
   name: string;
   image: string;
   password: string;
 }>;
-
-export type AdminUpdateUserInput = UpdateUserInput &
-  Partial<{ email: string; role: UserRole; emailVerified: Date | null }>;
 
 async function buildUpdateData(
   data: Record<string, unknown>,
@@ -131,44 +106,5 @@ export async function updateUser(id: string, data: UpdateUserInput) {
   } catch (error) {
     console.error('Failed to update user:', error);
     throw error;
-  }
-}
-
-export async function adminUpdateUser(id: string, data: AdminUpdateUserInput) {
-  try {
-    return await db.user.update({
-      where: { id },
-      data: await buildUpdateData(data, ADMIN_FIELDS),
-      select: SAFE_USER_SELECT,
-    });
-  } catch (error) {
-    console.error('Failed to update user (admin):', error);
-    throw error;
-  }
-}
-
-export async function deleteUser(id: string) {
-  try {
-    await db.user.delete({ where: { id } });
-    return true;
-  } catch (error) {
-    console.error('Failed to delete user:', error);
-    throw error;
-  }
-}
-
-export type SafeUserListItem = Awaited<ReturnType<typeof getSafeUsers>>[number];
-
-export async function getSafeUsers({ includeAdmins = false } = {}) {
-  try {
-    const where = includeAdmins ? {} : { role: { not: UserRole.ADMIN } };
-    return await db.user.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      select: SAFE_USER_SELECT,
-    });
-  } catch (error) {
-    console.error('Failed to fetch users:', error);
-    return [];
   }
 }

@@ -1,15 +1,15 @@
 // app/(dashboard)/dashboard/positions/page.tsx
 
 import Link from 'next/link';
-import { requirePageRole } from '@/lib/authz';
+import { requirePageOrgRole } from '@/lib/authz';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { PositionsList } from '@/components/positions/positions-list';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole } from '@/lib/generated/prisma/browser';
 
 export default async function PositionsPage() {
-  await requirePageRole([UserRole.ADMIN, UserRole.MANAGER]);
+  await requirePageOrgRole([OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.MANAGER]);
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
