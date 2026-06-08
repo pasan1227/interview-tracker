@@ -22,7 +22,20 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { register } from '@/actions/auth/register';
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  // Provided when the user landed via an invitation link. The form
+  // prefills + locks the email and threads the token through to the
+  // register action. Without a token, the action throws.
+  invitationToken?: string;
+  invitedEmail?: string;
+  orgName?: string;
+}
+
+export function RegisterForm({
+  invitationToken,
+  invitedEmail,
+  orgName,
+}: RegisterFormProps) {
   const router = useRouter();
   // success message stays local — useFormAction owns isSubmitting + error.
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,13 +44,14 @@ export function RegisterForm() {
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
       name: '',
-      email: '',
+      email: invitedEmail ?? '',
       password: '',
     },
   });
 
   const { submit, isSubmitting: isPending, error } = useFormAction(
-    async (values: z.infer<typeof RegisterSchema>) => register(values),
+    async (values: z.infer<typeof RegisterSchema>) =>
+      register({ ...values, invitationToken }),
     {
       errorMessage: 'Something went wrong',
       onSuccess: (result) => {
@@ -56,7 +70,11 @@ export function RegisterForm() {
   return (
     <CardWrapper
       headerTitle='Create your account'
-      headerLabel='Start a free 30-day trial. No credit card required.'
+      headerLabel={
+        orgName
+          ? `Accept your invitation to ${orgName}.`
+          : 'InterviewPro is invite-only.'
+      }
       backButtonLabel='Already have an account? Sign in'
       backButtonHref='/login'
     >
@@ -96,7 +114,12 @@ export function RegisterForm() {
                     type='email'
                     placeholder='name@company.com'
                     autoComplete='email'
-                    disabled={isPending}
+                    // Email is locked to the invited address. Letting the
+                    // user change it would either drift from the
+                    // invitation (server rejects) or let a shared link be
+                    // claimed by a different account.
+                    disabled={isPending || Boolean(invitedEmail)}
+                    readOnly={Boolean(invitedEmail)}
                     className='h-11 bg-card'
                   />
                 </FormControl>

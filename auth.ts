@@ -71,11 +71,28 @@ export const {
       // Credentials path is fully validated in authorize().
       if (account?.provider === 'credentials') return true;
 
-      // OAuth path: refuse linking if a credentials user already exists for
-      // this email but hasn't verified — prevents account takeover.
+      // OAuth path:
+      // 1. Refuse linking if a credentials user already exists for this
+      //    email but hasn't verified — prevents account takeover.
+      // 2. PR 12: signup is invite-only. A brand-new OAuth login is
+      //    only allowed if there's a pending invitation for the email
+      //    (i.e. the user clicked their invite link and chose "Sign in
+      //    with Google"). Without an invitation OR an existing user
+      //    row, reject — there's no path to bootstrap an org in v1.
       if (user.email) {
         const existing = await getUserByEmail(user.email);
         if (existing?.password && !existing.emailVerified) return false;
+        if (!existing) {
+          const invitation = await db.invitation.findFirst({
+            where: {
+              email: user.email.toLowerCase(),
+              acceptedAt: null,
+              expires: { gt: new Date() },
+            },
+            select: { id: true },
+          });
+          if (!invitation) return false;
+        }
       }
       return true;
     },

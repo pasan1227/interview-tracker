@@ -9,6 +9,7 @@
 import { acceptInvitation } from '@/actions/org/accept-invitation';
 import { signOut } from '@/auth';
 import { getInvitationByToken } from '@/data/tokens';
+import { getUserByEmail } from '@/data/user';
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
@@ -24,9 +25,19 @@ export default async function AcceptInvitationPage({
 
   const session = await getSession();
   if (!session?.user) {
-    redirect(
-      `/login?callbackUrl=${encodeURIComponent(`/invitations/accept?token=${token}`)}`
-    );
+    // No session — figure out whether the invited email already has an
+    // account. If yes, send them through /login (they'll come back).
+    // If not, send them through /register so they can create one with
+    // the invitation prefilled.
+    const invitation = await getInvitationByToken(token);
+    if (!invitation) return <Card>Invitation not found or already used.</Card>;
+    const existing = await getUserByEmail(invitation.email);
+    if (existing) {
+      redirect(
+        `/login?callbackUrl=${encodeURIComponent(`/invitations/accept?token=${token}`)}`
+      );
+    }
+    redirect(`/register?invitationToken=${encodeURIComponent(token)}`);
   }
 
   const invitation = await getInvitationByToken(token);
