@@ -64,6 +64,11 @@ interface InterviewFormProps {
   // that useStagesForPosition used to do.
   stagesByPosition: Record<string, InterviewFormStage[]>;
   isEdit?: boolean;
+  // When false, the form disables scheduling/assignment inputs because
+  // updateInterview will strip them on submit (privilege ceiling for
+  // plain interviewers). Defaults to true so create flows and the
+  // schedule-from-candidate shortcut are unaffected.
+  canEditScheduling?: boolean;
 }
 
 export function InterviewForm({
@@ -74,6 +79,7 @@ export function InterviewForm({
   interviewers,
   stagesByPosition,
   isEdit = false,
+  canEditScheduling = true,
 }: InterviewFormProps) {
   const router = useRouter();
 
@@ -134,6 +140,15 @@ export function InterviewForm({
           </Alert>
         )}
 
+        {!canEditScheduling && (
+          <Alert>
+            <AlertDescription>
+              You can update notes and status. Scheduling, assignment, and
+              candidate/position changes are reserved for managers.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <FormField
           control={form.control}
           name='title'
@@ -141,7 +156,11 @@ export function InterviewForm({
             <FormItem>
               <FormLabel>Interview Title</FormLabel>
               <FormControl>
-                <Input placeholder='Technical Interview' {...field} />
+                <Input
+                  placeholder='Technical Interview'
+                  disabled={!canEditScheduling}
+                  {...field}
+                />
               </FormControl>
               <FormDescription>
                 A descriptive title for the interview
@@ -159,7 +178,7 @@ export function InterviewForm({
               <FormItem>
                 <FormLabel>Candidate</FormLabel>
                 <Select
-                  disabled={isEdit || !!defaultCandidateId}
+                  disabled={isEdit || !!defaultCandidateId || !canEditScheduling}
                   onValueChange={field.onChange}
                   value={field.value}
                 >
@@ -187,7 +206,11 @@ export function InterviewForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Position</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  disabled={!canEditScheduling}
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder='Select a position' />
@@ -212,7 +235,11 @@ export function InterviewForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Interview Type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  disabled={!canEditScheduling}
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder='Select a type' />
@@ -238,7 +265,9 @@ export function InterviewForm({
               <FormItem>
                 <FormLabel>Interview Stage</FormLabel>
                 <Select
-                  disabled={isLoadingStages || stages.length === 0}
+                  disabled={
+                    isLoadingStages || stages.length === 0 || !canEditScheduling
+                  }
                   onValueChange={field.onChange}
                   value={field.value || undefined}
                 >
@@ -268,11 +297,13 @@ export function InterviewForm({
             control={form.control}
             name='startTime'
             label='Start Date & Time'
+            disabled={!canEditScheduling}
           />
           <DateTimeField
             control={form.control}
             name='endTime'
             label='End Date & Time'
+            disabled={!canEditScheduling}
           />
         </div>
 
@@ -285,6 +316,7 @@ export function InterviewForm({
               <FormControl>
                 <Input
                   placeholder='Conference Room A or https://meet.google.com/...'
+                  disabled={!canEditScheduling}
                   {...field}
                   value={field.value || ''}
                 />
@@ -312,6 +344,7 @@ export function InterviewForm({
                   selected={field.value}
                   onChange={field.onChange}
                   placeholder='Select interviewers'
+                  disabled={!canEditScheduling}
                 />
               </FormControl>
               <FormDescription>Select one or more interviewers</FormDescription>

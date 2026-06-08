@@ -123,7 +123,14 @@ export async function updateInterview(id: string, input: UpdateInterviewInput) {
 }
 
 export async function deleteInterview(id: string) {
-  const { interview } = await authorizeInterviewMutation(id);
+  // Tighter than authorizeInterviewMutation: a listed interviewer can
+  // edit notes/status (see updateInterview) but should not be able to
+  // destroy the record outright. Manager/admin and the original creator
+  // only.
+  const { user, interview } = await authorizeInterviewMutation(id);
+  const canDelete =
+    isManagerOrAdmin(user) || interview.createdById === user.id;
+  if (!canDelete) throw new AuthzError('Forbidden');
 
   await deleteInterviewData(id);
 

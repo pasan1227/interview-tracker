@@ -41,6 +41,12 @@ export default async function EditInterviewPage({
     redirect('/dashboard');
   }
 
+  // updateInterview strips non-notes/status fields server-side for a
+  // plain interviewer (see actions/interview.ts privilege ceiling). Tell
+  // the form so it can disable those inputs instead of silently dropping
+  // edits on submit.
+  const canEditScheduling = isManagerOrAdmin || isCreator;
+
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
       <PageHeader
@@ -57,6 +63,7 @@ export default async function EditInterviewPage({
           interviewers={interviewers}
           stagesByPosition={stagesByPosition}
           isEdit
+          canEditScheduling={canEditScheduling}
         />
       </div>
     </div>

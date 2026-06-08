@@ -33,6 +33,7 @@ interface DateTimeFieldProps<TForm extends FieldValues> {
   control: Control<TForm>;
   name: FieldPath<TForm>;
   label: string;
+  disabled?: boolean;
 }
 
 /**
@@ -44,6 +45,7 @@ export function DateTimeField<TForm extends FieldValues>({
   control,
   name,
   label,
+  disabled,
 }: DateTimeFieldProps<TForm>) {
   return (
     <FormField
@@ -74,7 +76,9 @@ export function DateTimeField<TForm extends FieldValues>({
               <PopoverTrigger asChild>
                 <FormControl>
                   <Button
+                    type='button'
                     variant='outline'
+                    disabled={disabled}
                     className={cn(
                       'w-full pl-3 text-left font-normal',
                       !value && 'text-muted-foreground'
@@ -99,6 +103,7 @@ export function DateTimeField<TForm extends FieldValues>({
                       className='w-40'
                       value={format(value, 'HH:mm')}
                       onChange={(e) => setTimePart(e.target.value)}
+                      disabled={disabled}
                     />
                   </div>
                 </div>

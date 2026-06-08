@@ -21,15 +21,13 @@ export default async function DeleteInterviewPageRoute({
   const interview = await getInterviewById(id);
   if (!interview) notFound();
 
-  // Mutation gate: matches authorizeInterviewMutation in
-  // actions/interview.ts — manager/admin OR creator OR listed interviewer.
-  const isInterviewer = interview.interviewers.some(
-    (interviewer) => interviewer.id === session.id
-  );
+  // Delete gate: matches deleteInterview in actions/interview.ts —
+  // manager/admin or the original creator. Listed interviewers can
+  // edit notes/status but cannot destroy the record.
   const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
     session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
-  if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
+  if (!isManagerOrAdmin && !isCreator) {
     redirect('/dashboard');
   }
 

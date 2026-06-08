@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, FilterIcon, XIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // react-day-picker only fetched when the popover actually opens.
 const Calendar = dynamic(
@@ -67,8 +67,16 @@ export function ReportFilters({
   const [positionId, setPositionId] = useState(activeFilters.positionId || ALL);
   const [source, setSource] = useState(activeFilters.source || ALL);
 
-  // Re-sync local state when the URL changes externally (e.g. tab switch).
+  // Re-sync local draft state when the URL changes externally (e.g.
+  // tab switch). The first-mount pass is a noop because the useState
+  // initializers already read from activeFilters — guarding it with a
+  // ref avoids a cascading-render warning from React Compiler.
+  const didMount = useRef(false);
   useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
     setDate({ from: activeFilters.startDate, to: activeFilters.endDate });
     setPositionId(activeFilters.positionId || ALL);
     setSource(activeFilters.source || ALL);

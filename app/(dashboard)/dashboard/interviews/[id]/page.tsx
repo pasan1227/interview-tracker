@@ -32,27 +32,41 @@ export default async function InterviewDetailPage({
     notFound();
   }
 
-  // Visibility gate: managers/admins, the interview creator, and the
-  // listed interviewers can view this page. Everyone else lands on the
-  // dashboard. Mirrors authorizeInterviewMutation in actions/interview.ts.
+  // Read-only visibility: managers/admins, the interview creator, the
+  // listed interviewers, and anyone who has authored feedback on the
+  // interview can view it. The feedback-author branch covers the case
+  // where someone was removed from the interviewer roster after they
+  // submitted feedback — the row still shows up in their "My feedback"
+  // list, and View should not lead to a redirect.
   const isInterviewer = interview.interviewers.some(
     (interviewer) => interviewer.id === session.id
   );
   const isCreator = interview.createdById === session.id;
   const isManagerOrAdmin =
     session.role === UserRole.ADMIN || session.role === UserRole.MANAGER;
-  if (!isManagerOrAdmin && !isCreator && !isInterviewer) {
+  const hasSubmittedFeedback = interview.feedbacks.some(
+    (feedback) => feedback.interviewer.id === session.id
+  );
+  if (
+    !isManagerOrAdmin &&
+    !isCreator &&
+    !isInterviewer &&
+    !hasSubmittedFeedback
+  ) {
     redirect('/dashboard');
   }
+
+  // Mutate gate (edit button): the read-only feedback-author path above
+  // does NOT carry mutation rights. Matches authorizeInterviewMutation
+  // in actions/interview.ts.
+  const canMutate = isManagerOrAdmin || isCreator || isInterviewer;
+  // Delete is further restricted: listed interviewers shouldn't be able
+  // to destroy an interview record they were merely assigned to.
+  const canDelete = isManagerOrAdmin || isCreator;
 
   const statusClass =
     INTERVIEW_STATUS_BADGE[interview.status] ??
     INTERVIEW_STATUS_BADGE[InterviewStatus.SCHEDULED];
-
-  // Check if the current user has already submitted feedback
-  const hasSubmittedFeedback = interview.feedbacks.some(
-    (feedback) => feedback.interviewer.id === session.id
-  );
 
   return (
     <div className='mx-auto flex max-w-[1200px] flex-col gap-6'>
@@ -82,18 +96,22 @@ export default async function InterviewDetailPage({
                   </Link>
                 </Button>
               )}
-            <Button variant='outline' asChild>
-              <Link href={`/dashboard/interviews/${interview.id}/edit`}>
-                <PencilIcon className='mr-2 h-4 w-4' />
-                Edit
-              </Link>
-            </Button>
-            <Button variant='outline' className='text-destructive' asChild>
-              <Link href={`/dashboard/interviews/${interview.id}/delete`}>
-                <TrashIcon className='mr-2 h-4 w-4' />
-                Delete
-              </Link>
-            </Button>
+            {canMutate && (
+              <Button variant='outline' asChild>
+                <Link href={`/dashboard/interviews/${interview.id}/edit`}>
+                  <PencilIcon className='mr-2 h-4 w-4' />
+                  Edit
+                </Link>
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant='outline' className='text-destructive' asChild>
+                <Link href={`/dashboard/interviews/${interview.id}/delete`}>
+                  <TrashIcon className='mr-2 h-4 w-4' />
+                  Delete
+                </Link>
+              </Button>
+            )}
           </div>
         }
       />

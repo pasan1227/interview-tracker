@@ -11,20 +11,19 @@ import { useEffect, useRef, useState } from 'react';
 export function NewVerificationForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-  const [error, setError] = useState<string | undefined>();
+  // Missing-token is known synchronously — compute it as initial state
+  // rather than fire setState from inside the effect (which the React
+  // Compiler flags as a cascading render).
+  const [error, setError] = useState<string | undefined>(() =>
+    token ? undefined : 'Missing token!'
+  );
   const [success, setSuccess] = useState<string | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => Boolean(token));
   const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return;
+    if (ran.current || !token) return;
     ran.current = true;
-
-    if (!token) {
-      setError('Missing token!');
-      setIsLoading(false);
-      return;
-    }
 
     newVerification(token)
       .then((data) => {

@@ -30,6 +30,7 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function MultiSelect({
@@ -38,6 +39,7 @@ export function MultiSelect({
   onChange,
   placeholder = 'Select options',
   className,
+  disabled = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -59,13 +61,15 @@ export function MultiSelect({
     .map((option) => option.label);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open && !disabled} onOpenChange={(v) => !disabled && setOpen(v)}>
       <PopoverTrigger asChild>
         <div
           className={cn(
             'flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+            disabled && 'pointer-events-none opacity-50',
             className
           )}
+          aria-disabled={disabled || undefined}
         >
           <div className='flex flex-wrap gap-1'>
             {selectedLabels.length > 0 ? (

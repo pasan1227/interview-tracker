@@ -3,7 +3,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   filterNavItems,
   NavHelpCard,
@@ -21,9 +21,13 @@ export function DashboardMobileNav({ role }: Readonly<DashboardMobileNavProps>) 
   const pathname = usePathname();
   const items = filterNavItems(role);
 
-  // Auto-dismiss on route change so the drawer doesn't linger after a
-  // user navigates from inside it.
+  // Auto-dismiss on route change (covers browser back/forward while the
+  // drawer is open — NavList's onNavigate handles in-drawer clicks).
+  // The ref skips the mount pass so we don't fire a noop setState on
+  // first render (which is what the React Compiler warns about).
+  const initialPathname = useRef(pathname);
   useEffect(() => {
+    if (pathname === initialPathname.current) return;
     setOpen(false);
   }, [pathname]);
 
