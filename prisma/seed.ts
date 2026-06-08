@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { PrismaClient, CandidateStatus, InterviewType, InterviewStatus, Recommendation } from '../lib/generated/prisma/client';
+import { OrganizationRole } from '../lib/generated/prisma/enums';
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL_DIRECT ?? process.env.DATABASE_URL!,
@@ -10,7 +11,9 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Clear existing data in reverse dependency order
+  // Clear existing data in reverse dependency order. Multi-tenant
+  // tables (Membership, Invitation) and Organization sit at the top
+  // of the cascade, so they go last.
   await prisma.skillAssessment.deleteMany();
   await prisma.feedback.deleteMany();
   await prisma.note.deleteMany();
@@ -21,6 +24,8 @@ async function main() {
   await prisma.workflow.deleteMany();
   await prisma.tag.deleteMany();
   await prisma.settings.deleteMany();
+  await prisma.invitation.deleteMany();
+  await prisma.membership.deleteMany();
   await prisma.twoFactorConfirmation.deleteMany();
   await prisma.twoFactorToken.deleteMany();
   await prisma.passwordResetToken.deleteMany();
@@ -28,12 +33,24 @@ async function main() {
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
 
   console.log('🧹 Cleared existing data');
 
+  // 0. Create the default Organization. Every seeded row below scopes
+  //    to this org's id.
+  const defaultOrg = await prisma.organization.create({
+    data: {
+      slug: 'default',
+      name: 'Default Organization',
+      billingEmail: 'admin@company.com',
+    },
+  });
+  console.log('🏢 Created default organization');
+
   // 1. Create Users (5 users)
   const hashedPassword = await bcrypt.hash('password123', 12);
-  
+
   const adminUser = await prisma.user.create({
     data: {
       name: 'Admin User',
@@ -86,9 +103,25 @@ async function main() {
 
   console.log('👥 Created 5 users');
 
+  // 1b. Membership rows — admin = OWNER, others mapped from legacy role.
+  const memberships: Array<{ userId: string; role: OrganizationRole }> = [
+    { userId: adminUser.id, role: OrganizationRole.OWNER },
+    { userId: manager1.id, role: OrganizationRole.MANAGER },
+    { userId: manager2.id, role: OrganizationRole.MANAGER },
+    { userId: interviewer1.id, role: OrganizationRole.INTERVIEWER },
+    { userId: interviewer2.id, role: OrganizationRole.INTERVIEWER },
+  ];
+  for (const m of memberships) {
+    await prisma.membership.create({
+      data: { ...m, organizationId: defaultOrg.id, acceptedAt: new Date() },
+    });
+  }
+  console.log('🪪 Created 5 memberships (admin=OWNER)');
+
   // 2. Create Company Settings
   await prisma.settings.create({
     data: {
+      organizationId: defaultOrg.id,
       companyName: 'TechCorp Solutions',
       emailNotifications: true,
       feedbackReminders: true,
@@ -104,6 +137,7 @@ async function main() {
       name: 'Technical Interview Process',
       description: 'Standard technical interview workflow for engineering positions',
       isDefault: true,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -112,6 +146,7 @@ async function main() {
       name: 'Management Interview Process',
       description: 'Interview workflow for management and leadership positions',
       isDefault: false,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -122,6 +157,7 @@ async function main() {
       description: 'Initial phone screening with recruiter',
       order: 1,
       workflowId: techWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -131,6 +167,7 @@ async function main() {
       description: 'Technical assessment with senior developer',
       order: 2,
       workflowId: techWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -140,6 +177,7 @@ async function main() {
       description: 'Interview with hiring manager',
       order: 3,
       workflowId: techWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -150,6 +188,7 @@ async function main() {
       description: 'Initial screening with HR',
       order: 1,
       workflowId: managerWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -159,6 +198,7 @@ async function main() {
       description: 'Panel interview with team leads',
       order: 2,
       workflowId: managerWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -171,6 +211,7 @@ async function main() {
       department: 'Engineering',
       isActive: true,
       workflowId: techWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -180,6 +221,7 @@ async function main() {
       department: 'Engineering',
       isActive: true,
       workflowId: techWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
@@ -189,17 +231,18 @@ async function main() {
       department: 'Product',
       isActive: true,
       workflowId: managerWorkflow.id,
+      organizationId: defaultOrg.id,
     },
   });
 
   console.log('💼 Created 3 positions');
 
   // 5. Create Tags (5 tags)
-  const reactTag = await prisma.tag.create({ data: { name: 'React' } });
-  const nodeTag = await prisma.tag.create({ data: { name: 'Node.js' } });
-  const pythonTag = await prisma.tag.create({ data: { name: 'Python' } });
-  const seniorTag = await prisma.tag.create({ data: { name: 'Senior Level' } });
-  const remoteTag = await prisma.tag.create({ data: { name: 'Remote OK' } });
+  const reactTag = await prisma.tag.create({ data: { name: 'React', organizationId: defaultOrg.id } });
+  const nodeTag = await prisma.tag.create({ data: { name: 'Node.js', organizationId: defaultOrg.id } });
+  const pythonTag = await prisma.tag.create({ data: { name: 'Python', organizationId: defaultOrg.id } });
+  const seniorTag = await prisma.tag.create({ data: { name: 'Senior Level', organizationId: defaultOrg.id } });
+  const remoteTag = await prisma.tag.create({ data: { name: 'Remote OK', organizationId: defaultOrg.id } });
 
   console.log('🏷️ Created 5 tags');
 
@@ -304,6 +347,7 @@ async function main() {
     const candidate = await prisma.candidate.create({
       data: {
         ...data,
+        organization: { connect: { id: defaultOrg.id } },
         position: { connect: { id: positionId } },
         createdBy: { connect: { id: adminUser.id } },
         managedBy: { connect: { id: manager1.id } },
@@ -439,6 +483,7 @@ async function main() {
     const interview = await prisma.interview.create({
       data: {
         ...data,
+        organization: { connect: { id: defaultOrg.id } },
         candidate: { connect: { id: candidateId } },
         position: { connect: { id: positionId } },
         stage: stageId ? { connect: { id: stageId } } : undefined,
@@ -509,6 +554,7 @@ async function main() {
         rating: data.rating,
         recommendation: data.recommendation,
         comment: data.comment,
+        organizationId: defaultOrg.id,
         interviewId: interview.id,
         candidateId: interview.candidateId,
         interviewerId: interviewer1.id, // Using first interviewer for simplicity
@@ -523,6 +569,7 @@ async function main() {
           rating: skillData.rating,
           comment: skillData.comment,
           feedbackId: feedback.id,
+          organizationId: defaultOrg.id,
         },
       });
     }
@@ -544,6 +591,7 @@ async function main() {
       data: {
         content: noteData.content,
         candidateId: noteData.candidateId,
+        organizationId: defaultOrg.id,
       },
     });
   }
