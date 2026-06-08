@@ -2,17 +2,27 @@
 
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import { useTransition } from 'react';
+import { switchActiveOrg } from '@/actions/org/switch-org';
 import { DashboardMobileNav } from '@/components/dashboard/dashboard-mobile-nav';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserRole } from '@/lib/generated/prisma/browser';
+import { OrganizationRole, UserRole } from '@/lib/generated/prisma/browser';
+
+type HeaderOrg = {
+  id: string;
+  slug: string;
+  name: string;
+  role: OrganizationRole;
+};
 
 // Narrow to the fields the header actually reads. Accepts both the
 // next-auth session user (no createdAt/updatedAt) and a Prisma User.
@@ -23,6 +33,8 @@ interface DashboardHeaderProps {
     image?: string | null;
     role?: UserRole;
   };
+  activeOrgId?: string | null;
+  orgs?: HeaderOrg[];
 }
 
 function Logomark() {
@@ -43,7 +55,13 @@ function Logomark() {
   );
 }
 
-export function DashboardHeader({ user }: Readonly<DashboardHeaderProps>) {
+export function DashboardHeader({
+  user,
+  activeOrgId,
+  orgs = [],
+}: Readonly<DashboardHeaderProps>) {
+  const [isPending, startTransition] = useTransition();
+  const activeOrg = orgs.find((o) => o.id === activeOrgId);
   const userInitials =
     user?.name
       ?.split(' ')
@@ -131,6 +149,48 @@ export function DashboardHeader({ user }: Readonly<DashboardHeaderProps>) {
                   )}
                 </div>
               </div>
+              {activeOrg && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className='text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground'>
+                    Organization
+                  </DropdownMenuLabel>
+                  <div className='px-2 pb-2 text-xs'>
+                    <p className='font-medium'>{activeOrg.name}</p>
+                    <p className='text-muted-foreground'>
+                      {activeOrg.slug} · {activeOrg.role.toLowerCase()}
+                    </p>
+                  </div>
+                  {orgs.length > 1 && (
+                    <>
+                      <DropdownMenuLabel className='text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground'>
+                        Switch to
+                      </DropdownMenuLabel>
+                      {orgs
+                        .filter((o) => o.id !== activeOrgId)
+                        .map((o) => (
+                          <DropdownMenuItem
+                            key={o.id}
+                            disabled={isPending}
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              startTransition(async () => {
+                                await switchActiveOrg(o.id);
+                              });
+                            }}
+                          >
+                            <span className='flex flex-col'>
+                              <span className='text-sm'>{o.name}</span>
+                              <span className='text-xs text-muted-foreground'>
+                                {o.slug}
+                              </span>
+                            </span>
+                          </DropdownMenuItem>
+                        ))}
+                    </>
+                  )}
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href='/dashboard/profile'>Profile</Link>

@@ -5,16 +5,20 @@ import bcrypt from 'bcryptjs';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { getAccountByUserId } from './data/account';
+import { getActiveMembershipsForUser, getMembership } from './data/membership';
 import { getTwoFactorConfirmationByUserId } from './data/two-factor-confirmation';
 import { getUserById, getUserByEmail } from './data/user';
 import { UserRole } from './lib/generated/prisma/client';
+import { MembershipStatus, OrganizationRole } from './lib/generated/prisma/enums';
 import { LoginSchema } from './lib/validations/auth';
+import type { ExtendedUser } from './next-auth.d';
 
 export const {
   handlers: { GET, POST },
   auth,
   signIn,
   signOut,
+  unstable_update,
 } = NextAuth({
   ...authConfig,
   pages: {
@@ -81,12 +85,24 @@ export const {
         if (token.role) session.user.role = token.role as UserRole;
         session.user.isTwoFactorEnabled = Boolean(token.isTwoFactorEnabled);
         session.user.isOAuth = Boolean(token.isOAuth);
+        session.user.isPlatformAdmin = Boolean(token.isPlatformAdmin);
         session.user.name = token.name;
         session.user.email = token.email as string;
+        // Active organization slice. middleware.ts redirects logged-in
+        // users with activeOrgId === null to /select-org. Cast through
+        // `as` because the JWT type augmentation widens the field shape
+        // here under `interface JWT` merging.
+        session.user.activeOrgId =
+          (token.activeOrgId as string | null | undefined) ?? null;
+        session.user.activeOrgSlug =
+          (token.activeOrgSlug as string | null | undefined) ?? null;
+        session.user.activeOrgRole =
+          (token.activeOrgRole as ExtendedUser['activeOrgRole']) ?? null;
+        session.user.orgs = (token.orgs as ExtendedUser['orgs']) ?? [];
       }
       return session;
     },
-    async jwt({ token, trigger }) {
+    async jwt({ token, trigger, session: updatePayload }) {
       if (!token.sub) return token;
 
       // Always confirm the underlying user still exists. The lookup is
@@ -99,10 +115,35 @@ export const {
         return {};
       }
 
-      // Refresh role / name / email / 2FA / OAuth claims only on
-      // sign-in, explicit session update, or first JWT creation —
-      // existence-check above runs every request, the claim refresh
-      // doesn't have to.
+      // Org-switching path. The client calls update({ activeOrgId })
+      // via NextAuth's useSession().update or unstable_update on the
+      // server. We accept it only after re-verifying membership — the
+      // payload is untrusted input.
+      if (
+        trigger === 'update' &&
+        updatePayload &&
+        typeof updatePayload === 'object' &&
+        'activeOrgId' in updatePayload &&
+        typeof (updatePayload as { activeOrgId?: unknown }).activeOrgId === 'string'
+      ) {
+        const requestedOrgId = (updatePayload as { activeOrgId: string }).activeOrgId;
+        const membership = await getMembership(existingUser.id, requestedOrgId);
+        if (
+          membership &&
+          membership.status === MembershipStatus.ACTIVE &&
+          !membership.organization.deletedAt
+        ) {
+          token.activeOrgId = requestedOrgId;
+          token.activeOrgSlug = membership.organization.slug;
+          token.activeOrgRole = membership.role;
+        }
+        // Fall through to refresh below regardless of accept/reject.
+      }
+
+      // Refresh role / name / email / 2FA / OAuth + org slice claims
+      // on sign-in, explicit session update, or first JWT creation.
+      // The existence-check above runs every request — the heavier
+      // refresh only when something has actually changed.
       const needsRefresh =
         trigger === 'signIn' || trigger === 'update' || !token.role;
       if (!needsRefresh) return token;
@@ -113,6 +154,44 @@ export const {
       token.email = existingUser.email;
       token.role = existingUser.role;
       token.isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
+      token.isPlatformAdmin = existingUser.isPlatformAdmin;
+
+      // Refresh the org list so a freshly-added Membership shows up
+      // in the switcher without a re-login.
+      const orgs = await getActiveMembershipsForUser(existingUser.id);
+      token.orgs = orgs;
+
+      // Decide / re-validate activeOrgId. Three cases:
+      //   - user belongs to exactly one org → auto-select.
+      //   - user's existing activeOrgId is still valid → keep it.
+      //   - otherwise (zero orgs, or activeOrg revoked) → null, and
+      //     middleware routes them to /select-org or /no-access.
+      if (token.activeOrgId) {
+        const stillMember = orgs.find((o) => o.id === token.activeOrgId);
+        if (stillMember) {
+          token.activeOrgSlug = stillMember.slug;
+          token.activeOrgRole = stillMember.role;
+        } else {
+          token.activeOrgId = null;
+          token.activeOrgSlug = null;
+          token.activeOrgRole = null;
+        }
+      }
+      if (!token.activeOrgId && orgs.length === 1) {
+        token.activeOrgId = orgs[0].id;
+        token.activeOrgSlug = orgs[0].slug;
+        token.activeOrgRole = orgs[0].role;
+      }
+      if (!token.activeOrgId) {
+        token.activeOrgId = null;
+        token.activeOrgSlug = null;
+        token.activeOrgRole = null;
+      }
+      // Default for users that haven't been ported yet (e.g. test
+      // fixtures missing the field).
+      if (token.isPlatformAdmin === undefined) token.isPlatformAdmin = false;
+      // Suppress unused-import warning under strict tsc.
+      void OrganizationRole;
 
       return token;
     },

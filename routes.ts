@@ -15,6 +15,15 @@ export const authRoutes = [
 ];
 
 /**
+ * Onboarding routes — accessible to logged-in users *without* an
+ * active organization. Middleware lets these through even when
+ * activeOrgId is null. Includes the no-access page for users that
+ * have zero memberships (invite-only signup means they can't bootstrap
+ * an org themselves).
+ */
+export const orgOnboardingRoutes = ['/select-org', '/no-access'];
+
+/**
  * Prefix for NextAuth's API routes — never intercepted by middleware.
  */
 export const apiAuthPrefix = '/api/auth';

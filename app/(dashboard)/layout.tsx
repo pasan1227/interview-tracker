@@ -17,7 +17,11 @@ export default async function DashboardLayout({
 
   return (
     <div className='flex min-h-screen flex-col bg-background text-foreground'>
-      <DashboardHeader user={user} />
+      <DashboardHeader
+        user={user}
+        activeOrgId={user.activeOrgId ?? null}
+        orgs={user.orgs ?? []}
+      />
       <div className='flex flex-1'>
         <DashboardNav role={user.role} />
         <main id='main' className='flex-1 px-6 py-8 lg:px-10 lg:py-10'>

@@ -2,6 +2,7 @@ import {
   DEFAULT_LOGIN_REDIRECT,
   apiAuthPrefix,
   authRoutes,
+  orgOnboardingRoutes,
   publicRoutes,
 } from '@/routes';
 import NextAuth from 'next-auth';
@@ -30,6 +31,22 @@ export default auth((req) => {
         nextUrl
       )
     );
+  }
+
+  // Logged-in with no active organization → /select-org (or
+  // /no-access if they belong to zero orgs, which we infer from the
+  // empty orgs[]). Onboarding routes themselves are always allowed
+  // so the chooser page can render. Auth-API + public routes already
+  // returned above. Everything else (dashboard, settings, etc.)
+  // requires an activeOrgId.
+  if (isLoggedIn) {
+    const activeOrgId = req.auth?.user?.activeOrgId;
+    const orgs = req.auth?.user?.orgs ?? [];
+    const onOnboarding = orgOnboardingRoutes.includes(nextUrl.pathname);
+    if (!activeOrgId && !onOnboarding && !publicRoutes.includes(nextUrl.pathname)) {
+      const target = orgs.length === 0 ? '/no-access' : '/select-org';
+      return Response.redirect(new URL(target, nextUrl));
+    }
   }
 });
 
