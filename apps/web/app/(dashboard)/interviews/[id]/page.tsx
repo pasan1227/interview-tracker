@@ -4,7 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewByIdForViewer } from '@/data/interview';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InterviewDetail } from '@/components/interviews/interview-detail';

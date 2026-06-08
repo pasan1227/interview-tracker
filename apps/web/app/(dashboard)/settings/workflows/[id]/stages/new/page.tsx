@@ -1,7 +1,7 @@
 // app/(dashboard)/settings/workflows/[id]/stages/new/page.tsx
 
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { StageForm } from '@/components/workflows/stage-form';
 import { getWorkflowById } from '@/data/workflow';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
-import { DeleteResourcePage } from '@/components/delete-resource-page';
+import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { PositionDeleteForm } from '@/components/positions/position-delete-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

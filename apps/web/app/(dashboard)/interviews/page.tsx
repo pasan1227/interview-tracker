@@ -1,7 +1,7 @@
 // app/(dashboard)/interviews/page.tsx
 
 import { requirePageOrgSession } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewsFilters } from '@/components/interviews/interviews-filters';
 import { InterviewsList } from '@/components/interviews/interviews-list';
 import { ResourceSearch } from '@/components/ui/resource-search';

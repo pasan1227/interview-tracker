@@ -1,6 +1,6 @@
 // app/(dashboard)/positions/new/page.tsx
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { PositionForm } from '@/components/positions/position-form-lazy';
 import { requirePageOrgRole } from '@/lib/authz';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';

@@ -6,7 +6,7 @@ import {
   getSourceReport,
   getTimeToHireReport,
 } from '@/actions/reports';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { ReportTabs } from '@/components/reports/report-tabs';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportSkeleton } from '@/components/reports/report-skeleton';

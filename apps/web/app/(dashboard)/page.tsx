@@ -1,7 +1,7 @@
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview';
 import { DashboardSummary } from '@/components/dashboard/dashboard-summary';
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts-lazy';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import {
   getUpcomingInterviews,
   getRecentCandidates,

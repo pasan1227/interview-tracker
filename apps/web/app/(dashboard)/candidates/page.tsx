@@ -4,7 +4,7 @@ import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { CandidatesFilters } from '@/components/candidates/candidates-filters';
 import { CandidatesList } from '@/components/candidates/candidates-list';
 import { ResourceSearch } from '@/components/ui/resource-search';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { getPositions } from '@/data/position';
 import { CandidatesSearchParamsSchema } from '@/lib/search-params';

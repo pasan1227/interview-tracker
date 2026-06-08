@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import { getCandidateForDelete } from '@/data/candidate';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
-import { DeleteResourcePage } from '@/components/delete-resource-page';
+import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { CandidateDeleteForm } from '@/components/candidates/candidate-delete-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

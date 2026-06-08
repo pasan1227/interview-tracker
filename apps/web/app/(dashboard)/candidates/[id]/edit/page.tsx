@@ -1,7 +1,7 @@
 // app/(dashboard)/candidates/[id]/edit/page.tsx
 
 import { CandidateForm } from '@/components/candidates/candidate-form-lazy';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { getCandidateForForm } from '@/data/candidate';
 import { getPositions } from '@/data/position';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';

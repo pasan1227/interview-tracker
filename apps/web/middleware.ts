@@ -13,7 +13,14 @@ const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+  // Tighten the logged-in check to require a real user.id, not just a
+  // truthy session object. NextAuth's JWT callback returns {} when the
+  // user referenced by token.sub no longer exists in the database
+  // (common after a dev `yarn db:seed` reseed — old cookie's userId is
+  // now invalid). That stub session is still truthy, but it has no
+  // user.id; treating it as "logged in" would route the holder to
+  // /no-access (and crash that page), instead of /login.
+  const isLoggedIn = !!req.auth?.user?.id;
 
   if (nextUrl.pathname.startsWith(apiAuthPrefix)) return;
 

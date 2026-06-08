@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { requirePageOrgRole } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { PositionsList } from '@/components/positions/positions-list';

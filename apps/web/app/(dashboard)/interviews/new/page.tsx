@@ -2,7 +2,7 @@
 
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { getInterviewFormOptions } from '@/data/interview-form';
 

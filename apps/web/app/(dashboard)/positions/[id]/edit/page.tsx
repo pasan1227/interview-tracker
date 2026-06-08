@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requirePageOrgRole } from '@/lib/authz';
 import { db } from '@/lib/db';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { PositionForm } from '@/components/positions/position-form-lazy';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

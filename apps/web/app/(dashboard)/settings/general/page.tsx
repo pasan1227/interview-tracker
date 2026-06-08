@@ -2,7 +2,7 @@
 
 import { getSettings } from '@/data/settings';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { GeneralSettingsForm } from '@/components/settings/general-settings-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

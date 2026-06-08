@@ -1,6 +1,6 @@
 // app/(dashboard)/settings/workflows/page.tsx
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { requirePageOrgRole } from '@/lib/authz';
 import { WorkflowsList } from '@/components/workflows/workflows-list';

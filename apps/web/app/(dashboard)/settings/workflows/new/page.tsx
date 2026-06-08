@@ -1,6 +1,6 @@
 // app/(dashboard)/settings/workflows/new/page.tsx
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
 import { requirePageOrgRole } from '@/lib/authz';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';

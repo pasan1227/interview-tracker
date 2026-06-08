@@ -6,7 +6,7 @@
 // app. The DashboardHeader/Nav above this boundary keep rendering.
 
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { AlertCircleIcon, RotateCwIcon } from 'lucide-react';
 import { useEffect } from 'react';
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { requirePageOrgRole } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import {
   ArrowUpRight,
   BriefcaseIcon,

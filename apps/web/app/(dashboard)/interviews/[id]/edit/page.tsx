@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewForForm } from '@/data/interview';
 import { getInterviewFormOptions } from '@/data/interview-form';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InterviewForm } from '@/components/interviews/interview-form-lazy';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

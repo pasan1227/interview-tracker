@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { UserProfileForm } from '@/components/users/user-profile-form';
 import { getSafeUserById } from '@/data/user';
 

@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import { getWorkflowById } from '@/data/workflow';
-import { DeleteResourcePage } from '@/components/delete-resource-page';
+import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { WorkflowDeleteForm } from '@/components/workflows/workflow-delete-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 

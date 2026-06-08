@@ -3,7 +3,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewById } from '@/data/interview';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { FeedbackForm } from '@/components/feedback/feedback-form-lazy';
 import { InterviewStatus } from '@/lib/generated/prisma/browser';
 

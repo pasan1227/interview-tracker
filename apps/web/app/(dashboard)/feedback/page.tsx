@@ -1,6 +1,6 @@
 // app/(dashboard)/feedback/page.tsx
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

@@ -3,7 +3,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { requirePageOrgSession, toOrgContext } from '@/lib/authz';
 import { getInterviewById } from '@/data/interview';
-import { DeleteResourcePage } from '@/components/delete-resource-page';
+import { DeleteResourcePage } from '@/components/dashboard/delete-resource-page';
 import { InterviewDeleteForm } from '@/components/interviews/interview-delete-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';
 import { format } from 'date-fns';

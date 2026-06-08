@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { getWorkflowById } from '@/data/workflow';
 import { WorkflowForm } from '@/components/workflows/workflow-form';
 import { OrganizationRole } from '@/lib/generated/prisma/browser';

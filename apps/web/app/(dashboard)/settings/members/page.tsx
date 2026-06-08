@@ -4,7 +4,7 @@
 // pending invitations for the current org; admins can invite, revoke,
 // and (PR 12) demote/promote roles.
 
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { InviteMemberForm } from '@/components/members/invite-member-form';
 import { MembersTable } from '@/components/members/members-table';
 import { PendingInvitations } from '@/components/members/pending-invitations';

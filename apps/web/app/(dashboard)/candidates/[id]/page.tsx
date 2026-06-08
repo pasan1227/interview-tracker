@@ -4,7 +4,7 @@ import { CandidateInfo } from '@/components/candidates/candidate-info';
 import { CandidateInterviews } from '@/components/candidates/candidate-interviews';
 import { CandidateNotes } from '@/components/candidates/candidate-notes';
 import { CandidateStatusUpdate } from '@/components/candidates/candidate-status-update';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

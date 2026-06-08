@@ -4,10 +4,15 @@
 // human path; there's no self-serve org creation in v1.
 
 import { signOut } from '@/auth';
-import { requireSession } from '@/lib/authz';
+import { requirePageSession } from '@/lib/authz';
 
 export default async function NoAccessPage() {
-  const user = await requireSession();
+  // requirePageSession redirects to /login if there's no valid
+  // session. Using the throwing variant (requireSession) would render
+  // an uncaught error page when a stale cookie or corrupted JWT lands
+  // a logged-out user here — common after a db reseed because the
+  // JWT.sub references a userId that no longer exists.
+  const user = await requirePageSession();
 
   return (
     <div className='mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16'>

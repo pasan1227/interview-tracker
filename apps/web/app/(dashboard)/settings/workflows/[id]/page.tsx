@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requirePageOrgRole, toOrgContext } from '@/lib/authz';
 import Link from 'next/link';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, ArrowLeftIcon } from 'lucide-react';
 import { WorkflowHeader } from '@/components/workflows/workflow-header';
