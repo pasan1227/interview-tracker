@@ -1,9 +1,11 @@
 import {
+  INVITATION_TOKEN_TTL_MS,
   PASSWORD_RESET_TOKEN_TTL_MS,
   TWO_FACTOR_TOKEN_TTL_MS,
   VERIFICATION_TOKEN_TTL_MS,
 } from '@/lib/auth-constants';
 import { db } from '@/lib/db';
+import { OrganizationRole } from '@/lib/generated/prisma/enums';
 import crypto from 'crypto';
 import { v4 as uuid } from 'uuid';
 
@@ -105,6 +107,63 @@ export const getPasswordResetTokenByToken = (rawToken: string) =>
 
 export const getTwoFactorTokenByEmail = (email: string) =>
   safeFirst(() => db.twoFactorToken.findFirst({ where: { email } }));
+
+// ---------- Invitations ----------
+// Same hash-the-token pattern as verification + password-reset: the
+// raw token lives only in the email body, the DB stores the digest.
+
+export type GeneratedInvitation = {
+  email: string;
+  organizationId: string;
+  token: string; // raw, only ever returned to the email sender
+  expires: Date;
+};
+
+export const generateInvitationToken = async ({
+  organizationId,
+  email,
+  role,
+  invitedById,
+}: {
+  organizationId: string;
+  email: string;
+  role: OrganizationRole;
+  invitedById: string;
+}): Promise<GeneratedInvitation> => {
+  const rawToken = uuid();
+  const expires = new Date(Date.now() + INVITATION_TOKEN_TTL_MS);
+
+  // Replace any prior unaccepted invite for this (org, email) so the
+  // most recent link is always the only valid one. Already-accepted
+  // rows stay for audit history.
+  await db.invitation.deleteMany({
+    where: { organizationId, email, acceptedAt: null },
+  });
+  await db.invitation.create({
+    data: {
+      organizationId,
+      email,
+      role,
+      invitedById,
+      token: hashToken(rawToken),
+      expires,
+    },
+  });
+  return { email, organizationId, token: rawToken, expires };
+};
+
+// Raw token in → row out. Returns null on miss / expired so the
+// caller never branches on hashed-vs-raw inputs.
+export const getInvitationByToken = (rawToken: string) =>
+  safeFirst(() =>
+    db.invitation.findUnique({
+      where: { token: hashToken(rawToken) },
+      include: {
+        organization: { select: { id: true, name: true, slug: true } },
+        invitedBy: { select: { id: true, name: true, email: true } },
+      },
+    })
+  );
 
 async function safeFirst<T>(fn: () => Promise<T | null>): Promise<T | null> {
   try {

@@ -82,10 +82,10 @@ export default async function SettingsPage() {
 
       <div className='grid gap-5 md:grid-cols-2 lg:grid-cols-3'>
         <SettingsCard
-          href='/dashboard/settings/users'
+          href='/dashboard/settings/members'
           Icon={UsersIcon}
-          title='User management'
-          description='Add, edit, or deactivate user accounts. Assign roles and permissions.'
+          title='Members'
+          description='Invite teammates, manage roles, and revoke access.'
         />
         <SettingsCard
           href='/dashboard/positions'

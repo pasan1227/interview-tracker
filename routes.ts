@@ -24,6 +24,13 @@ export const authRoutes = [
 export const orgOnboardingRoutes = ['/select-org', '/no-access'];
 
 /**
+ * Public-but-auth-required routes that work without an active org.
+ * Used by middleware so a user without an active org can still accept
+ * an invitation (which sets one).
+ */
+export const noOrgRequiredRoutes = ['/invitations/accept'];
+
+/**
  * Prefix for NextAuth's API routes — never intercepted by middleware.
  */
 export const apiAuthPrefix = '/api/auth';

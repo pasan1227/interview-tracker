@@ -2,6 +2,7 @@ import {
   DEFAULT_LOGIN_REDIRECT,
   apiAuthPrefix,
   authRoutes,
+  noOrgRequiredRoutes,
   orgOnboardingRoutes,
   publicRoutes,
 } from '@/routes';
@@ -43,7 +44,15 @@ export default auth((req) => {
     const activeOrgId = req.auth?.user?.activeOrgId;
     const orgs = req.auth?.user?.orgs ?? [];
     const onOnboarding = orgOnboardingRoutes.includes(nextUrl.pathname);
-    if (!activeOrgId && !onOnboarding && !publicRoutes.includes(nextUrl.pathname)) {
+    const onNoOrgRoute = noOrgRequiredRoutes.some((r) =>
+      nextUrl.pathname.startsWith(r)
+    );
+    if (
+      !activeOrgId &&
+      !onOnboarding &&
+      !onNoOrgRoute &&
+      !publicRoutes.includes(nextUrl.pathname)
+    ) {
       const target = orgs.length === 0 ? '/no-access' : '/select-org';
       return Response.redirect(new URL(target, nextUrl));
     }

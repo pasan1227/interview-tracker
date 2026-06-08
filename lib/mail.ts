@@ -84,6 +84,46 @@ export const sendTwoFactorTokenEmail = async (email: string, token: string) => {
   });
 };
 
+export const sendInvitationEmail = async ({
+  email,
+  token,
+  orgName,
+  inviterName,
+  role,
+}: {
+  email: string;
+  token: string;
+  orgName: string;
+  inviterName: string;
+  role: string;
+}) => {
+  const acceptLink = `${domain}/invitations/accept?token=${encodeURIComponent(token)}`;
+  await resend.emails.send({
+    from: fromAddress(),
+    to: email,
+    subject: headerSafe(`[${orgName}] You've been invited to InterviewPro`),
+    html: html`
+      <div style="font-family: Arial, sans-serif; max-width: 520px; padding: 24px;">
+        <h2 style="margin: 0 0 12px;">You're invited to ${orgName}</h2>
+        <p style="margin: 0 0 8px;">
+          ${inviterName} invited you to join <strong>${orgName}</strong>
+          on InterviewPro as <strong>${role.toLowerCase()}</strong>.
+        </p>
+        <p style="margin: 16px 0;">
+          <a
+            href="${acceptLink}"
+            style="background:#1f2937;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;"
+          >Accept invitation</a>
+        </p>
+        <p style="margin: 0; font-size: 12px; color:#6b7280;">
+          This invitation expires in 7 days. If you weren't expecting
+          this, you can safely ignore the email.
+        </p>
+      </div>
+    `,
+  });
+};
+
 /**
  * Sends an email notification for an interview schedule
  * Used when interviews are created or status changes to SCHEDULED
